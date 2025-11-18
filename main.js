@@ -33,18 +33,48 @@ const categoryColors = [
 
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando aplicación...');
     loadTheme();
-    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-    loadVulnerabilities();
-    document.getElementById('calculate-btn').addEventListener('click', calculateRisk);
-    document.getElementById('save-btn').addEventListener('click', saveVulnerability);
     
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+    
+    loadVulnerabilities();
+    
+    // Event listeners corregidos
+    const calculateBtn = document.getElementById('calculate-btn');
+    const saveBtn = document.getElementById('save-btn');
+    
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function() {
+            calculateRisk();
+        });
+    } else {
+        console.error('Botón calcular no encontrado');
+    }
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            saveVulnerability();
+        });
+    } else {
+        console.error('Botón guardar no encontrado');
+    }
+    
+    // Event listeners para selects
     document.querySelectorAll('select').forEach(select => {
         select.addEventListener('change', calculateRisk);
     });
     
-    calculateRisk();
-    initializeExportButton();
+    // Calcular riesgo inicial
+    setTimeout(calculateRisk, 100);
+    
+    // Inicializar botón de exportación
+    setTimeout(initializeExportButton, 500);
+    
+    console.log('Aplicación inicializada correctamente');
 });
 
 // ========== FUNCIONES DE TEMA ==========
@@ -68,158 +98,240 @@ function toggleTheme() {
 function loadTheme() {
     const savedTheme = localStorage.getItem('theme');
     const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = themeToggle.querySelector('.theme-icon');
     
-    if (savedTheme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        currentTheme = 'dark';
-        themeIcon.textContent = '☀️';
-    } else {
-        document.documentElement.removeAttribute('data-theme');
-        currentTheme = 'light';
-        themeIcon.textContent = '🌙';
+    if (themeToggle) {
+        const themeIcon = themeToggle.querySelector('.theme-icon');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            currentTheme = 'dark';
+            themeIcon.textContent = '☀️';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            currentTheme = 'light';
+            themeIcon.textContent = '🌙';
+        }
     }
 }
 
 // ========== CÁLCULO DE RIESGO ==========
 function calculateRisk() {
-    const sl = parseFloat(document.getElementById('sl').value);
-    const m = parseFloat(document.getElementById('m').value);
-    const o = parseFloat(document.getElementById('o').value);
-    const s = parseFloat(document.getElementById('s').value);
+    console.log('Calculando riesgo...');
     
-    const lc = parseFloat(document.getElementById('lc').value);
-    const li = parseFloat(document.getElementById('li').value);
-    const lav = parseFloat(document.getElementById('lav').value);
-    const lac = parseFloat(document.getElementById('lac').value);
-    
-    const ed = parseFloat(document.getElementById('ed').value);
-    const ee = parseFloat(document.getElementById('ee').value);
-    const a = parseFloat(document.getElementById('a').value);
-    const id = parseFloat(document.getElementById('id').value);
-    
-    const fd = parseFloat(document.getElementById('fd').value);
-    const rd = parseFloat(document.getElementById('rd').value);
-    const nc = parseFloat(document.getElementById('nc').value);
-    const pv = parseFloat(document.getElementById('pv').value);
-    
-    const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
-    const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
-    const risk = likelihood * impact;
-    
-    document.querySelector('.LS').textContent = likelihood.toFixed(2);
-    document.querySelector('.IS').textContent = impact.toFixed(2);
-    
-    let riskLevel, riskClass;
-    if (risk >= 60) {
-        riskLevel = 'CRÍTICO';
-        riskClass = 'risk-critico';
-    } else if (risk >= 40) {
-        riskLevel = 'ALTO';
-        riskClass = 'risk-alto';
-    } else if (risk >= 20) {
-        riskLevel = 'MEDIO';
-        riskClass = 'risk-medio';
-    } else if (risk >= 10) {
-        riskLevel = 'BAJO';
-        riskClass = 'risk-bajo';
-    } else {
-        riskLevel = 'INFORMATIVO';
-        riskClass = 'risk-info';
+    try {
+        // Obtener valores de los selects con valores por defecto
+        const sl = parseFloat(document.getElementById('sl')?.value) || 1;
+        const m = parseFloat(document.getElementById('m')?.value) || 1;
+        const o = parseFloat(document.getElementById('o')?.value) || 0;
+        const s = parseFloat(document.getElementById('s')?.value) || 2;
+        
+        const lc = parseFloat(document.getElementById('lc')?.value) || 2;
+        const li = parseFloat(document.getElementById('li')?.value) || 1;
+        const lav = parseFloat(document.getElementById('lav')?.value) || 1;
+        const lac = parseFloat(document.getElementById('lac')?.value) || 1;
+        
+        const ed = parseFloat(document.getElementById('ed')?.value) || 1;
+        const ee = parseFloat(document.getElementById('ee')?.value) || 1;
+        const a = parseFloat(document.getElementById('a')?.value) || 1;
+        const id = parseFloat(document.getElementById('id')?.value) || 1;
+        
+        const fd = parseFloat(document.getElementById('fd')?.value) || 1;
+        const rd = parseFloat(document.getElementById('rd')?.value) || 1;
+        const nc = parseFloat(document.getElementById('nc')?.value) || 2;
+        const pv = parseFloat(document.getElementById('pv')?.value) || 3;
+        
+        console.log('Valores obtenidos:', {sl, m, o, s, lc, li, lav, lac, ed, ee, a, id, fd, rd, nc, pv});
+        
+        // Calcular promedios
+        const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
+        const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
+        const risk = (likelihood + impact) / 2; // Promedio entre probabilidad e impacto
+        
+        console.log('Resultados:', {likelihood, impact, risk});
+        
+        // Actualizar UI
+        const lsElement = document.querySelector('.LS');
+        const isElement = document.querySelector('.IS');
+        
+        if (lsElement) lsElement.textContent = likelihood.toFixed(2);
+        if (isElement) isElement.textContent = impact.toFixed(2);
+        
+        let riskLevel, riskClass;
+        if (risk >= 7.5) {
+            riskLevel = 'CRÍTICO';
+            riskClass = 'risk-critico';
+        } else if (risk >= 5) {
+            riskLevel = 'ALTO';
+            riskClass = 'risk-alto';
+        } else if (risk >= 2.5) {
+            riskLevel = 'MEDIO';
+            riskClass = 'risk-medio';
+        } else if (risk >= 1) {
+            riskLevel = 'BAJO';
+            riskClass = 'risk-bajo';
+        } else {
+            riskLevel = 'INFORMATIVO';
+            riskClass = 'risk-info';
+        }
+        
+        const riskElement = document.getElementById('risk-result');
+        if (riskElement) {
+            riskElement.textContent = `Riesgo: ${riskLevel} (${risk.toFixed(2)})`;
+            riskElement.className = `risk-indicator ${riskClass}`;
+        }
+        
+        updateRiskChart(likelihood, impact, risk);
+        
+        return { 
+            likelihood: parseFloat(likelihood.toFixed(2)), 
+            impact: parseFloat(impact.toFixed(2)), 
+            risk: parseFloat(risk.toFixed(2)), 
+            riskLevel, 
+            riskClass 
+        };
+    } catch (error) {
+        console.error('Error en calculateRisk:', error);
+        return { likelihood: 0, impact: 0, risk: 0, riskLevel: 'INFORMATIVO', riskClass: 'risk-info' };
     }
-    
-    const riskElement = document.getElementById('risk-result');
-    riskElement.textContent = `Riesgo: ${riskLevel} (${risk.toFixed(2)})`;
-    riskElement.className = `risk-indicator ${riskClass}`;
-    
-    updateRiskChart(likelihood, impact, risk);
-    
-    return { likelihood, impact, risk, riskLevel, riskClass };
 }
 
 function updateRiskChart(likelihood, impact, risk) {
-    const ctx = document.getElementById('riskChart').getContext('2d');
+    const ctx = document.getElementById('riskChart');
+    if (!ctx) {
+        console.log('Canvas riskChart no encontrado, puede ser normal si no está en la pestaña activa');
+        return;
+    }
     
-    if (riskChart) riskChart.destroy();
-    
-    riskChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Probabilidad', 'Impacto', 'Riesgo'],
-            datasets: [{
-                label: 'Puntuación',
-                data: [likelihood, impact, risk],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(255, 99, 132, 0.7)',
-                    risk >= 60 ? 'rgba(255, 0, 0, 0.7)' : 
-                    risk >= 40 ? 'rgba(255, 107, 107, 0.7)' : 
-                    risk >= 20 ? 'rgba(255, 209, 102, 0.7)' : 
-                    risk >= 10 ? 'rgba(6, 214, 160, 0.7)' : 'rgba(17, 138, 178, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    risk >= 60 ? 'rgba(255, 0, 0, 1)' : 
-                    risk >= 40 ? 'rgba(255, 107, 107, 1)' : 
-                    risk >= 20 ? 'rgba(255, 209, 102, 1)' : 
-                    risk >= 10 ? 'rgba(6, 214, 160, 1)' : 'rgba(17, 138, 178, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, max: 100 } },
-            plugins: { legend: { display: false } }
-        }
-    });
+    try {
+        const context = ctx.getContext('2d');
+        
+        if (riskChart) riskChart.destroy();
+        
+        riskChart = new Chart(context, {
+            type: 'bar',
+            data: {
+                labels: ['Probabilidad', 'Impacto', 'Riesgo'],
+                datasets: [{
+                    label: 'Puntuación',
+                    data: [likelihood, impact, risk],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)',
+                        risk >= 7.5 ? 'rgba(255, 0, 0, 0.7)' : 
+                        risk >= 5 ? 'rgba(255, 107, 107, 0.7)' : 
+                        risk >= 2.5 ? 'rgba(255, 209, 102, 0.7)' : 
+                        risk >= 1 ? 'rgba(6, 214, 160, 0.7)' : 'rgba(17, 138, 178, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        risk >= 7.5 ? 'rgba(255, 0, 0, 1)' : 
+                        risk >= 5 ? 'rgba(255, 107, 107, 1)' : 
+                        risk >= 2.5 ? 'rgba(255, 209, 102, 1)' : 
+                        risk >= 1 ? 'rgba(6, 214, 160, 1)' : 'rgba(17, 138, 178, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        max: 10,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    } 
+                },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error actualizando gráfico:', error);
+    }
 }
 
 // ========== GESTIÓN DE VULNERABILIDADES ==========
 function saveVulnerability() {
-    const riskData = calculateRisk();
-    const formData = getFormData();
+    console.log('Guardando vulnerabilidad...');
     
-    const vulnerability = {
-        id: Date.now(),
-        name: formData.name || `Vulnerabilidad ${vulnerabilities.length + 1}`,
-        ...riskData,
-        ...formData,
-        date: new Date().toISOString()
-    };
-    
-    vulnerabilities.push(vulnerability);
-    saveVulnerabilities();
-    renderVulnerabilitiesList();
-    updateDashboard();
-    
-    showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
+    try {
+        const riskData = calculateRisk();
+        const formData = getFormData();
+        
+        // Validar que tenga al menos un nombre
+        if (!formData.name || formData.name.trim() === '') {
+            showNotification('Por favor ingresa un nombre para la vulnerabilidad', 'error');
+            return;
+        }
+        
+        const vulnerability = {
+            id: Date.now(),
+            name: formData.name.trim(),
+            ...riskData,
+            ...formData,
+            date: new Date().toISOString()
+        };
+        
+        vulnerabilities.push(vulnerability);
+        saveVulnerabilities();
+        renderVulnerabilitiesList();
+        updateDashboard();
+        
+        // Limpiar formulario
+        document.getElementById('vulnerability-name').value = '';
+        
+        showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
+        
+    } catch (error) {
+        console.error('Error guardando vulnerabilidad:', error);
+        showNotification('Error al guardar la vulnerabilidad', 'error');
+    }
 }
 
 function getFormData() {
+    // Función helper para obtener valores seguros
+    const getValue = (id) => {
+        const element = document.getElementById(id);
+        return element ? element.value : '';
+    };
+    
     return {
-        name: document.getElementById('vulnerability-name').value,
-        owasp: document.getElementById('owasp-category').value,
-        mitre: document.getElementById('mitre-id').value,
-        toolCriticity: document.getElementById('tool-criticity').value,
-        threatAgent: document.getElementById('threat-agent').value,
-        attackVector: document.getElementById('attack-vector').value,
-        securityWeakness: document.getElementById('security-weakness').value,
-        securityControls: document.getElementById('security-controls').value,
-        technicalBusinessImpact: document.getElementById('technical-business-impact').value,
-        detail: document.getElementById('detail').value,
-        description: document.getElementById('description').value,
-        recommendation: document.getElementById('recommendation').value,
-        mitreDetection: document.getElementById('mitre-detection').value,
-        mitreMitigation: document.getElementById('mitre-mitigation').value
+        name: getValue('vulnerability-name'),
+        owasp: getValue('owasp-category'),
+        mitre: getValue('mitre-id'),
+        toolCriticity: getValue('tool-criticity'),
+        threatAgent: getValue('threat-agent'),
+        attackVector: getValue('attack-vector'),
+        securityWeakness: getValue('security-weakness'),
+        securityControls: getValue('security-controls'),
+        technicalBusinessImpact: getValue('technical-business-impact'),
+        detail: getValue('detail'),
+        description: getValue('description'),
+        recommendation: getValue('recommendation'),
+        mitreDetection: getValue('mitre-detection'),
+        mitreMitigation: getValue('mitre-mitigation')
     };
 }
 
 function renderVulnerabilitiesList() {
     const listElement = document.getElementById('vulnerabilities-list');
     const countElement = document.getElementById('vulnerability-count');
+    
+    if (!listElement || !countElement) {
+        console.log('Elementos de lista no encontrados, puede ser normal si no está en la pestaña activa');
+        return;
+    }
     
     countElement.textContent = `${vulnerabilities.length} vulnerabilidad(es)`;
     
@@ -235,13 +347,13 @@ function renderVulnerabilitiesList() {
         item.className = 'vulnerability-item';
         item.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
-                <div>
+                <div style="flex: 1;">
                     <h5>${vuln.name}</h5>
                     <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
                     <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
                     <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()}</small>
                 </div>
-                <div>
+                <div class="ms-3">
                     <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
                 </div>
             </div>
@@ -254,126 +366,165 @@ function renderVulnerabilitiesList() {
 
 // ========== DASHBOARD ==========
 function updateDashboard() {
-    document.getElementById('total-vulnerabilities').textContent = vulnerabilities.length;
+    console.log('Actualizando dashboard...');
     
-    const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
-    const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
-    const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
-    const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
-    const infoCount = vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length;
-    
-    document.getElementById('critical-count').textContent = criticalCount;
-    document.getElementById('high-count').textContent = highCount;
-    document.getElementById('medium-count').textContent = mediumCount;
-    
-    updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
-    updateOwaspDistributionChart();
-    updateDashboardTable();
+    try {
+        const totalElement = document.getElementById('total-vulnerabilities');
+        const criticalElement = document.getElementById('critical-count');
+        const highElement = document.getElementById('high-count');
+        const mediumElement = document.getElementById('medium-count');
+        
+        if (totalElement) totalElement.textContent = vulnerabilities.length;
+        
+        const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
+        const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
+        const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
+        const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
+        const infoCount = vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length;
+        
+        if (criticalElement) criticalElement.textContent = criticalCount;
+        if (highElement) highElement.textContent = highCount;
+        if (mediumElement) mediumElement.textContent = mediumCount;
+        
+        updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
+        updateOwaspDistributionChart();
+        updateDashboardTable();
+    } catch (error) {
+        console.error('Error actualizando dashboard:', error);
+    }
 }
 
 function updateRiskDistributionChart(critical, high, medium, low, info) {
-    const ctx = document.getElementById('riskDistributionChart').getContext('2d');
+    const ctx = document.getElementById('riskDistributionChart');
+    if (!ctx) return;
     
-    if (riskDistributionChart) riskDistributionChart.destroy();
-    
-    riskDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Crítico', 'Alto', 'Medio', 'Bajo', 'Informativo'],
-            datasets: [{
-                data: [critical, high, medium, low, info],
-                backgroundColor: [
-                    'rgba(255, 0, 0, 0.8)',
-                    'rgba(255, 107, 107, 0.8)',
-                    'rgba(255, 209, 102, 0.8)',
-                    'rgba(6, 214, 160, 0.8)',
-                    'rgba(17, 138, 178, 0.8)'
-                ],
-                borderColor: [
-                    'rgba(255, 0, 0, 1)',
-                    'rgba(255, 107, 107, 1)',
-                    'rgba(255, 209, 102, 1)',
-                    'rgba(6, 214, 160, 1)',
-                    'rgba(17, 138, 178, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
+    try {
+        const context = ctx.getContext('2d');
+        
+        if (riskDistributionChart) riskDistributionChart.destroy();
+        
+        riskDistributionChart = new Chart(context, {
+            type: 'doughnut',
+            data: {
+                labels: ['Crítico', 'Alto', 'Medio', 'Bajo', 'Informativo'],
+                datasets: [{
+                    data: [critical, high, medium, low, info],
+                    backgroundColor: [
+                        'rgba(255, 0, 0, 0.8)',
+                        'rgba(255, 107, 107, 0.8)',
+                        'rgba(255, 209, 102, 0.8)',
+                        'rgba(6, 214, 160, 0.8)',
+                        'rgba(17, 138, 178, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 0, 0, 1)',
+                        'rgba(255, 107, 107, 1)',
+                        'rgba(255, 209, 102, 1)',
+                        'rgba(6, 214, 160, 1)',
+                        'rgba(17, 138, 178, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    } 
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error actualizando gráfico de distribución:', error);
+    }
 }
 
 function updateOwaspDistributionChart() {
-    const ctx = document.getElementById('owaspDistributionChart').getContext('2d');
+    const ctx = document.getElementById('owaspDistributionChart');
+    if (!ctx) return;
     
-    const owaspCounts = Array(owaspCategories.length).fill(0);
-    vulnerabilities.forEach(vuln => {
-        if (vuln.owasp) {
-            const index = owaspCategories.findIndex(cat => cat.startsWith(vuln.owasp));
-            if (index !== -1) owaspCounts[index]++;
-        }
-    });
-    
-    if (owaspDistributionChart) owaspDistributionChart.destroy();
-    
-    owaspDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: owaspCategories,
-            datasets: [{
-                data: owaspCounts,
-                backgroundColor: categoryColors,
-                borderColor: categoryColors.map(color => color.replace('0.8', '1')),
-                borderWidth: 2,
-                hoverOffset: 15
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+    try {
+        const context = ctx.getContext('2d');
+        
+        const owaspCounts = Array(owaspCategories.length).fill(0);
+        vulnerabilities.forEach(vuln => {
+            if (vuln.owasp) {
+                const index = owaspCategories.findIndex(cat => cat.startsWith(vuln.owasp));
+                if (index !== -1) owaspCounts[index]++;
+            }
+        });
+        
+        if (owaspDistributionChart) owaspDistributionChart.destroy();
+        
+        owaspDistributionChart = new Chart(context, {
+            type: 'doughnut',
+            data: {
+                labels: owaspCategories,
+                datasets: [{
+                    data: owaspCounts,
+                    backgroundColor: categoryColors,
+                    borderColor: categoryColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
-                }
-            },
-            cutout: '55%',
-            animation: { animateScale: true, animateRotate: true }
-        }
-    });
-    
-    updateLegend(owaspCounts);
+                },
+                cutout: '55%',
+                animation: { animateScale: true, animateRotate: true }
+            }
+        });
+        
+        updateLegend(owaspCounts);
+    } catch (error) {
+        console.error('Error actualizando gráfico OWASP:', error);
+    }
 }
 
 function updateLegend(owaspCounts) {
     const legendElement = document.getElementById('chart-legend');
+    if (!legendElement) return;
+    
     legendElement.innerHTML = '';
     
     owaspCategories.forEach((category, index) => {
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-            <div class="legend-color" style="background-color: ${categoryColors[index]}"></div>
-            <span>${category.split('-')[0].trim()}: ${owaspCounts[index]}</span>
-        `;
-        legendElement.appendChild(legendItem);
+        if (owaspCounts[index] > 0) {
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            legendItem.innerHTML = `
+                <div class="legend-color" style="background-color: ${categoryColors[index]}"></div>
+                <span>${category.split('-')[0].trim()}: ${owaspCounts[index]}</span>
+            `;
+            legendElement.appendChild(legendItem);
+        }
     });
 }
 
 function updateDashboardTable() {
     const tableBody = document.getElementById('dashboard-vulnerabilities-list');
+    if (!tableBody) return;
+    
     tableBody.innerHTML = '';
     
     if (vulnerabilities.length === 0) {
@@ -417,21 +568,11 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD ==========
-function initializeExportButton() {
-    const exportBtn = document.getElementById('export-all-btn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportToWord);
-        console.log('Botón de exportación inicializado');
-    } else {
-        console.log('Botón de exportación no encontrado, reintentando...');
-        setTimeout(initializeExportButton, 1000);
-    }
-}
-
+// ========== EXPORTACIÓN A WORD (MODIFICADA) ==========
 function exportToWord() {
     console.log('Ejecutando exportToWord...');
     
+    // Asumiendo que 'vulnerabilities' está disponible globalmente
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
         return;
@@ -443,77 +584,169 @@ function exportToWord() {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Reporte de Vulnerabilidades OWASP</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Reporte de Vulnerabilidades</title>
                 <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
-                    .vulnerability { margin-bottom: 30px; border: 1px solid #ccc; padding: 15px; }
-                    .title { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
-                    .section { margin-bottom: 15px; }
-                    .section-title { font-weight: bold; color: #34495e; margin-bottom: 5px; }
-                    .risk-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; color: white; font-weight: bold; margin-left: 10px; }
-                    .risk-critico { background-color: #FF0000; }
-                    .risk-alto { background-color: #FF6B6B; }
-                    .risk-medio { background-color: #FFD166; color: #333; }
-                    .risk-bajo { background-color: #06D6A0; }
-                    .risk-info { background-color: #118AB2; }
-                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 20px; 
+                        line-height: 1.4; 
+                        color: #333;
+                    }
+                    .report-header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #2c3e50;
+                        padding-bottom: 20px;
+                    }
+                    .vulnerability-container {
+                        margin-bottom: 40px;
+                        page-break-after: always;
+                    }
+                    .vulnerability-table {
+                        width: 100%;
+                        border-collapse: collapse; /* Bordes juntos */
+                        margin: 20px 0;
+                        font-size: 12px;
+                        /* Redefinimos el borde principal de la tabla */
+                        border: 1px solid #000; 
+                    }
+                    
+                    /* Estilo para todas las celdas (encabezado y datos) */
+                    .vulnerability-table td {
+                        border: 1px solid #000; /* Bordes negros más visibles */
+                        padding: 8px 10px;
+                        vertical-align: top;
+                    }
+
+                    /* Celda de Encabezado (primera columna) */
+                    .header-cell {
+                        background-color: #f2f2f2; 
+                        font-weight: bold;
+                        width: 25%; /* Definido en la tabla original */
+                    }
+
+                    /* Celda de Datos (segunda/tercera columna) */
+                    .data-cell {
+                        background-color: #ffffff;
+                        font-weight: normal;
+                    }
+
+                    /* El título de la vulnerabilidad */
+                    .vulnerability-title {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #333; /* Color de texto ajustado */
+                        margin-bottom: 0px; 
+                        padding: 10px;
+                        border-radius: 0; 
+                    }
+                    
+                    .list-item {
+                        margin-bottom: 5px;
+                        padding-left: 10px;
+                    }
+                    
+                    /* Se eliminaron estilos .risk-* innecesarios del CSS de Word ya que se usan colores directos */
                 </style>
             </head>
             <body>
-                <h1>Reporte de Vulnerabilidades OWASP</h1>
-                <p><strong>Generado:</strong> ${new Date().toLocaleDateString()}</p>
-                <p><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
+                <div class="report-header">
+                    <h1>Reporte de Vulnerabilidades de Seguridad</h1>
+                    <p><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                    <p><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
+                </div>
         `;
 
         vulnerabilities.forEach((vuln, index) => {
+            const titleColor = getRiskHeaderColor(vuln.riskLevel);
+            // Determina el color del fondo para la celda de riesgo
+            const riskHighlightColor = titleColor;
+            
             htmlContent += `
-                <div class="vulnerability">
-                    <div class="title">${vuln.name} <span class="risk-badge ${vuln.riskClass}">${vuln.riskLevel}</span></div>
+                <div class="vulnerability-container">
+                    <div class="vulnerability-title" style="background-color: ${titleColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'};">
+                        Vulnerabilidad ${index + 1}: **${vuln.name || 'No especificado'}**
+                    </div>
                     
-                    <div class="section">
-                        <div class="section-title">Resultados del análisis</div>
-                        Puntuación: ${vuln.risk.toFixed(2)} | Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)}
-                    </div>
+                    <table class="vulnerability-table">
+                        
+                        <tr>
+                            <td rowspan="2" class="header-cell data-cell" style="font-weight: bold; width: 50%; background-color: #ffffff; text-align: left;">
+                                ${vuln.name || 'No especificado'}
+                            </td>
+                            
+                            <td class="header-cell" style="width: 25%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                                Resultados del Análisis
+                            </td>
+                            <td class="data-cell" style="width: 25%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
+                                ${vuln.riskLevel || 'No especificado'}
+                            </td>
+                        </tr>
 
-                    <table>
-                        <tr><th>Host/Vector de Ataque</th><td>${vuln.attackVector || 'No especificado'}</td></tr>
-                        <tr><th>ID OWASP top 10</th><td>${vuln.owasp || 'No especificado'}</td></tr>
-                        <tr><th>MITRE ID</th><td>${vuln.mitre || 'No especificado'}</td></tr>
-                        <tr><th>Criticidad según Herramienta</th><td>${vuln.toolCriticity || 'No especificado'}</td></tr>
+                        <tr>
+                            <td class="header-cell" style="background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                                Nivel de Riesgo
+                            </td>
+                            <td class="data-cell" style="background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
+                                ${vuln.riskLevel || 'No especificado'}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Host</td>
+                            <td colspan="3" class="data-cell">${vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold; width: 25%;">Ruta afectada</td>
+                            <td class="data-cell" style="width: 25%;">${vuln.securityWeakness || 'No especificado'}</td>
+                            <td class="header-cell" style="font-weight: bold; width: 25%;">Resultado del Escáner</td>
+                            <td class="data-cell" style="width: 25%;"> - </td>
+                        </tr>
+
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Detalle</td>
+                            <td colspan="3" class="data-cell">${vuln.detail || 'No especificado'}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Descripción del análisis</td>
+                            <td colspan="3" class="data-cell">${vuln.description || 'No especificado'}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Recomendación</td>
+                            <td colspan="3" class="data-cell">${vuln.recommendation || 'No especificado'}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">ID OWASP top 10</td>
+                            <td colspan="3" class="data-cell">${vuln.owasp || 'No especificado'}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">MITRE ID</td>
+                            <td colspan="3" class="data-cell">${formatMitreIds(vuln.mitre)}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Estrategia de detección MITRE</td>
+                            <td colspan="3" class="data-cell">${formatMitreStrategies(vuln.mitreDetection)}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Estrategia de mitigación MITRE</td>
+                            <td colspan="3" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
+                        </tr>
                     </table>
-
-                    <div class="section">
-                        <div class="section-title">Detalle</div>
-                        ${vuln.detail || vuln.description || 'No especificado'}
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">Descripción del análisis</div>
-                        ${vuln.description || vuln.securityWeakness || 'No especificado'}
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">Recomendación</div>
-                        ${vuln.recommendation || 'No especificado'}
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">Estrategia de detección MITRE</div>
-                        ${vuln.mitreDetection || 'No especificado'}
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">Estrategia de mitigación MITRE</div>
-                        ${vuln.mitreMitigation || 'No especificado'}
-                    </div>
                 </div>
             `;
         });
 
         htmlContent += `</body></html>`;
 
+        // Generación y descarga del archivo .doc
         const blob = new Blob([htmlContent], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -524,7 +757,7 @@ function exportToWord() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidades`, 'success');
+        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
         
     } catch (error) {
         console.error('Error al exportar:', error);
@@ -532,12 +765,84 @@ function exportToWord() {
     }
 }
 
-// ========== UTILIDADES ==========
+// Función auxiliar para obtener color del header según riesgo (MODIFICADA)
+function getRiskHeaderColor(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO':
+            return '#dc3545'; // Rojo
+        case 'ALTO':
+            return '#fd7e14'; // Naranja
+        case 'MEDIO':
+            return '#ffc107'; // Amarillo
+        case 'BAJO':
+            return '#20c997'; // Verde
+        case 'INFORMATIVO':
+            return '#17a2b8'; // Azul
+        default:
+            return '#6c757d'; // Gris
+    }
+}
+
+// Función auxiliar para formatear IDs MITRE (MODIFICADA para mejor manejo de saltos de línea)
+function formatMitreIds(mitreIds) {
+    if (!mitreIds) return 'No especificado';
+    
+    // Si hay múltiples IDs separados por comas o saltos de línea
+    const ids = mitreIds.split(/[,;\n]/).filter(id => id.trim());
+    
+    if (ids.length > 1) {
+        return ids.map(id => `<div class="list-item">• ${id.trim()}</div>`).join('');
+    }
+    
+    // Si contiene múltiples IDs separados por salto de línea sin viñetas
+    if (mitreIds.includes('\n')) {
+        return mitreIds.split('\n')
+            .filter(line => line.trim())
+            .map(line => `<div class="list-item">• ${line.trim()}</div>`)
+            .join('');
+    }
+    
+    return mitreIds;
+}
+
+// Función auxiliar para formatear estrategias MITRE (MODIFICADA para mejor manejo de saltos de línea)
+function formatMitreStrategies(strategies) {
+    if (!strategies) return 'No especificado';
+    
+    // Si es texto plano, convertirlo en lista. Asume que cada línea es un elemento.
+    const lines = strategies.split('\n').filter(line => line.trim());
+    
+    if (lines.length > 0) {
+        return lines.map(line => {
+            // Reemplazar guiones o asteriscos iniciales por un punto de lista HTML
+            const cleanedLine = line.replace(/^(\-|\•)\s*/, '');
+            return `<div class="list-item">• ${cleanedLine.trim()}</div>`;
+        }).join('');
+    }
+    
+    return strategies;
+}
+
+// ========== INICIALIZACIÓN DEL BOTÓN DE EXPORTACIÓN ==========
+function initializeExportButton() {
+    const exportBtn = document.getElementById('export-all-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToWord);
+        console.log('Botón de exportación inicializado');
+    } else {
+        console.log('Botón de exportación no encontrado, reintentando...');
+        setTimeout(initializeExportButton, 1000);
+    }
+}
+
+// ========== FUNCIONES FALTANTES ==========
 function showVulnerabilityDetails(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
     if (!vuln) return;
     
     const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+    
     modalBody.innerHTML = `
         <div class="vulnerability-details">
             <div class="detail-item">
@@ -611,31 +916,66 @@ function showVulnerabilityDetails(id) {
         </div>
     `;
     
-    const modal = new bootstrap.Modal(document.getElementById('vulnerabilityModal'));
-    modal.show();
+    // Usar Bootstrap modal si está disponible
+    const modalElement = document.getElementById('vulnerabilityModal');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
 }
 
 function showNotification(message, type) {
+    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.textContent = message;
     notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s;
+        background-color: ${type === 'success' ? '#2ecc71' : '#e74c3c'};
+    `;
+    
     document.body.appendChild(notification);
     
+    // Remover después de 3 segundos
     setTimeout(() => {
         notification.style.opacity = '0';
-        setTimeout(() => document.body.removeChild(notification), 300);
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
     }, 3000);
 }
 
 function saveVulnerabilities() {
-    localStorage.setItem('owaspVulnerabilities', JSON.stringify(vulnerabilities));
+    try {
+        localStorage.setItem('owaspVulnerabilities', JSON.stringify(vulnerabilities));
+        console.log('Vulnerabilidades guardadas en localStorage');
+    } catch (error) {
+        console.error('Error guardando en localStorage:', error);
+    }
 }
 
 function loadVulnerabilities() {
-    const saved = localStorage.getItem('owaspVulnerabilities');
-    if (saved) {
-        vulnerabilities = JSON.parse(saved);
-        renderVulnerabilitiesList();
-        updateDashboard();
+    try {
+        const saved = localStorage.getItem('owaspVulnerabilities');
+        if (saved) {
+            vulnerabilities = JSON.parse(saved);
+            renderVulnerabilitiesList();
+            updateDashboard();
+            console.log('Vulnerabilidades cargadas:', vulnerabilities.length);
+        }
+    } catch (error) {
+        console.error('Error cargando vulnerabilidades:', error);
+        vulnerabilities = [];
     }
 }
