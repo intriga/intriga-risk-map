@@ -370,3 +370,15 @@ header {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-bottom: 30px;
 }
+
+/* boton de exportar */
+#export-all-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+#export-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}

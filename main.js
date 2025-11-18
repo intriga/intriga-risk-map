@@ -1,4 +1,3 @@
-
 // Variables globales
 let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
@@ -32,31 +31,23 @@ const categoryColors = [
     'rgba(210, 105, 30, 0.8)'    // A10 - Marrón
 ];
 
-// Inicializar la aplicación
+// ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar tema guardado
     loadTheme();
-    
-    // Configurar evento del interruptor de tema
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-    
-    // Cargar vulnerabilidades guardadas
     loadVulnerabilities();
-    
-    // Configurar eventos
     document.getElementById('calculate-btn').addEventListener('click', calculateRisk);
     document.getElementById('save-btn').addEventListener('click', saveVulnerability);
     
-    // Configurar eventos para los select
     document.querySelectorAll('select').forEach(select => {
         select.addEventListener('change', calculateRisk);
     });
     
-    // Calcular riesgo inicial
     calculateRisk();
+    initializeExportButton();
 });
 
-// Función para cambiar entre temas
+// ========== FUNCIONES DE TEMA ==========
 function toggleTheme() {
     const themeToggle = document.getElementById('theme-toggle');
     const themeIcon = themeToggle.querySelector('.theme-icon');
@@ -74,7 +65,6 @@ function toggleTheme() {
     }
 }
 
-// Función para cargar el tema guardado
 function loadTheme() {
     const savedTheme = localStorage.getItem('theme');
     const themeToggle = document.getElementById('theme-toggle');
@@ -91,9 +81,8 @@ function loadTheme() {
     }
 }
 
-// Función para calcular el riesgo
+// ========== CÁLCULO DE RIESGO ==========
 function calculateRisk() {
-    // Obtener valores de los factores
     const sl = parseFloat(document.getElementById('sl').value);
     const m = parseFloat(document.getElementById('m').value);
     const o = parseFloat(document.getElementById('o').value);
@@ -114,16 +103,13 @@ function calculateRisk() {
     const nc = parseFloat(document.getElementById('nc').value);
     const pv = parseFloat(document.getElementById('pv').value);
     
-    // Calcular puntuaciones
     const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
     const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
     const risk = likelihood * impact;
     
-    // Actualizar la interfaz
     document.querySelector('.LS').textContent = likelihood.toFixed(2);
     document.querySelector('.IS').textContent = impact.toFixed(2);
     
-    // Determinar nivel de riesgo
     let riskLevel, riskClass;
     if (risk >= 60) {
         riskLevel = 'CRÍTICO';
@@ -142,24 +128,19 @@ function calculateRisk() {
         riskClass = 'risk-info';
     }
     
-    // Actualizar indicador de riesgo
     const riskElement = document.getElementById('risk-result');
     riskElement.textContent = `Riesgo: ${riskLevel} (${risk.toFixed(2)})`;
     riskElement.className = `risk-indicator ${riskClass}`;
     
-    // Actualizar gráfico
     updateRiskChart(likelihood, impact, risk);
     
     return { likelihood, impact, risk, riskLevel, riskClass };
 }
 
-// Función para actualizar el gráfico de riesgo
 function updateRiskChart(likelihood, impact, risk) {
     const ctx = document.getElementById('riskChart').getContext('2d');
     
-    if (riskChart) {
-        riskChart.destroy();
-    }
+    if (riskChart) riskChart.destroy();
     
     riskChart = new Chart(ctx, {
         type: 'bar',
@@ -190,22 +171,13 @@ function updateRiskChart(likelihood, impact, risk) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
+            scales: { y: { beginAtZero: true, max: 100 } },
+            plugins: { legend: { display: false } }
         }
     });
 }
 
-// Función para guardar una vulnerabilidad
+// ========== GESTIÓN DE VULNERABILIDADES ==========
 function saveVulnerability() {
     const riskData = calculateRisk();
     const formData = getFormData();
@@ -226,7 +198,6 @@ function saveVulnerability() {
     showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
 }
 
-// Función para obtener datos del formulario
 function getFormData() {
     return {
         name: document.getElementById('vulnerability-name').value,
@@ -246,7 +217,6 @@ function getFormData() {
     };
 }
 
-// Función para renderizar la lista de vulnerabilidades
 function renderVulnerabilitiesList() {
     const listElement = document.getElementById('vulnerabilities-list');
     const countElement = document.getElementById('vulnerability-count');
@@ -282,7 +252,287 @@ function renderVulnerabilitiesList() {
     });
 }
 
-// Función para mostrar detalles de una vulnerabilidad
+// ========== DASHBOARD ==========
+function updateDashboard() {
+    document.getElementById('total-vulnerabilities').textContent = vulnerabilities.length;
+    
+    const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
+    const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
+    const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
+    const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
+    const infoCount = vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length;
+    
+    document.getElementById('critical-count').textContent = criticalCount;
+    document.getElementById('high-count').textContent = highCount;
+    document.getElementById('medium-count').textContent = mediumCount;
+    
+    updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
+    updateOwaspDistributionChart();
+    updateDashboardTable();
+}
+
+function updateRiskDistributionChart(critical, high, medium, low, info) {
+    const ctx = document.getElementById('riskDistributionChart').getContext('2d');
+    
+    if (riskDistributionChart) riskDistributionChart.destroy();
+    
+    riskDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Crítico', 'Alto', 'Medio', 'Bajo', 'Informativo'],
+            datasets: [{
+                data: [critical, high, medium, low, info],
+                backgroundColor: [
+                    'rgba(255, 0, 0, 0.8)',
+                    'rgba(255, 107, 107, 0.8)',
+                    'rgba(255, 209, 102, 0.8)',
+                    'rgba(6, 214, 160, 0.8)',
+                    'rgba(17, 138, 178, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(255, 0, 0, 1)',
+                    'rgba(255, 107, 107, 1)',
+                    'rgba(255, 209, 102, 1)',
+                    'rgba(6, 214, 160, 1)',
+                    'rgba(17, 138, 178, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function updateOwaspDistributionChart() {
+    const ctx = document.getElementById('owaspDistributionChart').getContext('2d');
+    
+    const owaspCounts = Array(owaspCategories.length).fill(0);
+    vulnerabilities.forEach(vuln => {
+        if (vuln.owasp) {
+            const index = owaspCategories.findIndex(cat => cat.startsWith(vuln.owasp));
+            if (index !== -1) owaspCounts[index]++;
+        }
+    });
+    
+    if (owaspDistributionChart) owaspDistributionChart.destroy();
+    
+    owaspDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: owaspCategories,
+            datasets: [{
+                data: owaspCounts,
+                backgroundColor: categoryColors,
+                borderColor: categoryColors.map(color => color.replace('0.8', '1')),
+                borderWidth: 2,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '55%',
+            animation: { animateScale: true, animateRotate: true }
+        }
+    });
+    
+    updateLegend(owaspCounts);
+}
+
+function updateLegend(owaspCounts) {
+    const legendElement = document.getElementById('chart-legend');
+    legendElement.innerHTML = '';
+    
+    owaspCategories.forEach((category, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${categoryColors[index]}"></div>
+            <span>${category.split('-')[0].trim()}: ${owaspCounts[index]}</span>
+        `;
+        legendElement.appendChild(legendItem);
+    });
+}
+
+function updateDashboardTable() {
+    const tableBody = document.getElementById('dashboard-vulnerabilities-list');
+    tableBody.innerHTML = '';
+    
+    if (vulnerabilities.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
+        return;
+    }
+    
+    const vulnerabilitiesByCategory = {};
+    owaspCategories.forEach((_, index) => {
+        vulnerabilitiesByCategory[index] = vulnerabilities.filter(v => {
+            if (!v.owasp) return false;
+            return owaspCategories[index].startsWith(v.owasp);
+        });
+    });
+    
+    owaspCategories.forEach((category, index) => {
+        const categoryVulns = vulnerabilitiesByCategory[index];
+        
+        if (categoryVulns.length > 0) {
+            const categoryRow = document.createElement('tr');
+            categoryRow.className = `risk-${index}`;
+            categoryRow.innerHTML = `
+                <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[index].replace('0.8', '0.2')}">
+                    ${category} (${categoryVulns.length})
+                </td>
+            `;
+            tableBody.appendChild(categoryRow);
+            
+            categoryVulns.forEach(vuln => {
+                const row = document.createElement('tr');
+                row.className = `risk-${index}`;
+                row.innerHTML = `
+                    <td></td>
+                    <td>${vuln.name}</td>
+                    <td>${vuln.attackVector || 'No especificado'}</td>
+                    <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    });
+}
+
+// ========== EXPORTACIÓN A WORD ==========
+function initializeExportButton() {
+    const exportBtn = document.getElementById('export-all-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToWord);
+        console.log('Botón de exportación inicializado');
+    } else {
+        console.log('Botón de exportación no encontrado, reintentando...');
+        setTimeout(initializeExportButton, 1000);
+    }
+}
+
+function exportToWord() {
+    console.log('Ejecutando exportToWord...');
+    
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para exportar', 'error');
+        return;
+    }
+
+    try {
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Reporte de Vulnerabilidades OWASP</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
+                    .vulnerability { margin-bottom: 30px; border: 1px solid #ccc; padding: 15px; }
+                    .title { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
+                    .section { margin-bottom: 15px; }
+                    .section-title { font-weight: bold; color: #34495e; margin-bottom: 5px; }
+                    .risk-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; color: white; font-weight: bold; margin-left: 10px; }
+                    .risk-critico { background-color: #FF0000; }
+                    .risk-alto { background-color: #FF6B6B; }
+                    .risk-medio { background-color: #FFD166; color: #333; }
+                    .risk-bajo { background-color: #06D6A0; }
+                    .risk-info { background-color: #118AB2; }
+                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                </style>
+            </head>
+            <body>
+                <h1>Reporte de Vulnerabilidades OWASP</h1>
+                <p><strong>Generado:</strong> ${new Date().toLocaleDateString()}</p>
+                <p><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
+        `;
+
+        vulnerabilities.forEach((vuln, index) => {
+            htmlContent += `
+                <div class="vulnerability">
+                    <div class="title">${vuln.name} <span class="risk-badge ${vuln.riskClass}">${vuln.riskLevel}</span></div>
+                    
+                    <div class="section">
+                        <div class="section-title">Resultados del análisis</div>
+                        Puntuación: ${vuln.risk.toFixed(2)} | Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)}
+                    </div>
+
+                    <table>
+                        <tr><th>Host/Vector de Ataque</th><td>${vuln.attackVector || 'No especificado'}</td></tr>
+                        <tr><th>ID OWASP top 10</th><td>${vuln.owasp || 'No especificado'}</td></tr>
+                        <tr><th>MITRE ID</th><td>${vuln.mitre || 'No especificado'}</td></tr>
+                        <tr><th>Criticidad según Herramienta</th><td>${vuln.toolCriticity || 'No especificado'}</td></tr>
+                    </table>
+
+                    <div class="section">
+                        <div class="section-title">Detalle</div>
+                        ${vuln.detail || vuln.description || 'No especificado'}
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Descripción del análisis</div>
+                        ${vuln.description || vuln.securityWeakness || 'No especificado'}
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Recomendación</div>
+                        ${vuln.recommendation || 'No especificado'}
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Estrategia de detección MITRE</div>
+                        ${vuln.mitreDetection || 'No especificado'}
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">Estrategia de mitigación MITRE</div>
+                        ${vuln.mitreMitigation || 'No especificado'}
+                    </div>
+                </div>
+            `;
+        });
+
+        htmlContent += `</body></html>`;
+
+        const blob = new Blob([htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidades`, 'success');
+        
+    } catch (error) {
+        console.error('Error al exportar:', error);
+        showNotification('Error al exportar el reporte', 'error');
+    }
+}
+
+// ========== UTILIDADES ==========
 function showVulnerabilityDetails(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
     if (!vuln) return;
@@ -365,234 +615,22 @@ function showVulnerabilityDetails(id) {
     modal.show();
 }
 
-// Función para actualizar el dashboard
-function updateDashboard() {
-    // Actualizar contadores
-    document.getElementById('total-vulnerabilities').textContent = vulnerabilities.length;
-    
-    const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
-    const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
-    const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
-    const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
-    const infoCount = vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length;
-    
-    document.getElementById('critical-count').textContent = criticalCount;
-    document.getElementById('high-count').textContent = highCount;
-    document.getElementById('medium-count').textContent = mediumCount;
-    
-    // Actualizar gráfico de distribución de riesgo
-    updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
-    
-    // Actualizar gráfico de distribución OWASP
-    updateOwaspDistributionChart();
-    
-    // Actualizar tabla de vulnerabilidades
-    updateDashboardTable();
-}
-
-// Función para actualizar el gráfico de distribución de riesgo
-function updateRiskDistributionChart(critical, high, medium, low, info) {
-    const ctx = document.getElementById('riskDistributionChart').getContext('2d');
-    
-    if (riskDistributionChart) {
-        riskDistributionChart.destroy();
-    }
-    
-    riskDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Crítico', 'Alto', 'Medio', 'Bajo', 'Informativo'],
-            datasets: [{
-                data: [critical, high, medium, low, info],
-                backgroundColor: [
-                    'rgba(255, 0, 0, 0.8)',
-                    'rgba(255, 107, 107, 0.8)',
-                    'rgba(255, 209, 102, 0.8)',
-                    'rgba(6, 214, 160, 0.8)',
-                    'rgba(17, 138, 178, 0.8)'
-                ],
-                borderColor: [
-                    'rgba(255, 0, 0, 1)',
-                    'rgba(255, 107, 107, 1)',
-                    'rgba(255, 209, 102, 1)',
-                    'rgba(6, 214, 160, 1)',
-                    'rgba(17, 138, 178, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-}
-
-// Función para actualizar el gráfico de distribución OWASP
-function updateOwaspDistributionChart() {
-    const ctx = document.getElementById('owaspDistributionChart').getContext('2d');
-    
-    // Contar vulnerabilidades por categoría OWASP
-    const owaspCounts = Array(owaspCategories.length).fill(0);
-    vulnerabilities.forEach(vuln => {
-        if (vuln.owasp) {
-            const index = owaspCategories.findIndex(cat => cat.startsWith(vuln.owasp));
-            if (index !== -1) {
-                owaspCounts[index]++;
-            }
-        }
-    });
-    
-    if (owaspDistributionChart) {
-        owaspDistributionChart.destroy();
-    }
-    
-    owaspDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: owaspCategories,
-            datasets: [{
-                data: owaspCounts,
-                backgroundColor: categoryColors,
-                borderColor: categoryColors.map(color => color.replace('0.8', '1')),
-                borderWidth: 2,
-                hoverOffset: 15
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            cutout: '55%',
-            animation: {
-                animateScale: true,
-                animateRotate: true
-            }
-        }
-    });
-    
-    // Actualizar leyenda
-    updateLegend(owaspCounts);
-}
-
-// Función para actualizar la leyenda
-function updateLegend(owaspCounts) {
-    const legendElement = document.getElementById('chart-legend');
-    legendElement.innerHTML = '';
-    
-    owaspCategories.forEach((category, index) => {
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        
-        legendItem.innerHTML = `
-            <div class="legend-color" style="background-color: ${categoryColors[index]}"></div>
-            <span>${category.split('-')[0].trim()}: ${owaspCounts[index]}</span>
-        `;
-        
-        legendElement.appendChild(legendItem);
-    });
-}
-
-// Función para actualizar la tabla del dashboard
-function updateDashboardTable() {
-    const tableBody = document.getElementById('dashboard-vulnerabilities-list');
-    tableBody.innerHTML = '';
-    
-    if (vulnerabilities.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="4" style="text-align: center;">No hay vulnerabilidades registradas</td>`;
-        tableBody.appendChild(row);
-        return;
-    }
-    
-    // Agrupar vulnerabilidades por categoría OWASP
-    const vulnerabilitiesByCategory = {};
-    owaspCategories.forEach((_, index) => {
-        vulnerabilitiesByCategory[index] = vulnerabilities.filter(v => {
-            if (!v.owasp) return false;
-            return owaspCategories[index].startsWith(v.owasp);
-        });
-    });
-    
-    // Renderizar cada categoría con sus vulnerabilidades
-    owaspCategories.forEach((category, index) => {
-        const categoryVulns = vulnerabilitiesByCategory[index];
-        
-        if (categoryVulns.length > 0) {
-            // Fila de categoría
-            const categoryRow = document.createElement('tr');
-            categoryRow.className = `risk-${index}`;
-            categoryRow.innerHTML = `
-                <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[index].replace('0.8', '0.2')}">
-                    ${category} (${categoryVulns.length})
-                </td>
-            `;
-            tableBody.appendChild(categoryRow);
-            
-            // Filas de vulnerabilidades de esta categoría
-            categoryVulns.forEach(vuln => {
-                const row = document.createElement('tr');
-                row.className = `risk-${index}`;
-                
-                row.innerHTML = `
-                    <td></td>
-                    <td>${vuln.name}</td>
-                    <td>${vuln.attackVector || 'No especificado'}</td>
-                    <td>
-                        <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-    });
-}
-
-// Función para mostrar notificaciones
 function showNotification(message, type) {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.textContent = message;
     notification.className = `notification ${type}`;
-    
     document.body.appendChild(notification);
     
-    // Eliminar notificación después de 3 segundos
     setTimeout(() => {
         notification.style.opacity = '0';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
+        setTimeout(() => document.body.removeChild(notification), 300);
     }, 3000);
 }
 
-// Función para guardar vulnerabilidades en localStorage
 function saveVulnerabilities() {
     localStorage.setItem('owaspVulnerabilities', JSON.stringify(vulnerabilities));
 }
 
-// Función para cargar vulnerabilidades desde localStorage
 function loadVulnerabilities() {
     const saved = localStorage.getItem('owaspVulnerabilities');
     if (saved) {
