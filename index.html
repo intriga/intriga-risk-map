@@ -11,7 +11,6 @@
 </head>
 
 <body>
-    <!-- Interruptor de tema -->
     <div class="theme-switch">
         <div class="theme-switch-btn" id="theme-toggle">
             <span class="theme-icon">🌙</span>
@@ -24,7 +23,6 @@
             <p class="lead">Calculadora de evaluación de riesgos con gestión completa de vulnerabilidades</p>
         </header>
 
-        <!-- Pestañas principales -->
         <ul class="nav nav-tabs" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="calculator-tab" data-bs-toggle="tab" data-bs-target="#calculator" type="button" role="tab">Calculadora</button>
@@ -38,10 +36,8 @@
         </ul>
 
         <div class="tab-content" id="mainTabsContent">
-            <!-- Pestaña de Calculadora -->
             <div class="tab-pane fade show active" id="calculator" role="tabpanel">
                 <div class="row">
-                    <!-- Información General de la Vulnerabilidad -->
                     <section class="col-12">
                         <h5 class="border-bottom">Información General de la Vulnerabilidad</h5>
                         <div class="row">
@@ -66,6 +62,17 @@
                                 </select>
                             </div>
                         </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Host</label>
+                                <input type="text" class="form-control" id="host" placeholder="Ej: https://ejemplo.com">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ruta Afectada</label>
+                                <input type="text" class="form-control" id="ruta-afectada" placeholder="Ej: /api/v1/user/details">
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">MITRE ID</label>
@@ -78,7 +85,6 @@
                         </div>
                     </section>
 
-                    <!-- Campos Adicionales -->
                     <section class="col-12 additional-fields">
                         <h5 class="border-bottom">Información Adicional de la Vulnerabilidad</h5>
                         <div class="row">
@@ -89,24 +95,6 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Vector de Ataque</label>
                                 <input type="text" class="form-control" id="attack-vector" placeholder="Describa el vector de ataque">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Debilidad de Seguridad</label>
-                                <textarea class="form-control" id="security-weakness" rows="3" placeholder="Describa la debilidad de seguridad"></textarea>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Controles de Seguridad</label>
-                                <textarea class="form-control" id="security-controls" rows="2" placeholder="Describa los controles de seguridad"></textarea>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Impacto Técnico - Negocio</label>
-                                <textarea class="form-control" id="technical-business-impact" rows="2" placeholder="Describa el impacto técnico y de negocio"></textarea>
                             </div>
                         </div>
                         <div class="row">
@@ -139,9 +127,26 @@
                                 <textarea class="form-control" id="mitre-mitigation" rows="2" placeholder="Estrategias de mitigación"></textarea>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Debilidad de Seguridad</label>
+                                <textarea class="form-control" id="security-weakness" rows="3" placeholder="Describa la debilidad de seguridad"></textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Controles de Seguridad</label>
+                                <textarea class="form-control" id="security-controls" rows="2" placeholder="Describa los controles de seguridad"></textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Impacto Técnico - Negocio</label>
+                                <textarea class="form-control" id="technical-business-impact" rows="2" placeholder="Describa el impacto técnico y de negocio"></textarea>
+                            </div>
+                        </div>                        
                     </section>
 
-                    <!-- Factores del Agente de Amenaza -->
                     <section class="col-md-6">
                         <h5 class="border-bottom" title="The first set of factors are related to the threat agent involved. The goal here is to estimate the likelihood of a successful attack by this group of threat agents. Use the worst-case threat agent.">Factores del Agente de Amenaza</h5>
                         <div class="row mb-3">
@@ -191,7 +196,6 @@
                         </div>
                     </section>
 
-                    <!-- Factores de Impacto Técnico -->
                     <section class="col-md-6">
                         <h5 class="border-bottom" title="Technical impact can be broken down into factors aligned with the traditional security areas of concern: confidentiality, integrity, availability, and accountability. The goal is to estimate the magnitude of the impact on the system if the vulnerability were to be exploited.">Factores de Impacto Técnico</h5>
                         <div class="row mb-3">
@@ -242,7 +246,6 @@
                         </div>
                     </section>
 
-                    <!-- Factores de Vulnerabilidad -->
                     <section class="col-md-6">
                         <h5 class="border-bottom" title="The next set of factors are related to the vulnerability involved. The goal here is to estimate the likelihood of the particular vulnerability involved being discovered and exploited. Assume the threat agent selected above.">Factores de Vulnerabilidad</h5>
                         <div class="row mb-3">
@@ -291,7 +294,6 @@
                         </div>
                     </section>
 
-                    <!-- Factores de Impacto de Negocio -->
                     <section class="col-md-6">
                         <h5 class="border-bottom" title="The business impact stems from the technical impact, but requires a deep understanding of what is important to the company running the application. In general, you should be aiming to support your risks with business impact, particularly if your audience is executive level. The business risk is what justifies investment in fixing security problems.">Factores de Impacto de Negocio</h5>
                         <div class="row mb-3">
@@ -339,7 +341,6 @@
                         </div>
                     </section>
 
-                    <!-- Resultados y Gráfico -->
                     <section class="col-12">
                         <div class="row">
                             <div class="col-md-6">
@@ -368,7 +369,6 @@
                 </div>
             </div>
 
-            <!-- Pestaña de Vulnerabilidades Guardadas -->
             <div class="tab-pane fade" id="vulnerabilities" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Vulnerabilidades Guardadas</h4>
@@ -376,11 +376,9 @@
                 </div>
                 
                 <div id="vulnerabilities-list">
-                    <!-- Las vulnerabilidades se cargarán aquí -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Pestaña de Dashboard -->
             <div class="tab-pane fade" id="dashboard" role="tabpanel">
                 <h4 class="mb-4">Dashboard de Vulnerabilidades</h4>
                 
@@ -426,8 +424,7 @@
                                     <canvas id="owaspDistributionChart"></canvas>
                                 </div>
                                 <div class="legend" id="chart-legend">
-                                    <!-- La leyenda se generará dinámicamente -->
-                                </div>
+                                    </div>
                             </div>
                         </div>
                     </div>
@@ -451,8 +448,7 @@
                                 </tr>
                             </thead>
                             <tbody id="dashboard-vulnerabilities-list">
-                                <!-- Las vulnerabilidades se agregarán aquí dinámicamente -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -460,7 +456,6 @@
         </div>
     </div>
 
-    <!-- Modal para ver detalles -->
     <div class="modal fade" id="vulnerabilityModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -469,8 +464,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="modal-body">
-                    <!-- Los detalles se cargarán aquí -->
-                </div>
+                    </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>

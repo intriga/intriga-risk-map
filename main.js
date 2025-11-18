@@ -308,6 +308,8 @@ function getFormData() {
     
     return {
         name: getValue('vulnerability-name'),
+        host: getValue('host'), // AGREGADO: Nuevo campo para Host
+        rutaAfectada: getValue('ruta-afectada'), // AGREGADO: Nuevo campo para Ruta Afectada
         owasp: getValue('owasp-category'),
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
@@ -349,6 +351,7 @@ function renderVulnerabilitiesList() {
             <div class="d-flex justify-content-between align-items-start">
                 <div style="flex: 1;">
                     <h5>${vuln.name}</h5>
+                    <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
                     <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
                     <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
                     <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()}</small>
@@ -559,7 +562,7 @@ function updateDashboardTable() {
                 row.innerHTML = `
                     <td></td>
                     <td>${vuln.name}</td>
-                    <td>${vuln.attackVector || 'No especificado'}</td>
+                    <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
                     <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
                 `;
                 tableBody.appendChild(row);
@@ -623,7 +626,6 @@ function exportToWord() {
                     .header-cell {
                         background-color: #f2f2f2; 
                         font-weight: bold;
-                        width: 25%; /* Definido en la tabla original */
                     }
 
                     /* Celda de Datos (segunda/tercera columna) */
@@ -672,14 +674,14 @@ function exportToWord() {
                     <table class="vulnerability-table">
                         
                         <tr>
-                            <td rowspan="2" class="header-cell data-cell" style="font-weight: bold; width: 50%; background-color: #ffffff; text-align: left;">
+                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 85%; background-color: #ffffff; text-align: left;">
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
-                            <td class="header-cell" style="width: 25%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                            <td class="header-cell" style="width: 7.5%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
                                 Resultados del Análisis
                             </td>
-                            <td class="data-cell" style="width: 25%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
+                            <td class="data-cell" style="width: 7.5%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
                                 ${vuln.riskLevel || 'No especificado'}
                             </td>
                         </tr>
@@ -694,15 +696,22 @@ function exportToWord() {
                         </tr>
 
                         <tr>
+                            <td class="header-cell" style="width: 7.5%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                                Resultado del Escáner
+                            </td>
+                            <td class="data-cell" style="width: 7.5%; background-color: #ffffff; text-align: center;">
+                                -
+                            </td>
+                        </tr>
+
+                        <tr>
                             <td class="header-cell" style="font-weight: bold;">Host</td>
-                            <td colspan="3" class="data-cell">${vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
+                            <td colspan="3" class="data-cell">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
                         </tr>
                         
                         <tr>
-                            <td class="header-cell" style="font-weight: bold; width: 25%;">Ruta afectada</td>
-                            <td class="data-cell" style="width: 25%;">${vuln.securityWeakness || 'No especificado'}</td>
-                            <td class="header-cell" style="font-weight: bold; width: 25%;">Resultado del Escáner</td>
-                            <td class="data-cell" style="width: 25%;"> - </td>
+                            <td class="header-cell" style="font-weight: bold; width: 20%;">Ruta afectada</td>
+                            <td colspan="3" class="data-cell">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
                         </tr>
 
                         <tr>
@@ -765,7 +774,7 @@ function exportToWord() {
     }
 }
 
-// Función auxiliar para obtener color del header según riesgo (MODIFICADA)
+// Función auxiliar para obtener color del header según riesgo
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
         case 'CRÍTICO':
@@ -783,7 +792,7 @@ function getRiskHeaderColor(riskLevel) {
     }
 }
 
-// Función auxiliar para formatear IDs MITRE (MODIFICADA para mejor manejo de saltos de línea)
+// Función auxiliar para formatear IDs MITRE
 function formatMitreIds(mitreIds) {
     if (!mitreIds) return 'No especificado';
     
@@ -805,7 +814,7 @@ function formatMitreIds(mitreIds) {
     return mitreIds;
 }
 
-// Función auxiliar para formatear estrategias MITRE (MODIFICADA para mejor manejo de saltos de línea)
+// Función auxiliar para formatear estrategias MITRE
 function formatMitreStrategies(strategies) {
     if (!strategies) return 'No especificado';
     
@@ -848,6 +857,14 @@ function showVulnerabilityDetails(id) {
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
                 <div class="detail-value">${vuln.name}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Host</div>
+                <div class="detail-value">${vuln.host || 'No especificado'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Ruta Afectada</div>
+                <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
