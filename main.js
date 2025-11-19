@@ -571,7 +571,7 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD (MODIFICADA) ==========
+// ========== EXPORTACIÓN A WORD (MODIFICADA PARA CENTRADO ROBUSTO) ==========
 function exportToWord() {
     console.log('Ejecutando exportToWord...');
     
@@ -592,71 +592,112 @@ function exportToWord() {
                 <style>
                     body { 
                         font-family: Arial, sans-serif; 
-                        margin: 20px; 
+                        margin: 0;
+                        padding: 20px;
                         line-height: 1.4; 
                         color: #333;
+                        font-size: 10px;
+                        /* Se eliminan las propiedades de flexbox de body para no interferir con el centrado del bloque */
+                        min-height: 100vh;
+                        width: 100%;
                     }
                     .report-header {
                         text-align: center;
                         margin-bottom: 30px;
                         border-bottom: 2px solid #2c3e50;
                         padding-bottom: 20px;
+                        width: 100%;
+                        max-width: 800px;
+                        margin-left: auto; 
+                        margin-right: auto;
                     }
                     .vulnerability-container {
                         margin-bottom: 40px;
                         page-break-after: always;
-                    }
-                    .vulnerability-table {
                         width: 100%;
-                        border-collapse: collapse; /* Bordes juntos */
-                        margin: 20px 0;
-                        font-size: 12px;
-                        /* Redefinimos el borde principal de la tabla */
-                        border: 1px solid #000; 
+                        max-width: 800px;
+                        /* Se eliminan las propiedades de flexbox de container */
                     }
                     
-                    /* Estilo para todas las celdas (encabezado y datos) */
-                    .vulnerability-table td {
-                        border: 1px solid #000; /* Bordes negros más visibles */
-                        padding: 8px 10px;
-                        vertical-align: top;
+                    /* ESTILO CLAVE PARA EL CENTRADO DE LA TABLA mediante CSS */
+                    .vulnerability-table {
+                        width: 95%; /* Ancho de la tabla para permitir el centrado */
+                        border-collapse: collapse;
+                        margin: 20px auto; /* Centrado horizontal mediante CSS */
+                        font-size: 9px;
+                        border: 1px solid #000;
+                        max-width: 780px; 
+                    }
+                    
+                    /* Asegurar que todas las celdas tengan el mismo ancho relativo */
+                    .vulnerability-table tr td:first-child {
+                        width: 25%; 
+                    }
+                    
+                    .vulnerability-table tr td:not(:first-child) {
+                        width: 75%; 
                     }
 
-                    /* Celda de Encabezado (primera columna) */
+                    /* Estilo para todas las celdas */
+                    .vulnerability-table td {
+                        border: 1px solid #000;
+                        padding: 6px 8px;
+                        vertical-align: top;
+                        font-size: 9px;
+                        text-align: left; /* Mantenemos el texto a la izquierda, como solicitaste */
+                    }
+
+                    /* Celda de Encabezado */
                     .header-cell {
                         background-color: #f2f2f2; 
                         font-weight: bold;
+                        font-size: 9px;
+                        text-align: left; /* Mantenemos a la izquierda */
                     }
 
-                    /* Celda de Datos (segunda/tercera columna) */
+                    /* Celda de Datos */
                     .data-cell {
                         background-color: #ffffff;
                         font-weight: normal;
+                        font-size: 9px;
+                        text-align: left; /* Mantenemos a la izquierda */
                     }
 
-                    /* El título de la vulnerabilidad */
+                    /* Alineación especial para las celdas de Riesgo que DEBEN ir centradas (esto se mantiene) */
+                    .vulnerability-table tr:nth-child(1) .data-cell,
+                    .vulnerability-table tr:nth-child(2) .data-cell,
+                    .vulnerability-table tr:nth-child(3) .data-cell {
+                        text-align: center !important; 
+                    }
+
+                    /* El título de la vulnerabilidad (Mantenido centrado) */
                     .vulnerability-title {
-                        font-size: 16px;
+                        font-size: 12px;
                         font-weight: bold;
-                        color: #333; /* Color de texto ajustado */
-                        margin-bottom: 0px; 
-                        padding: 10px;
-                        border-radius: 0; 
+                        color: #333;
+                        margin-bottom: 10px; 
+                        padding: 8px;
+                        border-radius: 0;
+                        width: 95%;
+                        max-width: 780px;
+                        text-align: center;
+                        margin-left: auto;
+                        margin-right: auto;
                     }
                     
                     .list-item {
-                        margin-bottom: 5px;
-                        padding-left: 10px;
+                        margin-bottom: 3px;
+                        padding-left: 8px;
+                        font-size: 9px;
+                        text-align: left; /* Aseguramos la lista a la izquierda */
                     }
-                    
-                    /* Se eliminaron estilos .risk-* innecesarios del CSS de Word ya que se usan colores directos */
                 </style>
             </head>
             <body>
                 <div class="report-header">
-                    <h1>Reporte de Vulnerabilidades de Seguridad</h1>
-                    <p><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                    <p><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
+                    <h1 style="font-size: 16px;">Reporte de Vulnerabilidades de Seguridad</h1>
+                    <p style="font-size: 10px;"><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                    <p style="font-size: 10px;"><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
                 </div>
         `;
 
@@ -671,16 +712,16 @@ function exportToWord() {
                         Vulnerabilidad ${index + 1}: **${vuln.name || 'No especificado'}**
                     </div>
                     
-                    <table class="vulnerability-table">
+                    <table class="vulnerability-table" align="center">
                         <tr>
-                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 85%; background-color: #ffffff; text-align: left;">
+                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: left;">
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
-                            <td class="header-cell" style="width: 7.5%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                            <td class="header-cell" style="width: 15%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
                                 Resultados del Análisis
                             </td>
-                            <td class="data-cell" style="width: 7.5%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
+                            <td class="data-cell" style="width: 60%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
                                 ${vuln.riskLevel || 'No especificado'}
                             </td>
                         </tr>
@@ -695,23 +736,22 @@ function exportToWord() {
                         </tr>
 
                         <tr>
-                            <td class="header-cell" style="width: 7.5%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
+                            <td class="header-cell" style="background-color: #f2f2f2; font-weight: bold; text-align: center;">
                                 Resultado del Escáner
                             </td>
-                            <td class="data-cell" style="width: 7.5%; background-color: #ffffff; text-align: center;">
+                            <td class="data-cell" style="background-color: #ffffff; text-align: center;">
                                 -
                             </td>
                         </tr>
 
-                        <!-- Las siguientes filas necesitan colspan="3" para ocupar todo el ancho -->
                         <tr>
-                            <td class="header-cell" style="font-weight: bold;">Host</td>
-                            <td colspan="2" class="data-cell">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
+                            <td class="header-cell" style="font-weight: bold; width: 25%;">Host</td>
+                            <td colspan="2" class="data-cell" style="width: 75%;">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
                         </tr>
                         
                         <tr>
-                            <td class="header-cell" style="font-weight: bold; width: 20%;">Ruta afectada</td>
-                            <td colspan="2" class="data-cell">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
+                            <td class="header-cell" style="font-weight: bold; width: 25%;">Ruta afectada</td>
+                            <td colspan="2" class="data-cell" style="width: 75%;">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
                         </tr>
 
                         <tr>
