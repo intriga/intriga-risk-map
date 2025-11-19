@@ -672,7 +672,6 @@ function exportToWord() {
                     </div>
                     
                     <table class="vulnerability-table">
-                        
                         <tr>
                             <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 85%; background-color: #ffffff; text-align: left;">
                                 ${vuln.name || 'No especificado'}
@@ -704,49 +703,50 @@ function exportToWord() {
                             </td>
                         </tr>
 
+                        <!-- Las siguientes filas necesitan colspan="3" para ocupar todo el ancho -->
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Host</td>
-                            <td colspan="3" class="data-cell">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
                         </tr>
                         
                         <tr>
                             <td class="header-cell" style="font-weight: bold; width: 20%;">Ruta afectada</td>
-                            <td colspan="3" class="data-cell">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
                         </tr>
 
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Detalle</td>
-                            <td colspan="3" class="data-cell">${vuln.detail || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.detail || 'No especificado'}</td>
                         </tr>
 
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Descripción del análisis</td>
-                            <td colspan="3" class="data-cell">${vuln.description || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.description || 'No especificado'}</td>
                         </tr>
 
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Recomendación</td>
-                            <td colspan="3" class="data-cell">${vuln.recommendation || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.recommendation || 'No especificado'}</td>
                         </tr>
 
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">ID OWASP top 10</td>
-                            <td colspan="3" class="data-cell">${vuln.owasp || 'No especificado'}</td>
+                            <td colspan="2" class="data-cell">${vuln.owasp || 'No especificado'}</td>
                         </tr>
                         
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">MITRE ID</td>
-                            <td colspan="3" class="data-cell">${formatMitreIds(vuln.mitre)}</td>
+                            <td colspan="2" class="data-cell">${formatMitreIds(vuln.mitre)}</td>
                         </tr>
                         
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Estrategia de detección MITRE</td>
-                            <td colspan="3" class="data-cell">${formatMitreStrategies(vuln.mitreDetection)}</td>
+                            <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreDetection)}</td>
                         </tr>
                         
                         <tr>
                             <td class="header-cell" style="font-weight: bold;">Estrategia de mitigación MITRE</td>
-                            <td colspan="3" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
+                            <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
                         </tr>
                     </table>
                 </div>
