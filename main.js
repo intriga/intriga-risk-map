@@ -141,12 +141,15 @@ function calculateRisk() {
         
         console.log('Valores obtenidos:', {sl, m, o, s, lc, li, lav, lac, ed, ee, a, id, fd, rd, nc, pv});
         
-        // Calcular promedios
+        // Calcular promedios (Risk 0-10)
         const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
         const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
-        const risk = (likelihood + impact) / 2; // Promedio entre probabilidad e impacto
+        const risk = (likelihood + impact) / 2; // Promedio entre probabilidad e impacto (0-10)
         
-        console.log('Resultados:', {likelihood, impact, risk});
+        // MODIFICACIÓN 1: Escalar el riesgo de 0-10 a 0-81
+        const scaledRisk = risk * 8.1;
+        
+        console.log('Resultados:', {likelihood, impact, risk: scaledRisk.toFixed(2)});
         
         // Actualizar UI
         const lsElement = document.querySelector('.LS');
@@ -156,16 +159,17 @@ function calculateRisk() {
         if (isElement) isElement.textContent = impact.toFixed(2);
         
         let riskLevel, riskClass;
-        if (risk >= 7.5) {
+        // MODIFICACIÓN 2: Aplicar la nueva clasificación (0-81)
+        if (scaledRisk > 75) {
             riskLevel = 'CRÍTICO';
             riskClass = 'risk-critico';
-        } else if (risk >= 5) {
+        } else if (scaledRisk > 50) {
             riskLevel = 'ALTO';
             riskClass = 'risk-alto';
-        } else if (risk >= 2.5) {
+        } else if (scaledRisk > 25) {
             riskLevel = 'MEDIO';
             riskClass = 'risk-medio';
-        } else if (risk >= 1) {
+        } else if (scaledRisk > 1) {
             riskLevel = 'BAJO';
             riskClass = 'risk-bajo';
         } else {
@@ -175,16 +179,19 @@ function calculateRisk() {
         
         const riskElement = document.getElementById('risk-result');
         if (riskElement) {
-            riskElement.textContent = `Riesgo: ${riskLevel} (${risk.toFixed(2)})`;
+            // Mostrar la puntuación escalada (0-81)
+            riskElement.textContent = `Riesgo: ${riskLevel} (${scaledRisk.toFixed(2)})`;
             riskElement.className = `risk-indicator ${riskClass}`;
         }
         
-        updateRiskChart(likelihood, impact, risk);
+        // El chart sigue usando la puntuación original (0-10) para el eje Y, pero se le pasa el riskLevel para el color.
+        updateRiskChart(likelihood, impact, risk, riskLevel); 
         
         return { 
             likelihood: parseFloat(likelihood.toFixed(2)), 
             impact: parseFloat(impact.toFixed(2)), 
-            risk: parseFloat(risk.toFixed(2)), 
+            // Devolver el riesgo escalado para guardarlo en la vulnerabilidad
+            risk: parseFloat(scaledRisk.toFixed(2)), 
             riskLevel, 
             riskClass 
         };
@@ -194,7 +201,31 @@ function calculateRisk() {
     }
 }
 
-function updateRiskChart(likelihood, impact, risk) {
+// Funciones auxiliares para color del Chart.js
+function getRiskChartColor(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO': return 'rgba(255, 0, 0, 0.7)'; // Rojo
+        case 'ALTO': return 'rgba(255, 107, 107, 0.7)'; // Naranja
+        case 'MEDIO': return 'rgba(255, 209, 102, 0.7)'; // Amarillo
+        case 'BAJO': return 'rgba(6, 214, 160, 0.7)'; // Verde
+        case 'INFORMATIVO': return 'rgba(17, 138, 178, 0.7)'; // Azul
+        default: return 'rgba(170, 170, 170, 0.7)'; // Gris
+    }
+}
+
+function getRiskChartBorder(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO': return 'rgba(255, 0, 0, 1)'; // Rojo
+        case 'ALTO': return 'rgba(255, 107, 107, 1)'; // Naranja
+        case 'MEDIO': return 'rgba(255, 209, 102, 1)'; // Amarillo
+        case 'BAJO': return 'rgba(6, 214, 160, 1)'; // Verde
+        case 'INFORMATIVO': return 'rgba(17, 138, 178, 1)'; // Azul
+        default: return 'rgba(170, 170, 170, 1)'; // Gris
+    }
+}
+
+
+function updateRiskChart(likelihood, impact, risk, riskLevel) { // MODIFICADO: Agregado riskLevel
     const ctx = document.getElementById('riskChart');
     if (!ctx) {
         console.log('Canvas riskChart no encontrado, puede ser normal si no está en la pestaña activa');
@@ -206,6 +237,9 @@ function updateRiskChart(likelihood, impact, risk) {
         
         if (riskChart) riskChart.destroy();
         
+        const chartColor = getRiskChartColor(riskLevel); // MODIFICADO: Obtener color por nivel
+        const chartBorder = getRiskChartBorder(riskLevel); // MODIFICADO: Obtener borde por nivel
+
         riskChart = new Chart(context, {
             type: 'bar',
             data: {
@@ -216,18 +250,12 @@ function updateRiskChart(likelihood, impact, risk) {
                     backgroundColor: [
                         'rgba(54, 162, 235, 0.7)',
                         'rgba(255, 99, 132, 0.7)',
-                        risk >= 7.5 ? 'rgba(255, 0, 0, 0.7)' : 
-                        risk >= 5 ? 'rgba(255, 107, 107, 0.7)' : 
-                        risk >= 2.5 ? 'rgba(255, 209, 102, 0.7)' : 
-                        risk >= 1 ? 'rgba(6, 214, 160, 0.7)' : 'rgba(17, 138, 178, 0.7)'
+                        chartColor // MODIFICADO
                     ],
                     borderColor: [
                         'rgba(54, 162, 235, 1)',
                         'rgba(255, 99, 132, 1)',
-                        risk >= 7.5 ? 'rgba(255, 0, 0, 1)' : 
-                        risk >= 5 ? 'rgba(255, 107, 107, 1)' : 
-                        risk >= 2.5 ? 'rgba(255, 209, 102, 1)' : 
-                        risk >= 1 ? 'rgba(6, 214, 160, 1)' : 'rgba(17, 138, 178, 1)'
+                        chartBorder // MODIFICADO
                     ],
                     borderWidth: 1
                 }]
