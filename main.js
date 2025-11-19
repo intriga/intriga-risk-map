@@ -593,100 +593,157 @@ function exportToWord() {
                         font-family: Arial, sans-serif; 
                         margin: 0;
                         padding: 20px;
-                        line-height: 1.4; 
+                        line-height: 1.4;
                         color: #333;
-                        font-size: 10px;
+                        font-size: 12px;
                         min-height: 100vh;
                         width: 100%;
+                        background-color: #ffffff;
                     }
                     .report-header {
                         text-align: center;
-                        margin-bottom: 30px;
+                        margin-bottom: 20px;
                         border-bottom: 2px solid #2c3e50;
-                        padding-bottom: 20px;
-                        width: 100%;
+                        padding-bottom: 15px;
+                        width: 80%;
                         max-width: 800px;
                         margin-left: auto; 
                         margin-right: auto;
                     }
+
+                    /* Título FUERA de la tabla - PEQUEÑO */
+                    .vulnerability-title {
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: #333;
+                        margin-bottom: 15px;
+                        padding: 8px;
+                        border-radius: 0;
+                        width: 80%;
+                        max-width: 800px;
+                        text-align: center;
+                        margin-left: auto;
+                        margin-right: auto;
+                        border: 1px solid #000;
+                        background-color: #f8f9fa;
+                        line-height: 1.4;
+                    }
+
+                    /* Título DENTRO de la tabla - MUY GRANDE */
+                    .vulnerability-table tr:first-child .header-cell {
+                        font-size: 28px !important;
+                        font-weight: bold;
+                        text-align: center !important;
+                        background-color: #e9ecef;
+                        padding: 30px 35px;
+                        line-height: 1.2;
+                        height: 100px;
+                    }
+
+                    /* Header del reporte pequeño */
+                    .report-header h1 {
+                        font-size: 18px;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .report-header p {
+                        font-size: 12px;
+                        margin-bottom: 5px;
+                    }
+
+                    /* LA TABLA SE MANTIENE GRANDE */
                     .vulnerability-container {
-                        margin-bottom: 40px;
+                        margin-bottom: 80px;
                         page-break-after: always;
                         width: 100%;
-                        max-width: 800px;
+                        max-width: 1400px;
                     }
                     
-                    /* ESTILO PARA EL CENTRADO DE LA TABLA (Mantenido) */
                     .vulnerability-table {
-                        width: 95%; 
+                        width: 100%; 
                         border-collapse: collapse;
-                        margin: 20px auto; /* Centrado horizontal mediante CSS */
-                        font-size: 9px;
-                        border: 1px solid #000;
-                        max-width: 780px; 
+                        margin: 40px auto;
+                        font-size: 16px;
+                        border: 3px solid #000;
+                        max-width: 1400px;
+                        background-color: white;
                     }
                     
-                    /* Asegurar que todas las celdas tengan el mismo ancho relativo */
+                    .vulnerability-table td {
+                        border: 3px solid #000;
+                        padding: 25px 30px;
+                        vertical-align: top;
+                        font-size: 16px;
+                        text-align: left;
+                        line-height: 1.8;
+                        min-height: 60px;
+                    }
+
+                    /* Ancho de columnas 40%/60% */
                     .vulnerability-table tr td:first-child {
-                        width: 25%; 
+                        width: 30% !important; /* ANCHO MODIFICADO: 30% para las etiquetas (Host, Detalle, etc.) */
+                        font-weight: bold;
+                        font-size: 17px;
                     }
                     
                     .vulnerability-table tr td:not(:first-child) {
-                        width: 75%; 
+                        width: 70% !important; /* ANCHO MODIFICADO: 70% para los valores de los datos */
                     }
 
-                    /* Estilo para todas las celdas - CAMBIO: left en lugar de justify */
-                    .vulnerability-table td {
-                        border: 1px solid #000;
-                        padding: 6px 8px;
-                        vertical-align: top;
-                        font-size: 9px;
-                        text-align: left; /* CAMBIO: left en lugar de justify */
+                    /* Excepción para las primeras 3 filas que tienen estructura diferente */
+                    .vulnerability-table tr:nth-child(-n+3) td:first-child {
+                        width: 25% !important;
                     }
 
-                    /* Celda de Encabezado - CAMBIO: left en lugar de justify */
+                    .vulnerability-table tr:nth-child(-n+3) td:not(:first-child) {
+                        width: 75% !important;
+                    }
+
                     .header-cell {
                         background-color: #f2f2f2; 
                         font-weight: bold;
-                        font-size: 9px;
-                        text-align: left; /* CAMBIO: left en lugar de justify */
+                        font-size: 17px;
+                        text-align: left;
+                        padding: 25px 30px;
+                        min-height: 60px;
                     }
 
-                    /* Celda de Datos - CAMBIO: left en lugar de justify */
                     .data-cell {
                         background-color: #ffffff;
                         font-weight: normal;
-                        font-size: 9px;
-                        text-align: left; /* CAMBIO: left en lugar de justify */
+                        font-size: 16px;
+                        text-align: left;
+                        min-height: 60px;
                     }
 
-                    /* SOLO las celdas de riesgo mantienen centrado - SELECTOR MÁS ESPECÍFICO */
+                    /* Celdas de riesgo grandes */
                     .vulnerability-table tr:nth-child(1) td:nth-child(3),
                     .vulnerability-table tr:nth-child(2) td:nth-child(3),
                     .vulnerability-table tr:nth-child(3) td:nth-child(3) {
                         text-align: center !important;
+                        font-size: 22px;
+                        font-weight: bold;
+                        padding: 30px 35px;
+                        min-height: 70px;
                     }
 
-                    /* El título de la vulnerabilidad (Mantenido centrado) */
-                    .vulnerability-title {
-                        font-size: 12px;
-                        font-weight: bold;
-                        color: #333;
-                        margin-bottom: 10px; 
-                        padding: 8px;
-                        border-radius: 0;
-                        width: 95%;
-                        max-width: 780px;
-                        text-align: center;
-                        margin-left: auto;
-                        margin-right: auto;
+                    /* Primera fila más grande */
+                    .vulnerability-table tr:first-child td {
+                        font-size: 20px !important;
+                        padding: 30px 35px !important;
+                        height: 100px;
                     }
-                    
+
                     .list-item {
-                        margin-bottom: 3px;
-                        padding-left: 8px;
-                        font-size: 9px;
-                        text-align: left; /* CAMBIO: left en lugar de justify */
+                        margin-bottom: 12px;
+                        padding-left: 20px;
+                        font-size: 16px;
+                        text-align: left;
+                        line-height: 1.8;
+                    }
+
+                    .vulnerability-table tr {
+                        height: 80px;
                     }
                 </style>
             </head>
@@ -710,7 +767,7 @@ function exportToWord() {
                     
                     <table class="vulnerability-table" align="center">
                         <tr>
-                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
+                            <td rowspan="3" class="header-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
