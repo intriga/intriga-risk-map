@@ -571,11 +571,10 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD (MODIFICADA PARA CENTRADO ROBUSTO) ==========
+// ========== EXPORTACIÓN A WORD (MODIFICADA: Cuadro Centrado, Texto Justificado) ==========
 function exportToWord() {
     console.log('Ejecutando exportToWord...');
     
-    // Asumiendo que 'vulnerabilities' está disponible globalmente
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
         return;
@@ -597,7 +596,6 @@ function exportToWord() {
                         line-height: 1.4; 
                         color: #333;
                         font-size: 10px;
-                        /* Se eliminan las propiedades de flexbox de body para no interferir con el centrado del bloque */
                         min-height: 100vh;
                         width: 100%;
                     }
@@ -616,12 +614,11 @@ function exportToWord() {
                         page-break-after: always;
                         width: 100%;
                         max-width: 800px;
-                        /* Se eliminan las propiedades de flexbox de container */
                     }
                     
-                    /* ESTILO CLAVE PARA EL CENTRADO DE LA TABLA mediante CSS */
+                    /* ESTILO PARA EL CENTRADO DE LA TABLA (Mantenido) */
                     .vulnerability-table {
-                        width: 95%; /* Ancho de la tabla para permitir el centrado */
+                        width: 95%; 
                         border-collapse: collapse;
                         margin: 20px auto; /* Centrado horizontal mediante CSS */
                         font-size: 9px;
@@ -638,36 +635,36 @@ function exportToWord() {
                         width: 75%; 
                     }
 
-                    /* Estilo para todas las celdas */
+                    /* Estilo para todas las celdas - CAMBIO: left en lugar de justify */
                     .vulnerability-table td {
                         border: 1px solid #000;
                         padding: 6px 8px;
                         vertical-align: top;
                         font-size: 9px;
-                        text-align: left; /* Mantenemos el texto a la izquierda, como solicitaste */
+                        text-align: left; /* CAMBIO: left en lugar de justify */
                     }
 
-                    /* Celda de Encabezado */
+                    /* Celda de Encabezado - CAMBIO: left en lugar de justify */
                     .header-cell {
                         background-color: #f2f2f2; 
                         font-weight: bold;
                         font-size: 9px;
-                        text-align: left; /* Mantenemos a la izquierda */
+                        text-align: left; /* CAMBIO: left en lugar de justify */
                     }
 
-                    /* Celda de Datos */
+                    /* Celda de Datos - CAMBIO: left en lugar de justify */
                     .data-cell {
                         background-color: #ffffff;
                         font-weight: normal;
                         font-size: 9px;
-                        text-align: left; /* Mantenemos a la izquierda */
+                        text-align: left; /* CAMBIO: left en lugar de justify */
                     }
 
-                    /* Alineación especial para las celdas de Riesgo que DEBEN ir centradas (esto se mantiene) */
-                    .vulnerability-table tr:nth-child(1) .data-cell,
-                    .vulnerability-table tr:nth-child(2) .data-cell,
-                    .vulnerability-table tr:nth-child(3) .data-cell {
-                        text-align: center !important; 
+                    /* SOLO las celdas de riesgo mantienen centrado - SELECTOR MÁS ESPECÍFICO */
+                    .vulnerability-table tr:nth-child(1) td:nth-child(3),
+                    .vulnerability-table tr:nth-child(2) td:nth-child(3),
+                    .vulnerability-table tr:nth-child(3) td:nth-child(3) {
+                        text-align: center !important;
                     }
 
                     /* El título de la vulnerabilidad (Mantenido centrado) */
@@ -689,7 +686,7 @@ function exportToWord() {
                         margin-bottom: 3px;
                         padding-left: 8px;
                         font-size: 9px;
-                        text-align: left; /* Aseguramos la lista a la izquierda */
+                        text-align: left; /* CAMBIO: left en lugar de justify */
                     }
                 </style>
             </head>
@@ -703,7 +700,6 @@ function exportToWord() {
 
         vulnerabilities.forEach((vuln, index) => {
             const titleColor = getRiskHeaderColor(vuln.riskLevel);
-            // Determina el color del fondo para la celda de riesgo
             const riskHighlightColor = titleColor;
             
             htmlContent += `
@@ -714,7 +710,7 @@ function exportToWord() {
                     
                     <table class="vulnerability-table" align="center">
                         <tr>
-                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: left;">
+                            <td rowspan="3" class="header-cell data-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
