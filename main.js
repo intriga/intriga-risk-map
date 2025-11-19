@@ -599,7 +599,7 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD (MODIFICADA: Cuadro Centrado, Texto Justificado) ==========
+// ========== EXPORTACIÓN A WORD (MODIFICADA: Separación y Estilo) ==========
 function exportToWord() {
     console.log('Ejecutando exportToWord...');
     
@@ -679,10 +679,10 @@ function exportToWord() {
                         margin-bottom: 5px;
                     }
 
-                    /* LA TABLA SE MANTIENE GRANDE */
+                    /* CLASE QUE GENERA LA SEPARACIÓN Y EL SALTO DE PÁGINA */
                     .vulnerability-container {
-                        margin-bottom: 80px;
-                        page-break-after: always;
+                        margin-bottom: 80px; 
+                        page-break-after: always; 
                         width: 100%;
                         max-width: 1400px;
                     }
@@ -870,6 +870,7 @@ function exportToWord() {
                             <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
                         </tr>
                     </table>
+                    <br></br>
                 </div>
             `;
         });
