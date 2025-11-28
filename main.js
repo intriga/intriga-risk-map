@@ -43,68 +43,52 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadVulnerabilities();
     
-    // Event listeners corregidos
     const calculateBtn = document.getElementById('calculate-btn');
     const saveBtn = document.getElementById('save-btn');
-    const exportWordBtn = document.getElementById('export-report-btn');
+    const exportWordBtn = document.getElementById('export-all-btn'); // Modificado el ID a 'export-all-btn'
     const exportPdfBtn = document.getElementById('export-pdf-btn');
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    // NUEVO: Botón de exportación ejecutiva
+    const exportExecutiveBtn = document.getElementById('export-executive-btn');
     
     if (calculateBtn) {
-        calculateBtn.addEventListener('click', function() {
-            calculateRisk();
-        });
-    } else {
-        console.error('Botón calcular no encontrado');
+        calculateBtn.addEventListener('click', calculateRisk);
     }
     
     if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
-            saveVulnerability();
-        });
-    } else {
-        console.error('Botón guardar no encontrado');
+        saveBtn.addEventListener('click', saveVulnerability);
     }
 
-    // Vinculación de botón de Word
-    if (exportWordBtn && typeof exportToWord === 'function') {
+    if (exportWordBtn) {
         exportWordBtn.addEventListener('click', exportToWord);
     }
     
-    // Vinculación del botón de PDF
-    if (exportPdfBtn && typeof exportToPDF === 'function') {
+    if (exportPdfBtn) {
         exportPdfBtn.addEventListener('click', exportToPDF);
-    } else if (exportPdfBtn) {
-        console.error('Función exportToPdf no definida.');
     }
     
-    // NUEVA VINCULACIÓN: Exportar JSON
-    const exportJsonBtn = document.getElementById('export-json-btn');
     if (exportJsonBtn) {
         exportJsonBtn.addEventListener('click', exportToJson);
+    } 
+    
+    // NUEVA VINCULACIÓN: Informe Ejecutivo
+    if (exportExecutiveBtn) {
+        exportExecutiveBtn.addEventListener('click', exportExecutiveReport);
     } else {
-        console.warn('Botón exportar JSON (export-json-btn) no encontrado.');
+        console.warn('Botón exportar informe ejecutivo (export-executive-btn) no encontrado.');
     }
 
-    // NUEVA VINCULACIÓN: Input de Carga JSON
     const importFileInput = document.getElementById('import-file-input');
     if (importFileInput) {
         importFileInput.addEventListener('change', importJson);
-    } else {
-        console.warn('Input de archivo para importación JSON (import-file-input) no encontrado.');
     }
     
-    // Event listeners para selects
     document.querySelectorAll('select').forEach(select => {
         select.addEventListener('change', calculateRisk);
     });
     
-    // Calcular riesgo inicial
     setTimeout(calculateRisk, 100);
 
-    // Inicializar botones de exportación
-    setTimeout(initializeExportButton, 500);
-    setTimeout(initializePdfExportButton, 500);
-    
     console.log('Aplicación inicializada correctamente');
 });
 
@@ -170,8 +154,6 @@ function calculateRisk() {
         const nc = parseFloat(document.getElementById('nc')?.value) || 2;
         const pv = parseFloat(document.getElementById('pv')?.value) || 3;
         
-        console.log('Valores obtenidos:', {sl, m, o, s, lc, li, lav, lac, ed, ee, a, id, fd, rd, nc, pv});
-        
         // Calcular promedios (Risk 0-10)
         const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
         const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
@@ -179,8 +161,6 @@ function calculateRisk() {
         
         // MODIFICACIÓN 1: Escalar el riesgo de 0-10 a 0-81
         const scaledRisk = risk * 8.1;
-        
-        console.log('Resultados:', {likelihood, impact, risk: scaledRisk.toFixed(2)});
         
         // Actualizar UI
         const lsElement = document.querySelector('.LS');
@@ -210,18 +190,15 @@ function calculateRisk() {
         
         const riskElement = document.getElementById('risk-result');
         if (riskElement) {
-            // Mostrar la puntuación escalada (0-81)
             riskElement.textContent = `Riesgo: ${riskLevel} (${scaledRisk.toFixed(2)})`;
             riskElement.className = `risk-indicator ${riskClass}`;
         }
         
-        // El chart sigue usando la puntuación original (0-10) para el eje Y, pero se le pasa el riskLevel para el color.
         updateRiskChart(likelihood, impact, risk, riskLevel); 
         
         return { 
             likelihood: parseFloat(likelihood.toFixed(2)), 
             impact: parseFloat(impact.toFixed(2)), 
-            // Devolver el riesgo escalado para guardarlo en la vulnerabilidad
             risk: parseFloat(scaledRisk.toFixed(2)), 
             riskLevel, 
             riskClass 
@@ -258,7 +235,6 @@ function getRiskChartBorder(riskLevel) {
 function updateRiskChart(likelihood, impact, risk, riskLevel) {
     const ctx = document.getElementById('riskChart');
     if (!ctx) {
-        console.log('Canvas riskChart no encontrado, puede ser normal si no está en la pestaña activa');
         return;
     }
     
@@ -327,7 +303,6 @@ function saveVulnerability() {
         const riskData = calculateRisk();
         const formData = getFormData();
         
-        // **VALIDACIÓN MEJORADA: Evitar campos críticos vacíos**
         if (!formData.name || formData.name.trim() === '') {
             showNotification('El campo "Nombre de la Vulnerabilidad" es obligatorio.', 'error');
             return;
@@ -340,7 +315,6 @@ function saveVulnerability() {
             showNotification('Selecciona una "Categoría OWASP 2021".', 'error');
             return;
         }
-        // **FIN VALIDACIÓN MEJORADA**
         
         const vulnerability = {
             id: Date.now(),
@@ -367,7 +341,6 @@ function saveVulnerability() {
 }
 
 function getFormData() {
-    // Función helper para obtener valores seguros
     const getValue = (id) => {
         const element = document.getElementById(id);
         return element ? element.value : '';
@@ -398,7 +371,6 @@ function renderVulnerabilitiesList() {
     const countElement = document.getElementById('vulnerability-count');
     
     if (!listElement || !countElement) {
-        console.log('Elementos de lista no encontrados, puede ser normal si no está en la pestaña activa');
         return;
     }
     
@@ -638,9 +610,10 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD ==========
+// ========== EXPORTACIÓN A WORD (COMPLETO) ==========
 function exportToWord() {
-    console.log('Ejecutando exportToWord...');
+    // ... (Mantener la función exportToWord original para el reporte completo)
+    console.log('Ejecutando exportToWord (Completo)...');
     
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
@@ -908,18 +881,17 @@ function exportToWord() {
 
         htmlContent += `</body></html>`;
 
-        // Generación y descarga del archivo .doc
         const blob = new Blob([htmlContent], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
+        a.download = `reporte_completo_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
+        showNotification(`Reporte completo exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
         
     } catch (error) {
         console.error('Error al exportar:', error);
@@ -927,7 +899,183 @@ function exportToWord() {
     }
 }
 
+
+// ========== NUEVA FUNCIÓN: EXPORTACIÓN A WORD (EJECUTIVO CON GRÁFICOS) ==========
+function exportExecutiveReport() {
+    console.log('Ejecutando exportExecutiveReport (Informe Ejecutivo)...');
+
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para generar el informe ejecutivo.', 'error');
+        return;
+    }
+
+    try {
+        // Asegurarse de que los gráficos se hayan generado
+        if (!riskDistributionChart || !owaspDistributionChart) {
+             updateDashboard(); // Forzar la actualización de los gráficos si no existen
+        }
+
+        const totalVulnerabilities = vulnerabilities.length;
+        const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
+        const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
+        const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
+        const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
+
+        // Capturar las imágenes de los gráficos
+        const riskChartImage = document.getElementById('riskDistributionChart').toDataURL('image/png');
+        const owaspChartImage = document.getElementById('owaspDistributionChart').toDataURL('image/png');
+        
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Informe Ejecutivo de Riesgos</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 0;
+                        padding: 30px;
+                        line-height: 1.6;
+                        color: #333;
+                        font-size: 12pt;
+                        width: 100%;
+                        background-color: #ffffff;
+                    }
+                    .report-header {
+                        text-align: center;
+                        margin-bottom: 40px;
+                        padding-bottom: 20px;
+                        border-bottom: 3px solid #000080; /* Azul oscuro */
+                    }
+                    .report-header h1 {
+                        font-size: 20pt;
+                        color: #000080;
+                        margin-bottom: 10px;
+                    }
+                    .section-title {
+                        font-size: 16pt;
+                        color: #2c3e50;
+                        border-bottom: 2px solid #ccc;
+                        padding-bottom: 5px;
+                        margin-top: 30px;
+                        margin-bottom: 20px;
+                        page-break-before: auto;
+                    }
+                    .summary-table {
+                        width: 80%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                        font-size: 11pt;
+                        border: 1px solid #ddd;
+                    }
+                    .summary-table th, .summary-table td {
+                        border: 1px solid #ddd;
+                        padding: 10px;
+                        text-align: left;
+                    }
+                    .summary-table th {
+                        background-color: #f2f2f2;
+                        font-weight: bold;
+                    }
+                    .chart-container {
+                        text-align: center;
+                        margin: 40px 0;
+                        page-break-inside: avoid;
+                    }
+                    .chart-caption {
+                        font-size: 10pt;
+                        color: #666;
+                        margin-top: 10px;
+                    }
+                    .total { background-color: #e6f3ff; font-weight: bold; }
+                    .critical { color: #dc3545; font-weight: bold; }
+                    .high { color: #fd7e14; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="report-header">
+                    <h1>Informe Ejecutivo de Riesgos de Seguridad</h1>
+                    <p><strong>Proyecto/Sistema:</strong> [Nombre del proyecto]</p>
+                    <p><strong>Fecha de Evaluación:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>Total de Vulnerabilidades Identificadas:</strong> ${totalVulnerabilities}</p>
+                </div>
+
+                <div class="section-title">Resumen de Vulnerabilidades</div>
+                <table class="summary-table">
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Valor</th>
+                        <th>Descripción</th>
+                    </tr>
+                    <tr class="total">
+                        <td>Total de Vulnerabilidades</td>
+                        <td>${totalVulnerabilities}</td>
+                        <td>Número total de hallazgos de seguridad identificados.</td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerabilidades Críticas</td>
+                        <td class="critical">${criticalCount}</td>
+                        <td>Requieren atención inmediata.</td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerabilidades Altas</td>
+                        <td class="high">${highCount}</td>
+                        <td>Deben ser mitigadas con alta prioridad.</td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerabilidades Medias</td>
+                        <td>${mediumCount}</td>
+                        <td>Riesgo moderado, mitigar en el ciclo de desarrollo actual.</td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerabilidades Bajas/Informativas</td>
+                        <td>${lowCount + vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length}</td>
+                        <td>Riesgo menor o informativo.</td>
+                    </tr>
+                </table>
+
+                <div class="section-title">Distribución de Riesgos</div>
+                <p>El siguiente gráfico representa la distribución de todas las vulnerabilidades según el nivel de riesgo calculado por el motor Intriga (OWASP Risk Rating Methodology, adaptado a escala 0-81).</p>
+                <div class="chart-container">
+                    <img src="${riskChartImage}" alt="Distribución por Nivel de Riesgo" style="width: 500px; height: 500px; border: 1px solid #ccc;"/>
+                    <div class="chart-caption">Figura 1: Distribución por Nivel de Riesgo (Crítico, Alto, Medio, Bajo, Informativo).</div>
+                </div>
+
+                <div class="section-title">Distribución por Categoría OWASP Top 10 (2021)</div>
+                <p>La siguiente gráfica muestra cómo se distribuyen los hallazgos según las categorías definidas por el OWASP Top 10 (2021), indicando las áreas más afectadas del sistema.</p>
+                <div class="chart-container">
+                    <img src="${owaspChartImage}" alt="Distribución por Categoría OWASP" style="width: 500px; height: 500px; border: 1px solid #ccc;"/>
+                    <div class="chart-caption">Figura 2: Distribución por Categoría OWASP Top 10 (2021).</div>
+                </div>
+                
+                <p style="page-break-before: always;">-- Fin del Informe Ejecutivo --</p>
+            </body>
+            </html>
+        `;
+
+        // Generación y descarga del archivo .doc
+        const blob = new Blob([htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `informe_ejecutivo_riesgos_${new Date().toISOString().split('T')[0]}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification(`Informe Ejecutivo exportado exitosamente.`, 'success');
+        
+    } catch (error) {
+        console.error('Error al exportar Informe Ejecutivo:', error);
+        showNotification('Error al exportar el Informe Ejecutivo. Asegúrese de que los gráficos se hayan cargado.', 'error');
+    }
+}
+
 // ========== EXPORTACIÓN A PDF (MEJORADA CON BORDES VISIBLES) ==========
+// ... (Mantener la función exportToPDF original)
 function exportToPDF() {
     console.log('Ejecutando exportToPDF...');
     
@@ -1048,9 +1196,10 @@ function exportToPDF() {
     }
 }
 
+
 // Función para dibujar filas de 2 columnas con bordes MÁS VISIBLES
 function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
-    // Configurar bordes MÁS GRUESOS y visibles
+    // ... (Mantener la función drawTwoColumnRowPDF original)
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.8); // Línea más gruesa
     
@@ -1105,6 +1254,7 @@ function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRi
 
 // Función para filas combinadas (2 columnas) con bordes MÁS VISIBLES
 function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
+    // ... (Mantener la función drawCombinedRowPDF original)
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.8); // Línea más gruesa
     
@@ -1156,18 +1306,15 @@ function exportToJson() {
     }
     
     try {
-        const jsonContent = JSON.stringify(vulnerabilities, null, 2); // 2 espacios para un JSON legible
+        const jsonContent = JSON.stringify(vulnerabilities, null, 2); 
         
-        // Crear un Blob para descargar
         const blob = new Blob([jsonContent], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
-        // Crear un enlace temporal para la descarga
         const a = document.createElement('a');
         a.href = url;
         a.download = `owasp_vulnerabilities_export_${new Date().toISOString().split('T')[0]}.json`;
         
-        // Simular clic
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1181,7 +1328,6 @@ function exportToJson() {
     }
 }
 
-// MODIFICACIÓN CRUCIAL: Ahora fusiona (merge) en lugar de reemplazar.
 function importJson(event) {
     console.log('Ejecutando importJson (Modo Fusión)...');
     const file = event.target.files[0];
@@ -1201,7 +1347,6 @@ function importJson(event) {
             const content = e.target.result;
             let newVulnerabilities = JSON.parse(content);
             
-            // Validación básica del formato
             if (!Array.isArray(newVulnerabilities)) {
                 showNotification('El archivo JSON debe contener un array de vulnerabilidades.', 'error');
                 return;
@@ -1213,13 +1358,9 @@ function importJson(event) {
             
             const initialCount = vulnerabilities.length;
 
-            // 1. Obtener IDs existentes para evitar duplicados
             const existingIds = new Set(vulnerabilities.map(v => v.id));
 
-            // 2. Filtrar nuevas vulnerabilidades: solo se incluyen si no tienen un ID que ya exista.
             const uniqueNewVulnerabilities = newVulnerabilities.filter(vuln => {
-                // Si la vulnerabilidad tiene un ID y ese ID ya existe, la filtramos (duplicado).
-                // Si no tiene ID o es nueva, la incluimos (única).
                 if (vuln.id && existingIds.has(vuln.id)) {
                     return false;
                 }
@@ -1228,12 +1369,10 @@ function importJson(event) {
             
             const duplicatesCount = newVulnerabilities.length - uniqueNewVulnerabilities.length;
 
-            // 3. Fusionar (Merge) las vulnerabilidades únicas con las existentes
             vulnerabilities = vulnerabilities.concat(uniqueNewVulnerabilities);
             
             const mergedCount = vulnerabilities.length - initialCount;
 
-            // Guardar y renderizar
             saveVulnerabilities();
             renderVulnerabilitiesList();
             updateDashboard();
@@ -1248,7 +1387,6 @@ function importJson(event) {
             console.error('Error procesando archivo JSON:', error);
             showNotification('Error al parsear el archivo JSON. Asegúrate de que el formato sea correcto.', 'error');
         }
-        // Limpiar el input para permitir recargar el mismo archivo
         event.target.value = '';
     };
     
@@ -1333,29 +1471,6 @@ function formatMitreStrategies(strategies) {
     return strategies;
 }
 
-// ========== INICIALIZACIÓN DEL BOTÓN DE EXPORTACIÓN ==========
-function initializeExportButton() {
-    const exportBtn = document.getElementById('export-all-btn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportToWord);
-        console.log('Botón de exportación inicializado');
-    } else {
-        console.log('Botón de exportación no encontrado, reintentando...');
-        setTimeout(initializeExportButton, 1000);
-    }
-}
-
-function initializePdfExportButton() {
-    const pdfExportBtn = document.getElementById('export-pdf-btn');
-    if (pdfExportBtn) {
-        pdfExportBtn.addEventListener('click', exportToPDF);
-        console.log('Botón de exportación PDF inicializado');
-    } else {
-        console.log('Botón de exportación PDF no encontrado');
-    }
-}
-
-// ========== FUNCIONES FALTANTES ==========
 function showVulnerabilityDetails(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
     if (!vuln) return;
@@ -1444,7 +1559,6 @@ function showVulnerabilityDetails(id) {
         </div>
     `;
     
-    // Usar Bootstrap modal si está disponible
     const modalElement = document.getElementById('vulnerabilityModal');
     if (modalElement && typeof bootstrap !== 'undefined') {
         const modal = new bootstrap.Modal(modalElement);
@@ -1453,7 +1567,6 @@ function showVulnerabilityDetails(id) {
 }
 
 function showNotification(message, type) {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.textContent = message;
     notification.className = `notification ${type}`;
@@ -1473,7 +1586,6 @@ function showNotification(message, type) {
     
     document.body.appendChild(notification);
     
-    // Remover después de 3 segundos
     setTimeout(() => {
         notification.style.opacity = '0';
         setTimeout(() => {
@@ -1487,7 +1599,6 @@ function showNotification(message, type) {
 function saveVulnerabilities() {
     try {
         localStorage.setItem('owaspVulnerabilities', JSON.stringify(vulnerabilities));
-        console.log('Vulnerabilidades guardadas en localStorage');
     } catch (error) {
         console.error('Error guardando en localStorage:', error);
     }
@@ -1500,7 +1611,6 @@ function loadVulnerabilities() {
             vulnerabilities = JSON.parse(saved);
             renderVulnerabilitiesList();
             updateDashboard();
-            console.log('Vulnerabilidades cargadas:', vulnerabilities.length);
         }
     } catch (error) {
         console.error('Error cargando vulnerabilidades:', error);
