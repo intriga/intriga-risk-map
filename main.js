@@ -32,7 +32,6 @@ const categoryColors = [
 ];
 
 // ========== INICIALIZACIÓN ==========
-// ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Inicializando aplicación...');
     loadTheme();
@@ -47,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners corregidos
     const calculateBtn = document.getElementById('calculate-btn');
     const saveBtn = document.getElementById('save-btn');
-    const exportWordBtn = document.getElementById('export-report-btn'); // Asumo este ID para Word
-    const exportPdfBtn = document.getElementById('export-pdf-btn');     // Nuevo ID para PDF
+    const exportWordBtn = document.getElementById('export-report-btn');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
     
     if (calculateBtn) {
         calculateBtn.addEventListener('click', function() {
@@ -66,14 +65,14 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Botón guardar no encontrado');
     }
 
-    // Vinculación de botón de Word (si existe)
+    // Vinculación de botón de Word
     if (exportWordBtn && typeof exportToWord === 'function') {
         exportWordBtn.addEventListener('click', exportToWord);
     }
     
-    // Vinculación del NUEVO botón de PDF
-    if (exportPdfBtn && typeof exportToPdf === 'function') {
-        exportPdfBtn.addEventListener('click', exportToPdf);
+    // Vinculación del botón de PDF
+    if (exportPdfBtn && typeof exportToPDF === 'function') {
+        exportPdfBtn.addEventListener('click', exportToPDF);
     } else if (exportPdfBtn) {
         console.error('Función exportToPdf no definida.');
     }
@@ -90,11 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initializeExportButton, 500);
     setTimeout(initializePdfExportButton, 500);
     
-    // La línea 'setTimeout(initializeExportButton, 500);' fue reemplazada por la vinculación directa de los botones de exportación.
-    
     console.log('Aplicación inicializada correctamente');
 });
-
 
 // ========== FUNCIONES DE TEMA ==========
 function toggleTheme() {
@@ -243,8 +239,7 @@ function getRiskChartBorder(riskLevel) {
     }
 }
 
-
-function updateRiskChart(likelihood, impact, risk, riskLevel) { // MODIFICADO: Agregado riskLevel
+function updateRiskChart(likelihood, impact, risk, riskLevel) {
     const ctx = document.getElementById('riskChart');
     if (!ctx) {
         console.log('Canvas riskChart no encontrado, puede ser normal si no está en la pestaña activa');
@@ -256,8 +251,8 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) { // MODIFICADO: A
         
         if (riskChart) riskChart.destroy();
         
-        const chartColor = getRiskChartColor(riskLevel); // MODIFICADO: Obtener color por nivel
-        const chartBorder = getRiskChartBorder(riskLevel); // MODIFICADO: Obtener borde por nivel
+        const chartColor = getRiskChartColor(riskLevel);
+        const chartBorder = getRiskChartBorder(riskLevel);
 
         riskChart = new Chart(context, {
             type: 'bar',
@@ -269,12 +264,12 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) { // MODIFICADO: A
                     backgroundColor: [
                         'rgba(54, 162, 235, 0.7)',
                         'rgba(255, 99, 132, 0.7)',
-                        chartColor // MODIFICADO
+                        chartColor
                     ],
                     borderColor: [
                         'rgba(54, 162, 235, 1)',
                         'rgba(255, 99, 132, 1)',
-                        chartBorder // MODIFICADO
+                        chartBorder
                     ],
                     borderWidth: 1
                 }]
@@ -355,8 +350,8 @@ function getFormData() {
     
     return {
         name: getValue('vulnerability-name'),
-        host: getValue('host'), // AGREGADO: Nuevo campo para Host
-        rutaAfectada: getValue('ruta-afectada'), // AGREGADO: Nuevo campo para Ruta Afectada
+        host: getValue('host'),
+        rutaAfectada: getValue('ruta-afectada'),
         owasp: getValue('owasp-category'),
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
@@ -618,7 +613,7 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD (MODIFICADA: Separación y Estilo) ==========
+// ========== EXPORTACIÓN A WORD ==========
 function exportToWord() {
     console.log('Ejecutando exportToWord...');
     
@@ -658,7 +653,6 @@ function exportToWord() {
                         margin-right: auto;
                     }
 
-                    /* Título FUERA de la tabla - PEQUEÑO */
                     .vulnerability-title {
                         font-size: 14px;
                         font-weight: bold;
@@ -676,7 +670,6 @@ function exportToWord() {
                         line-height: 1.4;
                     }
 
-                    /* Título DENTRO de la tabla - MUY GRANDE */
                     .vulnerability-table tr:first-child .header-cell {
                         font-size: 28px !important;
                         font-weight: bold;
@@ -687,7 +680,6 @@ function exportToWord() {
                         height: 100px;
                     }
 
-                    /* Header del reporte pequeño */
                     .report-header h1 {
                         font-size: 18px;
                         margin-bottom: 10px;
@@ -698,7 +690,6 @@ function exportToWord() {
                         margin-bottom: 5px;
                     }
 
-                    /* CLASE QUE GENERA LA SEPARACIÓN Y EL SALTO DE PÁGINA */
                     .vulnerability-container {
                         margin-bottom: 80px; 
                         page-break-after: always; 
@@ -726,18 +717,16 @@ function exportToWord() {
                         min-height: 60px;
                     }
 
-                    /* Ancho de columnas 40%/60% */
                     .vulnerability-table tr td:first-child {
-                        width: 30% !important; /* ANCHO MODIFICADO: 30% para las etiquetas (Host, Detalle, etc.) */
+                        width: 30% !important;
                         font-weight: bold;
                         font-size: 17px;
                     }
                     
                     .vulnerability-table tr td:not(:first-child) {
-                        width: 70% !important; /* ANCHO MODIFICADO: 70% para los valores de los datos */
+                        width: 70% !important;
                     }
 
-                    /* Excepción para las primeras 3 filas que tienen estructura diferente */
                     .vulnerability-table tr:nth-child(-n+3) td:first-child {
                         width: 25% !important;
                     }
@@ -763,7 +752,6 @@ function exportToWord() {
                         min-height: 60px;
                     }
 
-                    /* Celdas de riesgo grandes */
                     .vulnerability-table tr:nth-child(1) td:nth-child(3),
                     .vulnerability-table tr:nth-child(2) td:nth-child(3),
                     .vulnerability-table tr:nth-child(3) td:nth-child(3) {
@@ -774,7 +762,6 @@ function exportToWord() {
                         min-height: 70px;
                     }
 
-                    /* Primera fila más grande */
                     .vulnerability-table tr:first-child td {
                         font-size: 20px !important;
                         padding: 30px 35px !important;
@@ -819,7 +806,7 @@ function exportToWord() {
                             </td>
                             
                             <td class="header-cell" style="width: 15%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
-                                Resultados del Análisis
+                                Resultados del análisis
                             </td>
                             <td class="data-cell" style="width: 60%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
                                 ${vuln.riskLevel || 'No especificado'}
@@ -915,42 +902,255 @@ function exportToWord() {
     }
 }
 
-/**
- * Abre el reporte en una nueva ventana para que el usuario pueda usar 'Imprimir a PDF' del navegador.
- */
-function exportToPdf() {
-    const reportHtml = generateReportHtml(); // Usa la misma función que genera el HTML del reporte
+// ========== EXPORTACIÓN A PDF (MEJORADA CON BORDES VISIBLES) ==========
+function exportToPDF() {
+    console.log('Ejecutando exportToPDF...');
+    
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para exportar', 'error');
+        return;
+    }
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <title>Reporte de Vulnerabilidades (PDF)</title>
-            <style>
-                /* Estilos básicos para impresión, puedes añadir más si lo deseas */
-                body { font-family: 'Arial', sans-serif; margin: 20px; color: #333; }
-                h1 { color: #2c3e50; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-                .risk-critico { background-color: #FF0000; color: white; }
-                /* Agrega aquí los estilos .risk-badge, .risk-alto, etc. si no están en style.css */
-            </style>
-            <link rel="stylesheet" href="style.css" media="print">
-        </head>
-        <body>
-            ${reportHtml}
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 15;
+        
+        doc.setFont('helvetica');
+        
+        vulnerabilities.forEach((vuln, index) => {
+            if (index > 0) {
+                doc.addPage();
+            }
+            
+            let yPosition = 20;
+            
+            // Título principal MÁS DESTACADO - SOLO EL NOMBRE
+            const riskColor = getRiskPdfColor(vuln.riskLevel);
+            doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
+            doc.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(riskColor.textColor);
+            
+            const title = `${vuln.name || 'Vulnerabilidad'}`;
+            const titleWidth = doc.getTextWidth(title);
+            const titleX = margin + ((pageWidth - 2 * margin - titleWidth) / 2);
+            doc.text(title, titleX, yPosition + 8);
+            
+            yPosition += 20;
 
-    // Abrir el diálogo de impresión después de que la ventana cargue
-    printWindow.onload = function() {
-        printWindow.print();
-    };
+            // Configuración de columnas
+            const col1Width = 45;  // Ancho para etiquetas
+            const col2Width = pageWidth - col1Width - 2 * margin; // Ancho restante para valores
+
+            // Fila 1: Nombre de vulnerabilidad
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Nombre de vulnerabilidad', vuln.name || 'No especificado');
+            yPosition += 10;
+
+            // Fila 2: Resultados del análisis | ALTO
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Resultados del análisis', vuln.riskLevel, true, vuln.riskLevel);
+            yPosition += 10;
+
+            // Fila 3: Nivel de Riesgo | ALTO
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
+            yPosition += 10;
+
+            // Fila 4: Host | [valor]
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Host', vuln.host || 'No especificado');
+            yPosition += 10;
+
+            // Fila 5: Ruta afectada | [valor]
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Ruta afectada:', vuln.rutaAfectada || 'No especificado');
+            yPosition += 10;
+
+            // Fila 6: Resultado del Escáner | -
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Resultado del Escáner', '-');
+            yPosition += 10;
+
+            // Fila 7: Detalle | [valor combinado]
+            const detailHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                  'Detalle:', vuln.detail || 'No especificado');
+            yPosition += detailHeight;
+
+            // Fila 8: Descripción del análisis | [valor combinado]
+            const descHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                'Descripción del análisis', vuln.description || 'No especificado');
+            yPosition += descHeight;
+
+            // Fila 9: Recomendación | [valor combinado]
+            const recHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                               'Recomendación', vuln.recommendation || 'No especificado');
+            yPosition += recHeight;
+
+            // Fila 10: ID OWASP top 10 | [valor combinado]
+            const owaspHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                 'ID OWASP top 10', vuln.owasp || 'No especificado');
+            yPosition += owaspHeight;
+
+            // Fila 11: MITRE ID | [valor combinado]
+            const mitreHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                 'MITRE ID', formatMitreForPdf(vuln.mitre));
+            yPosition += mitreHeight;
+
+            // Fila 12: Estrategia de detección MITRE | [valor combinado]
+            const detectionHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                     'Estrategia de detección MITRE', formatMitreForPdf(vuln.mitreDetection));
+            yPosition += detectionHeight;
+
+            // Fila 13: Estrategia de mitigación MITRE | [valor combinado]
+            const mitigationHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
+                                                      'Estrategia de mitigación MITRE', formatMitreForPdf(vuln.mitreMitigation));
+            yPosition += mitigationHeight;
+
+        });
+        
+        doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
+        showNotification(`PDF exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
+        
+    } catch (error) {
+        console.error('Error al exportar PDF:', error);
+        showNotification('Error al exportar el PDF', 'error');
+    }
 }
 
+// Función para dibujar filas de 2 columnas con bordes MÁS VISIBLES
+function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
+    // Configurar bordes MÁS GRUESOS y visibles
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.8); // Línea más gruesa
+    
+    const totalWidth = col1Width + col2Width;
+    const rowHeight = 10;
+    
+    // Dibujar rectángulo exterior con línea más gruesa
+    doc.rect(x, y, totalWidth, rowHeight);
+    
+    // Dibujar línea vertical entre columnas MÁS GRUESA
+    doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
+    
+    // Fondos de celdas - gris más oscuro para mejor contraste
+    doc.setFillColor(220, 220, 220); // Gris más oscuro para etiquetas
+    doc.rect(x, y, col1Width, rowHeight, 'F');
+    
+    if (isRiskCell && riskLevel) {
+        const color = getRiskPdfColor(riskLevel);
+        doc.setFillColor(color.r, color.g, color.b);
+        doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
+    } else {
+        doc.setFillColor(255, 255, 255); // Blanco para valores
+        doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
+    }
+    
+    // Textos - tamaño de fuente aumentado para mejor legibilidad
+    doc.setFontSize(9);
+    
+    // Columna 1 (Etiqueta) - Negrita y más grande
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    const labelLines = doc.splitTextToSize(label, col1Width - 6);
+    doc.text(labelLines, x + 3, y + 6);
+    
+    // Columna 2 (Valor)
+    if (isRiskCell && riskLevel) {
+        const color = getRiskPdfColor(riskLevel);
+        doc.setTextColor(color.textColor);
+    } else {
+        doc.setTextColor(0, 0, 0);
+    }
+    
+    doc.setFont(undefined, isRiskCell ? 'bold' : 'normal');
+    const valueLines = doc.splitTextToSize(value, col2Width - 6);
+    doc.text(valueLines, x + col1Width + 3, y + 6);
+    
+    // Reset color
+    doc.setTextColor(0, 0, 0);
+    
+    return rowHeight;
+}
 
-// Función auxiliar para obtener color del header según riesgo
+// Función para filas combinadas (2 columnas) con bordes MÁS VISIBLES
+function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.8); // Línea más gruesa
+    
+    const totalWidth = col1Width + col2Width;
+    
+    // Calcular altura dinámica basada en el contenido
+    const valueLines = doc.splitTextToSize(value || 'No especificado', col2Width - 6);
+    const lineHeight = 5; // Más espacio entre líneas
+    const minHeight = 12; // Altura mínima aumentada
+    const contentHeight = Math.max(minHeight, valueLines.length * lineHeight);
+    const rowHeight = contentHeight;
+    
+    // Dibujar bordes VISIBLES Y GRUESOS
+    doc.rect(x, y, totalWidth, rowHeight);
+    doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
+    
+    // Fondo columna 1 (gris más oscuro)
+    doc.setFillColor(220, 220, 220);
+    doc.rect(x, y, col1Width, rowHeight, 'F');
+    
+    // Fondo columna 2 (blanco)
+    doc.setFillColor(255, 255, 255);
+    doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
+    
+    // Textos - tamaño aumentado para mejor legibilidad
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    
+    // Etiqueta (negrita, centrada verticalmente)
+    doc.setFont(undefined, 'bold');
+    const labelLines = doc.splitTextToSize(label, col1Width - 6);
+    const labelY = y + (rowHeight / 2) - ((labelLines.length * lineHeight) / 2) + 3;
+    doc.text(labelLines, x + 3, labelY);
+    
+    // Valor (normal, centrado verticalmente)
+    doc.setFont(undefined, 'normal');
+    const valueY = y + (rowHeight / 2) - ((valueLines.length * lineHeight) / 2) + 3;
+    doc.text(valueLines, x + col1Width + 3, valueY);
+    
+    return rowHeight;
+}
+
+// Función auxiliar para colores en PDF
+function getRiskPdfColor(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO': return { r: 220, g: 53, b: 69, textColor: 255 };
+        case 'ALTO': return { r: 253, g: 126, b: 20, textColor: 255 };
+        case 'MEDIO': return { r: 255, g: 193, b: 7, textColor: 0 };
+        case 'BAJO': return { r: 40, g: 167, b: 69, textColor: 255 };
+        case 'INFORMATIVO': return { r: 23, g: 162, b: 184, textColor: 255 };
+        default: return { r: 108, g: 117, b: 125, textColor: 255 };
+    }
+}
+
+// Función auxiliar para formatear MITRE en PDF
+function formatMitreForPdf(text) {
+    if (!text) return 'No especificado';
+    const lines = text.split(/[,;\n]/).filter(line => line.trim());
+    if (lines.length > 1) {
+        return lines.map(line => `• ${line.trim()}`).join('\n');
+    }
+    if (text.includes('\n')) {
+        return text.split('\n')
+            .filter(line => line.trim())
+            .map(line => `• ${line.trim()}`)
+            .join('\n');
+    }
+    return text;
+}
+
+// ========== FUNCIONES AUXILIARES ==========
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
         case 'CRÍTICO':
@@ -968,18 +1168,15 @@ function getRiskHeaderColor(riskLevel) {
     }
 }
 
-// Función auxiliar para formatear IDs MITRE
 function formatMitreIds(mitreIds) {
     if (!mitreIds) return 'No especificado';
     
-    // Si hay múltiples IDs separados por comas o saltos de línea
     const ids = mitreIds.split(/[,;\n]/).filter(id => id.trim());
     
     if (ids.length > 1) {
         return ids.map(id => `<div class="list-item">• ${id.trim()}</div>`).join('');
     }
     
-    // Si contiene múltiples IDs separados por salto de línea sin viñetas
     if (mitreIds.includes('\n')) {
         return mitreIds.split('\n')
             .filter(line => line.trim())
@@ -990,16 +1187,13 @@ function formatMitreIds(mitreIds) {
     return mitreIds;
 }
 
-// Función auxiliar para formatear estrategias MITRE
 function formatMitreStrategies(strategies) {
     if (!strategies) return 'No especificado';
     
-    // Si es texto plano, convertirlo en lista. Asume que cada línea es un elemento.
     const lines = strategies.split('\n').filter(line => line.trim());
     
     if (lines.length > 0) {
         return lines.map(line => {
-            // Reemplazar guiones o asteriscos iniciales por un punto de lista HTML
             const cleanedLine = line.replace(/^(\-|\•)\s*/, '');
             return `<div class="list-item">• ${cleanedLine.trim()}</div>`;
         }).join('');
@@ -1017,6 +1211,16 @@ function initializeExportButton() {
     } else {
         console.log('Botón de exportación no encontrado, reintentando...');
         setTimeout(initializeExportButton, 1000);
+    }
+}
+
+function initializePdfExportButton() {
+    const pdfExportBtn = document.getElementById('export-pdf-btn');
+    if (pdfExportBtn) {
+        pdfExportBtn.addEventListener('click', exportToPDF);
+        console.log('Botón de exportación PDF inicializado');
+    } else {
+        console.log('Botón de exportación PDF no encontrado');
     }
 }
 
@@ -1170,160 +1374,5 @@ function loadVulnerabilities() {
     } catch (error) {
         console.error('Error cargando vulnerabilidades:', error);
         vulnerabilities = [];
-    }
-}
-
-
-// ========== EXPORTACIÓN A PDF ==========
-function exportToPDF() {
-    console.log('Ejecutando exportToPDF...');
-    
-    if (vulnerabilities.length === 0) {
-        showNotification('No hay vulnerabilidades para exportar', 'error');
-        return;
-    }
-
-    try {
-        // Crear un nuevo documento PDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        let yPosition = 20;
-        const pageHeight = doc.internal.pageSize.height;
-        const margin = 20;
-        const lineHeight = 7;
-        
-        // Encabezado del reporte
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text('Reporte de Vulnerabilidades de Seguridad', margin, yPosition);
-        
-        yPosition += 10;
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, margin, yPosition);
-        
-        yPosition += 5;
-        doc.text(`Total de vulnerabilidades: ${vulnerabilities.length}`, margin, yPosition);
-        
-        yPosition += 15;
-        
-        // Iterar sobre cada vulnerabilidad
-        vulnerabilities.forEach((vuln, index) => {
-            // Verificar si necesitamos una nueva página
-            if (yPosition > pageHeight - 50) {
-                doc.addPage();
-                yPosition = 20;
-            }
-            
-            // Título de la vulnerabilidad con color según riesgo
-            const riskColor = getRiskPdfColor(vuln.riskLevel);
-            
-            doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
-            doc.rect(margin, yPosition, doc.internal.pageSize.width - 2 * margin, 8, 'F');
-            
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(riskColor.textColor);
-            doc.text(`Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}`, margin + 2, yPosition + 5);
-            
-            yPosition += 15;
-            doc.setTextColor(0, 0, 0); // Reset to black
-            
-            // Función helper para agregar campo
-            const addField = (label, value, isBold = false) => {
-                if (yPosition > pageHeight - 20) {
-                    doc.addPage();
-                    yPosition = 20;
-                }
-                
-                doc.setFont(undefined, 'bold');
-                doc.setFontSize(9);
-                doc.text(`${label}:`, margin, yPosition);
-                
-                doc.setFont(undefined, isBold ? 'bold' : 'normal');
-                
-                // Dividir texto largo en múltiples líneas
-                const lines = doc.splitTextToSize(value || 'No especificado', doc.internal.pageSize.width - 2 * margin - 40);
-                doc.text(lines, margin + 40, yPosition);
-                
-                yPosition += (lines.length * lineHeight) + 2;
-            };
-            
-            // Campos principales
-            addField('Host', vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado');
-            addField('Ruta afectada', vuln.rutaAfectada || vuln.securityWeakness || 'No especificado');
-            addField('Nivel de Riesgo', `${vuln.riskLevel} (${vuln.risk.toFixed(2)})`, true);
-            addField('OWASP 2021', vuln.owasp || 'No especificado');
-            addField('MITRE ID', formatMitreForPdf(vuln.mitre));
-            addField('Criticidad según Herramienta', vuln.toolCriticity || 'No especificado');
-            addField('Detalle', vuln.detail || 'No especificado');
-            addField('Descripción', vuln.description || 'No especificado');
-            addField('Recomendación', vuln.recommendation || 'No especificado');
-            addField('Estrategia de Detección MITRE', formatMitreForPdf(vuln.mitreDetection));
-            addField('Estrategia de Mitigación MITRE', formatMitreForPdf(vuln.mitreMitigation));
-            addField('Métricas', `Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)} | Riesgo: ${vuln.risk.toFixed(2)}`);
-            
-            // Espacio entre vulnerabilidades
-            yPosition += 10;
-            
-            // Línea separadora
-            if (index < vulnerabilities.length - 1) {
-                doc.setDrawColor(200, 200, 200);
-                doc.line(margin, yPosition, doc.internal.pageSize.width - margin, yPosition);
-                yPosition += 15;
-            }
-        });
-        
-        // Guardar el PDF
-        doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
-        
-        showNotification(`PDF exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
-        
-    } catch (error) {
-        console.error('Error al exportar PDF:', error);
-        showNotification('Error al exportar el PDF. Asegúrate de que jsPDF esté cargado.', 'error');
-    }
-}
-
-// Función auxiliar para colores en PDF
-function getRiskPdfColor(riskLevel) {
-    switch(riskLevel.toUpperCase()) {
-        case 'CRÍTICO':
-            return { r: 220, g: 53, b: 69, textColor: 255 }; // Rojo, texto blanco
-        case 'ALTO':
-            return { r: 253, g: 126, b: 20, textColor: 255 }; // Naranja, texto blanco
-        case 'MEDIO':
-            return { r: 255, g: 193, b: 7, textColor: 0 }; // Amarillo, texto negro
-        case 'BAJO':
-            return { r: 32, g: 201, b: 151, textColor: 255 }; // Verde, texto blanco
-        case 'INFORMATIVO':
-            return { r: 23, g: 162, b: 184, textColor: 255 }; // Azul, texto blanco
-        default:
-            return { r: 108, g: 117, b: 125, textColor: 255 }; // Gris, texto blanco
-    }
-}
-
-// Función auxiliar para formatear MITRE en PDF
-function formatMitreForPdf(text) {
-    if (!text) return 'No especificado';
-    
-    // Limpiar y formatear texto para PDF
-    const lines = text.split(/[,;\n]/).filter(line => line.trim());
-    if (lines.length > 1) {
-        return lines.map(line => `• ${line.trim()}`).join('\n');
-    }
-    
-    return text;
-}
-
-// ========== INICIALIZACIÓN DEL BOTÓN DE EXPORTACIÓN PDF ==========
-function initializePdfExportButton() {
-    const pdfExportBtn = document.getElementById('export-pdf-btn');
-    if (pdfExportBtn) {
-        pdfExportBtn.addEventListener('click', exportToPDF);
-        console.log('Botón de exportación PDF inicializado');
-    } else {
-        console.log('Botón de exportación PDF no encontrado');
     }
 }
