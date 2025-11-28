@@ -32,6 +32,7 @@ const categoryColors = [
 ];
 
 // ========== INICIALIZACIÓN ==========
+// ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Inicializando aplicación...');
     loadTheme();
@@ -46,6 +47,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners corregidos
     const calculateBtn = document.getElementById('calculate-btn');
     const saveBtn = document.getElementById('save-btn');
+    const exportWordBtn = document.getElementById('export-report-btn'); // Asumo este ID para Word
+    const exportPdfBtn = document.getElementById('export-pdf-btn');     // Nuevo ID para PDF
     
     if (calculateBtn) {
         calculateBtn.addEventListener('click', function() {
@@ -62,6 +65,18 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('Botón guardar no encontrado');
     }
+
+    // Vinculación de botón de Word (si existe)
+    if (exportWordBtn && typeof exportToWord === 'function') {
+        exportWordBtn.addEventListener('click', exportToWord);
+    }
+    
+    // Vinculación del NUEVO botón de PDF
+    if (exportPdfBtn && typeof exportToPdf === 'function') {
+        exportPdfBtn.addEventListener('click', exportToPdf);
+    } else if (exportPdfBtn) {
+        console.error('Función exportToPdf no definida.');
+    }
     
     // Event listeners para selects
     document.querySelectorAll('select').forEach(select => {
@@ -70,12 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Calcular riesgo inicial
     setTimeout(calculateRisk, 100);
-    
-    // Inicializar botón de exportación
+
+    // Inicializar botones de exportación
     setTimeout(initializeExportButton, 500);
+    setTimeout(initializePdfExportButton, 500);
+    
+    // La línea 'setTimeout(initializeExportButton, 500);' fue reemplazada por la vinculación directa de los botones de exportación.
     
     console.log('Aplicación inicializada correctamente');
 });
+
 
 // ========== FUNCIONES DE TEMA ==========
 function toggleTheme() {
@@ -896,6 +915,41 @@ function exportToWord() {
     }
 }
 
+/**
+ * Abre el reporte en una nueva ventana para que el usuario pueda usar 'Imprimir a PDF' del navegador.
+ */
+function exportToPdf() {
+    const reportHtml = generateReportHtml(); // Usa la misma función que genera el HTML del reporte
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <title>Reporte de Vulnerabilidades (PDF)</title>
+            <style>
+                /* Estilos básicos para impresión, puedes añadir más si lo deseas */
+                body { font-family: 'Arial', sans-serif; margin: 20px; color: #333; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+                .risk-critico { background-color: #FF0000; color: white; }
+                /* Agrega aquí los estilos .risk-badge, .risk-alto, etc. si no están en style.css */
+            </style>
+            <link rel="stylesheet" href="style.css" media="print">
+        </head>
+        <body>
+            ${reportHtml}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+
+    // Abrir el diálogo de impresión después de que la ventana cargue
+    printWindow.onload = function() {
+        printWindow.print();
+    };
+}
+
+
 // Función auxiliar para obtener color del header según riesgo
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
@@ -1116,5 +1170,160 @@ function loadVulnerabilities() {
     } catch (error) {
         console.error('Error cargando vulnerabilidades:', error);
         vulnerabilities = [];
+    }
+}
+
+
+// ========== EXPORTACIÓN A PDF ==========
+function exportToPDF() {
+    console.log('Ejecutando exportToPDF...');
+    
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para exportar', 'error');
+        return;
+    }
+
+    try {
+        // Crear un nuevo documento PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        let yPosition = 20;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 20;
+        const lineHeight = 7;
+        
+        // Encabezado del reporte
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('Reporte de Vulnerabilidades de Seguridad', margin, yPosition);
+        
+        yPosition += 10;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, margin, yPosition);
+        
+        yPosition += 5;
+        doc.text(`Total de vulnerabilidades: ${vulnerabilities.length}`, margin, yPosition);
+        
+        yPosition += 15;
+        
+        // Iterar sobre cada vulnerabilidad
+        vulnerabilities.forEach((vuln, index) => {
+            // Verificar si necesitamos una nueva página
+            if (yPosition > pageHeight - 50) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            // Título de la vulnerabilidad con color según riesgo
+            const riskColor = getRiskPdfColor(vuln.riskLevel);
+            
+            doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
+            doc.rect(margin, yPosition, doc.internal.pageSize.width - 2 * margin, 8, 'F');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(riskColor.textColor);
+            doc.text(`Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}`, margin + 2, yPosition + 5);
+            
+            yPosition += 15;
+            doc.setTextColor(0, 0, 0); // Reset to black
+            
+            // Función helper para agregar campo
+            const addField = (label, value, isBold = false) => {
+                if (yPosition > pageHeight - 20) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(9);
+                doc.text(`${label}:`, margin, yPosition);
+                
+                doc.setFont(undefined, isBold ? 'bold' : 'normal');
+                
+                // Dividir texto largo en múltiples líneas
+                const lines = doc.splitTextToSize(value || 'No especificado', doc.internal.pageSize.width - 2 * margin - 40);
+                doc.text(lines, margin + 40, yPosition);
+                
+                yPosition += (lines.length * lineHeight) + 2;
+            };
+            
+            // Campos principales
+            addField('Host', vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado');
+            addField('Ruta afectada', vuln.rutaAfectada || vuln.securityWeakness || 'No especificado');
+            addField('Nivel de Riesgo', `${vuln.riskLevel} (${vuln.risk.toFixed(2)})`, true);
+            addField('OWASP 2021', vuln.owasp || 'No especificado');
+            addField('MITRE ID', formatMitreForPdf(vuln.mitre));
+            addField('Criticidad según Herramienta', vuln.toolCriticity || 'No especificado');
+            addField('Detalle', vuln.detail || 'No especificado');
+            addField('Descripción', vuln.description || 'No especificado');
+            addField('Recomendación', vuln.recommendation || 'No especificado');
+            addField('Estrategia de Detección MITRE', formatMitreForPdf(vuln.mitreDetection));
+            addField('Estrategia de Mitigación MITRE', formatMitreForPdf(vuln.mitreMitigation));
+            addField('Métricas', `Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)} | Riesgo: ${vuln.risk.toFixed(2)}`);
+            
+            // Espacio entre vulnerabilidades
+            yPosition += 10;
+            
+            // Línea separadora
+            if (index < vulnerabilities.length - 1) {
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, yPosition, doc.internal.pageSize.width - margin, yPosition);
+                yPosition += 15;
+            }
+        });
+        
+        // Guardar el PDF
+        doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        showNotification(`PDF exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
+        
+    } catch (error) {
+        console.error('Error al exportar PDF:', error);
+        showNotification('Error al exportar el PDF. Asegúrate de que jsPDF esté cargado.', 'error');
+    }
+}
+
+// Función auxiliar para colores en PDF
+function getRiskPdfColor(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO':
+            return { r: 220, g: 53, b: 69, textColor: 255 }; // Rojo, texto blanco
+        case 'ALTO':
+            return { r: 253, g: 126, b: 20, textColor: 255 }; // Naranja, texto blanco
+        case 'MEDIO':
+            return { r: 255, g: 193, b: 7, textColor: 0 }; // Amarillo, texto negro
+        case 'BAJO':
+            return { r: 32, g: 201, b: 151, textColor: 255 }; // Verde, texto blanco
+        case 'INFORMATIVO':
+            return { r: 23, g: 162, b: 184, textColor: 255 }; // Azul, texto blanco
+        default:
+            return { r: 108, g: 117, b: 125, textColor: 255 }; // Gris, texto blanco
+    }
+}
+
+// Función auxiliar para formatear MITRE en PDF
+function formatMitreForPdf(text) {
+    if (!text) return 'No especificado';
+    
+    // Limpiar y formatear texto para PDF
+    const lines = text.split(/[,;\n]/).filter(line => line.trim());
+    if (lines.length > 1) {
+        return lines.map(line => `• ${line.trim()}`).join('\n');
+    }
+    
+    return text;
+}
+
+// ========== INICIALIZACIÓN DEL BOTÓN DE EXPORTACIÓN PDF ==========
+function initializePdfExportButton() {
+    const pdfExportBtn = document.getElementById('export-pdf-btn');
+    if (pdfExportBtn) {
+        pdfExportBtn.addEventListener('click', exportToPDF);
+        console.log('Botón de exportación PDF inicializado');
+    } else {
+        console.log('Botón de exportación PDF no encontrado');
     }
 }

@@ -382,3 +382,15 @@ header {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
+
+/* Agrega esto al final de style.css */
+#export-pdf-btn {
+    background: linear-gradient(135deg, #dc3545, #e25565);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+#export-pdf-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
