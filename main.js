@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportWordBtn = document.getElementById('export-all-btn'); // Modificado el ID a 'export-all-btn'
     const exportPdfBtn = document.getElementById('export-pdf-btn');
     const exportJsonBtn = document.getElementById('export-json-btn');
-    // NUEVO: Botón de exportación ejecutiva
+    // Botón de exportación ejecutiva
     const exportExecutiveBtn = document.getElementById('export-executive-btn');
     
     if (calculateBtn) {
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
         exportJsonBtn.addEventListener('click', exportToJson);
     } 
     
-    // NUEVA VINCULACIÓN: Informe Ejecutivo
+    // VINCULACIÓN: Informe Ejecutivo
     if (exportExecutiveBtn) {
         exportExecutiveBtn.addEventListener('click', exportExecutiveReport);
     } else {
@@ -159,7 +159,7 @@ function calculateRisk() {
         const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
         const risk = (likelihood + impact) / 2; // Promedio entre probabilidad e impacto (0-10)
         
-        // MODIFICACIÓN 1: Escalar el riesgo de 0-10 a 0-81
+        // Escalar el riesgo de 0-10 a 0-81
         const scaledRisk = risk * 8.1;
         
         // Actualizar UI
@@ -170,7 +170,7 @@ function calculateRisk() {
         if (isElement) isElement.textContent = impact.toFixed(2);
         
         let riskLevel, riskClass;
-        // MODIFICACIÓN 2: Aplicar la nueva clasificación (0-81)
+        // Aplicar la clasificación (0-81)
         if (scaledRisk > 75) {
             riskLevel = 'CRÍTICO';
             riskClass = 'risk-critico';
@@ -471,6 +471,7 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                backgroundColor: 'white', // Esto ayuda, pero la exportación final se fuerza en exportExecutiveReport
                 plugins: { 
                     legend: { 
                         position: 'bottom',
@@ -519,8 +520,39 @@ function updateOwaspDistributionChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                backgroundColor: 'white', // Esto ayuda, pero la exportación final se fuerza en exportExecutiveReport
                 plugins: {
-                    legend: { display: false },
+                    legend: { 
+                        display: true, 
+                        position: 'right', 
+                        labels: {
+                            font: {
+                                size: 14 // <-- Modificación anterior para tamaño de letra
+                            },
+                            filter: function (legendItem, data) {
+                                return data.datasets[0].data[legendItem.index] > 0;
+                            },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                return data.labels.map((label, i) => {
+                                    const count = data.datasets[0].data[i];
+                                    const categoryId = label.split(' - ')[0].trim(); // Obtiene "A01:2021"
+                                    
+                                    if (count > 0) {
+                                        return {
+                                            text: `${categoryId}: ${count}`, 
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            strokeStyle: data.datasets[0].borderColor[i],
+                                            lineWidth: data.datasets[0].borderWidth,
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    }
+                                    return null;
+                                }).filter(item => item !== null); 
+                            }
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -537,30 +569,9 @@ function updateOwaspDistributionChart() {
                 animation: { animateScale: true, animateRotate: true }
             }
         });
-        
-        updateLegend(owaspCounts);
     } catch (error) {
         console.error('Error actualizando gráfico OWASP:', error);
     }
-}
-
-function updateLegend(owaspCounts) {
-    const legendElement = document.getElementById('chart-legend');
-    if (!legendElement) return;
-    
-    legendElement.innerHTML = '';
-    
-    owaspCategories.forEach((category, index) => {
-        if (owaspCounts[index] > 0) {
-            const legendItem = document.createElement('div');
-            legendItem.className = 'legend-item';
-            legendItem.innerHTML = `
-                <div class="legend-color" style="background-color: ${categoryColors[index]}"></div>
-                <span>${category.split('-')[0].trim()}: ${owaspCounts[index]}</span>
-            `;
-            legendElement.appendChild(legendItem);
-        }
-    });
 }
 
 function updateDashboardTable() {
@@ -612,7 +623,6 @@ function updateDashboardTable() {
 
 // ========== EXPORTACIÓN A WORD (COMPLETO) ==========
 function exportToWord() {
-    // ... (Mantener la función exportToWord original para el reporte completo)
     console.log('Ejecutando exportToWord (Completo)...');
     
     if (vulnerabilities.length === 0) {
@@ -900,7 +910,6 @@ function exportToWord() {
 }
 
 
-// ========== NUEVA FUNCIÓN: EXPORTACIÓN A WORD (EJECUTIVO CON GRÁFICOS) ==========
 function exportExecutiveReport() {
     console.log('Ejecutando exportExecutiveReport (Informe Ejecutivo)...');
 
@@ -921,10 +930,11 @@ function exportExecutiveReport() {
         const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
         const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
 
-        // Capturar las imágenes de los gráficos
-        const riskChartImage = document.getElementById('riskDistributionChart').toDataURL('image/png');
-        const owaspChartImage = document.getElementById('owaspDistributionChart').toDataURL('image/png');
+        // **SOLUCIÓN MEJORADA: Crear canvas temporal con fondo blanco**
+        const riskChartImage = createChartWithWhiteBackground(riskDistributionChart);
+        const owaspChartImage = createChartWithWhiteBackground(owaspDistributionChart);
         
+        // El resto del código permanece igual...
         let htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -947,7 +957,7 @@ function exportExecutiveReport() {
                         text-align: center;
                         margin-bottom: 40px;
                         padding-bottom: 20px;
-                        border-bottom: 3px solid #000080; /* Azul oscuro */
+                        border-bottom: 3px solid #000080;
                     }
                     .report-header h1 {
                         font-size: 20pt;
@@ -1074,8 +1084,25 @@ function exportExecutiveReport() {
     }
 }
 
+// Función auxiliar para crear gráficos con fondo blanco
+function createChartWithWhiteBackground(chart) {
+    // Crear un canvas temporal
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = chart.width;
+    tempCanvas.height = chart.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Rellenar con fondo blanco
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Dibujar el gráfico sobre el fondo blanco
+    tempCtx.drawImage(chart.canvas, 0, 0);
+    
+    return tempCanvas.toDataURL('image/png');
+}
+
 // ========== EXPORTACIÓN A PDF (MEJORADA CON BORDES VISIBLES) ==========
-// ... (Mantener la función exportToPDF original)
 function exportToPDF() {
     console.log('Ejecutando exportToPDF...');
     
@@ -1199,7 +1226,6 @@ function exportToPDF() {
 
 // Función para dibujar filas de 2 columnas con bordes MÁS VISIBLES
 function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
-    // ... (Mantener la función drawTwoColumnRowPDF original)
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.8); // Línea más gruesa
     
@@ -1254,7 +1280,6 @@ function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRi
 
 // Función para filas combinadas (2 columnas) con bordes MÁS VISIBLES
 function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
-    // ... (Mantener la función drawCombinedRowPDF original)
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.8); // Línea más gruesa
     
