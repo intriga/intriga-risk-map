@@ -433,12 +433,20 @@
                 <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Vulnerabilidades por Categoría OWASP</h5>
-                        <button class="btn btn-success btn-sm" id="export-all-btn">
-                            📄 Exportar a Word
-                        </button>
-                        <button class="btn btn-danger btn-sm" id="export-pdf-btn">
-                            📊 Exportar a PDF
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
+                                📥 Cargar JSON
+                            </button>
+                            <button class="btn btn-info btn-sm" id="export-json-btn">
+                                📦 Exportar JSON
+                            </button>
+                            <button class="btn btn-success btn-sm" id="export-all-btn">
+                                📄 Exportar a Word
+                            </button>
+                            <button class="btn btn-danger btn-sm" id="export-pdf-btn">
+                                📊 Exportar a PDF
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <table class="table table-striped">
@@ -455,6 +463,7 @@
                         </table>
                     </div>
                 </div>
+                <input type="file" id="import-file-input" accept="application/json" style="display: none;">
             </div>
         </div>
     </div>

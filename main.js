@@ -77,6 +77,22 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Función exportToPdf no definida.');
     }
     
+    // NUEVA VINCULACIÓN: Exportar JSON
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener('click', exportToJson);
+    } else {
+        console.warn('Botón exportar JSON (export-json-btn) no encontrado.');
+    }
+
+    // NUEVA VINCULACIÓN: Input de Carga JSON
+    const importFileInput = document.getElementById('import-file-input');
+    if (importFileInput) {
+        importFileInput.addEventListener('change', importJson);
+    } else {
+        console.warn('Input de archivo para importación JSON (import-file-input) no encontrado.');
+    }
+    
     // Event listeners para selects
     document.querySelectorAll('select').forEach(select => {
         select.addEventListener('change', calculateRisk);
@@ -311,11 +327,20 @@ function saveVulnerability() {
         const riskData = calculateRisk();
         const formData = getFormData();
         
-        // Validar que tenga al menos un nombre
+        // **VALIDACIÓN MEJORADA: Evitar campos críticos vacíos**
         if (!formData.name || formData.name.trim() === '') {
-            showNotification('Por favor ingresa un nombre para la vulnerabilidad', 'error');
+            showNotification('El campo "Nombre de la Vulnerabilidad" es obligatorio.', 'error');
             return;
         }
+        if (!formData.host || formData.host.trim() === '') {
+            showNotification('El campo "Host" o Dominio es obligatorio.', 'error');
+            return;
+        }
+        if (!formData.owasp || formData.owasp.trim() === '') {
+            showNotification('Selecciona una "Categoría OWASP 2021".', 'error');
+            return;
+        }
+        // **FIN VALIDACIÓN MEJORADA**
         
         const vulnerability = {
             id: Date.now(),
@@ -1086,6 +1111,7 @@ function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
     const totalWidth = col1Width + col2Width;
     
     // Calcular altura dinámica basada en el contenido
+    doc.setFontSize(9);
     const valueLines = doc.splitTextToSize(value || 'No especificado', col2Width - 6);
     const lineHeight = 5; // Más espacio entre líneas
     const minHeight = 12; // Altura mínima aumentada
@@ -1105,7 +1131,6 @@ function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
     doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
     
     // Textos - tamaño aumentado para mejor legibilidad
-    doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
     
     // Etiqueta (negrita, centrada verticalmente)
@@ -1122,7 +1147,115 @@ function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
     return rowHeight;
 }
 
-// Función auxiliar para colores en PDF
+// ========== EXPORTACIÓN E IMPORTACIÓN JSON ==========
+function exportToJson() {
+    console.log('Ejecutando exportToJson...');
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para exportar en JSON.', 'error');
+        return;
+    }
+    
+    try {
+        const jsonContent = JSON.stringify(vulnerabilities, null, 2); // 2 espacios para un JSON legible
+        
+        // Crear un Blob para descargar
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Crear un enlace temporal para la descarga
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `owasp_vulnerabilities_export_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Simular clic
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification(`Exportación JSON de ${vulnerabilities.length} vulnerabilidad(es) completada.`, 'success');
+        
+    } catch (error) {
+        console.error('Error al exportar a JSON:', error);
+        showNotification('Error al exportar los datos a JSON.', 'error');
+    }
+}
+
+// MODIFICACIÓN CRUCIAL: Ahora fusiona (merge) en lugar de reemplazar.
+function importJson(event) {
+    console.log('Ejecutando importJson (Modo Fusión)...');
+    const file = event.target.files[0];
+    
+    if (!file) {
+        return;
+    }
+    
+    if (file.type !== 'application/json') {
+        showNotification('Tipo de archivo no válido. Se espera un archivo JSON.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            let newVulnerabilities = JSON.parse(content);
+            
+            // Validación básica del formato
+            if (!Array.isArray(newVulnerabilities)) {
+                showNotification('El archivo JSON debe contener un array de vulnerabilidades.', 'error');
+                return;
+            }
+            if (newVulnerabilities.length > 0 && (!newVulnerabilities[0].name || !newVulnerabilities[0].riskLevel)) {
+                showNotification('El archivo JSON no tiene el formato de vulnerabilidades esperado.', 'error');
+                return;
+            }
+            
+            const initialCount = vulnerabilities.length;
+
+            // 1. Obtener IDs existentes para evitar duplicados
+            const existingIds = new Set(vulnerabilities.map(v => v.id));
+
+            // 2. Filtrar nuevas vulnerabilidades: solo se incluyen si no tienen un ID que ya exista.
+            const uniqueNewVulnerabilities = newVulnerabilities.filter(vuln => {
+                // Si la vulnerabilidad tiene un ID y ese ID ya existe, la filtramos (duplicado).
+                // Si no tiene ID o es nueva, la incluimos (única).
+                if (vuln.id && existingIds.has(vuln.id)) {
+                    return false;
+                }
+                return true;
+            });
+            
+            const duplicatesCount = newVulnerabilities.length - uniqueNewVulnerabilities.length;
+
+            // 3. Fusionar (Merge) las vulnerabilidades únicas con las existentes
+            vulnerabilities = vulnerabilities.concat(uniqueNewVulnerabilities);
+            
+            const mergedCount = vulnerabilities.length - initialCount;
+
+            // Guardar y renderizar
+            saveVulnerabilities();
+            renderVulnerabilitiesList();
+            updateDashboard();
+            
+            let message = `${mergedCount} vulnerabilidades únicas cargadas y fusionadas.`;
+            if (duplicatesCount > 0) {
+                 message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
+            }
+            showNotification(message, 'success');
+            
+        } catch (error) {
+            console.error('Error procesando archivo JSON:', error);
+            showNotification('Error al parsear el archivo JSON. Asegúrate de que el formato sea correcto.', 'error');
+        }
+        // Limpiar el input para permitir recargar el mismo archivo
+        event.target.value = '';
+    };
+    
+    reader.readAsText(file);
+}
+
+// ========== FUNCIONES AUXILIARES ==========
 function getRiskPdfColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
         case 'CRÍTICO': return { r: 220, g: 53, b: 69, textColor: 255 };
@@ -1134,7 +1267,6 @@ function getRiskPdfColor(riskLevel) {
     }
 }
 
-// Función auxiliar para formatear MITRE en PDF
 function formatMitreForPdf(text) {
     if (!text) return 'No especificado';
     const lines = text.split(/[,;\n]/).filter(line => line.trim());
@@ -1150,7 +1282,6 @@ function formatMitreForPdf(text) {
     return text;
 }
 
-// ========== FUNCIONES AUXILIARES ==========
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
         case 'CRÍTICO':
