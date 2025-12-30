@@ -383,17 +383,25 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    vulnerabilities.forEach(vuln => {
+    // Ordenar por fecha (más reciente primero) o por ID
+    const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
+    
+    sortedVulnerabilities.forEach((vuln, index) => {
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
         item.innerHTML = `
+            <div class="vulnerability-header">
+                <div class="vulnerability-number">${sortedVulnerabilities.length - index}</div>
+                <div class="vulnerability-content">
+                    <h5 class="mb-2">${vuln.name}</h5>
+                </div>
+            </div>
             <div class="d-flex justify-content-between align-items-start">
                 <div style="flex: 1;">
-                    <h5>${vuln.name}</h5>
                     <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
                     <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
                     <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
-                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()}</small>
+                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
                 </div>
                 <div class="ms-3">
                     <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
@@ -593,31 +601,45 @@ function updateDashboardTable() {
         });
     });
     
-    owaspCategories.forEach((category, index) => {
-        const categoryVulns = vulnerabilitiesByCategory[index];
+    // Ordenar categorías por número de vulnerabilidades (mayor a menor)
+    const sortedCategories = [...owaspCategories].map((cat, idx) => ({
+        category: cat,
+        index: idx,
+        count: vulnerabilitiesByCategory[idx].length
+    })).filter(item => item.count > 0)
+      .sort((a, b) => b.count - a.count);
+    
+    let globalCounter = 1;
+    
+    sortedCategories.forEach((catItem, catIndex) => {
+        const categoryVulns = vulnerabilitiesByCategory[catItem.index];
         
-        if (categoryVulns.length > 0) {
-            const categoryRow = document.createElement('tr');
-            categoryRow.className = `risk-${index}`;
-            categoryRow.innerHTML = `
-                <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[index].replace('0.8', '0.2')}">
-                    ${category} (${categoryVulns.length})
+        // Encabezado de categoría
+        const categoryRow = document.createElement('tr');
+        categoryRow.className = `risk-${catItem.index}`;
+        categoryRow.innerHTML = `
+            <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[catItem.index].replace('0.8', '0.2')}">
+                ${catItem.category} (${categoryVulns.length} vulnerabilidad${categoryVulns.length !== 1 ? 'es' : ''})
+            </td>
+        `;
+        tableBody.appendChild(categoryRow);
+        
+        // Ordenar vulnerabilidades dentro de la categoría por riesgo (mayor a menor)
+        const sortedVulns = categoryVulns.sort((a, b) => b.risk - a.risk);
+        
+        sortedVulns.forEach((vuln, vulnIndex) => {
+            const row = document.createElement('tr');
+            row.className = `risk-${catItem.index}`;
+            row.innerHTML = `
+                <td style="font-weight: bold; text-align: center; width: 50px;">
+                    ${globalCounter++}
                 </td>
+                <td>${vuln.name}</td>
+                <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
+                <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
             `;
-            tableBody.appendChild(categoryRow);
-            
-            categoryVulns.forEach(vuln => {
-                const row = document.createElement('tr');
-                row.className = `risk-${index}`;
-                row.innerHTML = `
-                    <td></td>
-                    <td>${vuln.name}</td>
-                    <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
-                    <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
+            tableBody.appendChild(row);
+        });
     });
 }
 
@@ -804,12 +826,13 @@ function exportToWord() {
             htmlContent += `
                 <div class="vulnerability-container">
                     <div class="vulnerability-title" style="background-color: ${titleColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'};">
-                        Vulnerabilidad ${index + 1}: **${vuln.name || 'No especificado'}**
+                        Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}
                     </div>
                     
                     <table class="vulnerability-table" align="center">
                         <tr>
                             <td rowspan="3" class="header-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
+                                <strong>ID:</strong> ${index + 1}<br>
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
@@ -1505,6 +1528,10 @@ function showVulnerabilityDetails(id) {
     
     modalBody.innerHTML = `
         <div class="vulnerability-details">
+            <div class="detail-item">
+                <div class="detail-label">Número</div>
+                <div class="detail-value">#${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
+            </div>
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
                 <div class="detail-value">${vuln.name}</div>

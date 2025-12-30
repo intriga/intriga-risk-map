@@ -394,3 +394,26 @@ header {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
+.vulnerability-number {
+    background-color: var(--primary-color);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.vulnerability-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.vulnerability-content {
+    flex: 1;
+}
