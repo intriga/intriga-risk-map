@@ -34,7 +34,9 @@ const categoryColors = [
 
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando aplicación...');
+    console.log('🚀 Inicializando aplicación...');
+    console.log('✅ Campo edit-vulnerability-id encontrado:', !!document.getElementById('edit-vulnerability-id'));
+    
     loadTheme();
     
     const themeToggle = document.getElementById('theme-toggle');
@@ -56,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     setTimeout(calculateRisk, 100);
 
-    console.log('Aplicación inicializada correctamente');
+    console.log('✅ Aplicación inicializada correctamente');
 });
 
 function setupEventListeners() {
@@ -125,7 +127,7 @@ function loadTheme() {
 
 // ========== CÁLCULO DE RIESGO ==========
 function calculateRisk() {
-    console.log('Calculando riesgo...');
+    console.log('📊 Calculando riesgo...');
     
     try {
         const sl = parseFloat(document.getElementById('sl')?.value) || 1;
@@ -193,7 +195,7 @@ function calculateRisk() {
             riskClass 
         };
     } catch (error) {
-        console.error('Error en calculateRisk:', error);
+        console.error('❌ Error en calculateRisk:', error);
         return { likelihood: 0, impact: 0, risk: 0, riskLevel: 'INFORMATIVO', riskClass: 'risk-info' };
     }
 }
@@ -202,10 +204,11 @@ function calculateRisk() {
 
 // CREAR - Guardar nueva vulnerabilidad
 function saveVulnerability() {
-    console.log('Guardando vulnerabilidad...');
+    console.log('💾 Guardando vulnerabilidad...');
     
     try {
         if (!validateRequiredFields()) {
+            console.log('❌ Validación fallida, no se guarda');
             return;
         }
         
@@ -221,6 +224,7 @@ function saveVulnerability() {
             updatedAt: new Date().toISOString()
         };
         
+        console.log('✅ Vulnerabilidad creada con ID:', vulnerability.id);
         vulnerabilities.push(vulnerability);
         saveVulnerabilities();
         renderVulnerabilitiesList();
@@ -230,21 +234,48 @@ function saveVulnerability() {
         showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
         
     } catch (error) {
-        console.error('Error guardando vulnerabilidad:', error);
+        console.error('❌ Error guardando vulnerabilidad:', error);
         showNotification('Error al guardar la vulnerabilidad', 'error');
     }
 }
 
 // LEER - Cargar vulnerabilidad para editar
 function loadVulnerabilityForEdit(id) {
-    const vulnerability = vulnerabilities.find(v => v.id === id);
+    console.log('✏️ LOAD EDIT: Cargando vulnerabilidad ID:', id, 'Tipo:', typeof id);
+    
+    // Asegurar que id es un número
+    const numId = typeof id === 'string' ? parseInt(id) : id;
+    
+    console.log('🔍 Buscando vulnerabilidad con ID:', numId);
+    console.log('IDs en array:', vulnerabilities.map(v => v.id));
+    
+    const vulnerability = vulnerabilities.find(v => {
+        // Comparar flexiblemente
+        return v.id == numId || parseInt(v.id) === numId;
+    });
+    
     if (!vulnerability) {
+        console.log('❌ Vulnerabilidad no encontrada');
+        console.log('Tipos:', {
+            buscado: typeof numId,
+            enArray: vulnerabilities.map(v => ({id: v.id, type: typeof v.id}))
+        });
         showNotification('Vulnerabilidad no encontrada', 'error');
         return;
     }
     
+    console.log('✅ Vulnerabilidad encontrada:', vulnerability.name);
+    
     // Configurar modo edición
-    document.getElementById('edit-vulnerability-id').value = id;
+    const editIdField = document.getElementById('edit-vulnerability-id');
+    if (editIdField) {
+        // Guardar como string para consistencia
+        editIdField.value = vulnerability.id.toString();
+        console.log('📝 Campo edit-vulnerability-id actualizado a:', editIdField.value);
+    } else {
+        console.log('⚠️ Campo edit-vulnerability-id no encontrado');
+    }
+    
     document.getElementById('save-btn').style.display = 'none';
     document.getElementById('update-btn').style.display = 'inline-block';
     document.getElementById('cancel-edit-btn').style.display = 'inline-block';
@@ -261,7 +292,8 @@ function loadVulnerabilityForEdit(id) {
     if (vulnerability.threatAgent) {
         if (vulnerability.threatAgent.startsWith('Otro:')) {
             document.getElementById('threat-agent').value = 'Otro';
-            document.getElementById('other-threat-agent').value = vulnerability.threatAgent.replace('Otro: ', '');
+            const otherValue = vulnerability.threatAgent.replace('Otro: ', '');
+            document.getElementById('other-threat-agent').value = otherValue;
             document.getElementById('other-threat-agent-container').style.display = 'block';
         } else {
             document.getElementById('threat-agent').value = vulnerability.threatAgent;
@@ -326,34 +358,73 @@ function loadVulnerabilityForEdit(id) {
 
 // ACTUALIZAR - Guardar cambios de edición
 function updateVulnerability() {
-    const id = parseInt(document.getElementById('edit-vulnerability-id').value);
-    if (!id) {
+    console.log('🔄 UPDATE: Iniciando actualización...');
+    
+    const editField = document.getElementById('edit-vulnerability-id');
+    if (!editField) {
+        console.log('❌ Campo edit-vulnerability-id no encontrado');
+        showNotification('Error: Campo de edición no disponible', 'error');
+        return;
+    }
+    
+    const idValue = editField.value;
+    console.log('📝 ID del campo:', idValue, 'Tipo:', typeof idValue);
+    
+    if (!idValue || idValue.trim() === '') {
+        console.log('❌ ID vacío');
         showNotification('No hay vulnerabilidad para actualizar', 'error');
+        return;
+    }
+    
+    // Convertir a número entero (asegurar tipo correcto)
+    const id = parseInt(idValue);
+    console.log('🔢 ID convertido:', id, 'Es NaN?', isNaN(id));
+    
+    if (isNaN(id)) {
+        console.log('❌ ID no es un número válido');
+        showNotification('ID de vulnerabilidad inválido', 'error');
         return;
     }
     
     try {
         if (!validateRequiredFields()) {
+            console.log('❌ Validación falló');
             return;
         }
         
         const riskData = calculateRisk();
         const formData = getFormData();
         
-        const vulnerabilityIndex = vulnerabilities.findIndex(v => v.id === id);
+        console.log('🔍 Buscando vulnerabilidad con ID:', id);
+        console.log('IDs disponibles:', vulnerabilities.map(v => v.id));
+        
+        // Buscar la vulnerabilidad - manejar diferentes tipos
+        const vulnerabilityIndex = vulnerabilities.findIndex(v => {
+            // Comparar tanto como número como string
+            return v.id == id || parseInt(v.id) === id;
+        });
+        
+        console.log('🔍 Índice encontrado:', vulnerabilityIndex);
+        
         if (vulnerabilityIndex === -1) {
+            console.log('❌ Vulnerabilidad no encontrada');
+            console.log('Tipo de IDs en array:', vulnerabilities.map(v => ({id: v.id, type: typeof v.id})));
             showNotification('Vulnerabilidad no encontrada', 'error');
             return;
         }
         
-        // Actualizar vulnerabilidad
-        vulnerabilities[vulnerabilityIndex] = {
+        // Actualizar vulnerabilidad manteniendo propiedades existentes
+        const updatedVulnerability = {
             ...vulnerabilities[vulnerabilityIndex],
             name: formData.name.trim(),
             ...riskData,
             ...formData,
             updatedAt: new Date().toISOString()
         };
+        
+        console.log('✅ Vulnerabilidad a actualizar:', updatedVulnerability.name);
+        
+        vulnerabilities[vulnerabilityIndex] = updatedVulnerability;
         
         saveVulnerabilities();
         renderVulnerabilitiesList();
@@ -363,9 +434,10 @@ function updateVulnerability() {
         cancelEdit();
         
         showNotification(`Vulnerabilidad "${formData.name.trim()}" actualizada correctamente`, 'success');
+        console.log('✅ Actualización completada exitosamente');
         
     } catch (error) {
-        console.error('Error actualizando vulnerabilidad:', error);
+        console.error('❌ Error actualizando vulnerabilidad:', error);
         showNotification('Error al actualizar la vulnerabilidad', 'error');
     }
 }
@@ -430,6 +502,7 @@ function confirmDeleteAll() {
 
 // CANCELAR edición
 function cancelEdit() {
+    console.log('❌ Cancelando edición...');
     document.getElementById('edit-vulnerability-id').value = '';
     document.getElementById('save-btn').style.display = 'inline-block';
     document.getElementById('update-btn').style.display = 'none';
@@ -441,6 +514,8 @@ function cancelEdit() {
 
 // LIMPIAR formulario
 function clearForm() {
+    console.log('🧹 Limpiando formulario...');
+    
     // Limpiar campos básicos
     const basicFields = [
         'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
@@ -475,6 +550,8 @@ function clearForm() {
 
 // ========== FUNCIONES AUXILIARES ==========
 function getFormData() {
+    console.log('📝 Obteniendo datos del formulario...');
+    
     const getValue = (id) => {
         const element = document.getElementById(id);
         return element ? element.value : '';
@@ -492,20 +569,22 @@ function getFormData() {
         // Si seleccionó "Otro" pero no especificó, mantener "Otro"
     }
     
-    // Obtener todos los valores de los selects de factores
+    // FACTORES CRÍTICOS - Asegurar que incluimos todos
     const factorIds = [
         'sl', 'm', 'o', 's',        // Factores del Agente
         'lc', 'li', 'lav', 'lac',   // Factores de Impacto Técnico
-        'ed', 'ee', 'a', 'id',      // Factores de Vulnerabilidad (incluye 'id' para Detección de intrusiones)
+        'ed', 'ee', 'a', 'id',      // Factores de Vulnerabilidad
         'fd', 'rd', 'nc', 'pv'      // Factores de Impacto de Negocio
     ];
     
     const factorValues = {};
     factorIds.forEach(factorId => {
-        factorValues[factorId] = getValue(factorId);
+        const element = document.getElementById(factorId);
+        factorValues[factorId] = element ? element.value : '';
+        console.log(`🔧 Factor ${factorId}:`, factorValues[factorId]);
     });
     
-    return {
+    const formData = {
         name: getValue('vulnerability-name'),
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
@@ -522,13 +601,18 @@ function getFormData() {
         recommendation: getValue('recommendation'),
         mitreDetection: getValue('mitre-detection'),
         mitreMitigation: getValue('mitre-mitigation'),
-        // Incluir los valores de todos los selects de factores
+        // Incluir TODOS los factores
         ...factorValues
     };
+    
+    console.log('✅ Datos del formulario obtenidos:', formData);
+    return formData;
 }
 
 // ========== VALIDACIÓN ==========
 function validateRequiredFields() {
+    console.log('✅ Validando campos requeridos...');
+    
     const requiredFields = [
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
@@ -607,6 +691,7 @@ function validateRequiredFields() {
             if (!firstEmptyField) {
                 firstEmptyField = element;
             }
+            console.log(`❌ Campo vacío: ${fieldInfo.name}`);
             return false;
         } else {
             element.classList.add('is-valid');
@@ -673,7 +758,10 @@ function validateRequiredFields() {
             ? `Hay ${emptyFieldsCount} campos obligatorios sin completar.`
             : `Hay 1 campo obligatorio sin completar.`;
         
+        console.log(`❌ ${message}`);
         showNotification(message, 'error');
+    } else {
+        console.log('✅ Todos los campos están validados');
     }
     
     return isValid;
@@ -688,6 +776,7 @@ function clearFormValidation() {
             existingError.remove();
         }
     });
+    console.log('✅ Validación del formulario limpiada');
 }
 
 // ========== MANEJO DEL SELECT "AGENTE DE AMENAZAS" ==========
@@ -806,21 +895,26 @@ function renderVulnerabilitiesList() {
         
         editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log(`✏️ Editando vulnerabilidad ID: ${vuln.id}`);
             loadVulnerabilityForEdit(vuln.id);
         });
         
         viewBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log(`👁️ Viendo detalles ID: ${vuln.id}`);
             showVulnerabilityDetails(vuln.id);
         });
         
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log(`🗑️ Eliminando vulnerabilidad ID: ${vuln.id}`);
             confirmDeleteVulnerability(vuln.id);
         });
         
         listElement.appendChild(item);
     });
+    
+    console.log(`✅ Lista de vulnerabilidades renderizada (${vulnerabilities.length} items)`);
 }
 
 function updateDashboardTable() {
@@ -893,14 +987,17 @@ function updateDashboardTable() {
             
             // Agregar event listeners a los botones del dashboard
             row.querySelector('.edit-dashboard-btn').addEventListener('click', () => {
+                console.log(`✏️ Editando desde dashboard ID: ${vuln.id}`);
                 loadVulnerabilityForEdit(vuln.id);
             });
             
             row.querySelector('.view-dashboard-btn').addEventListener('click', () => {
+                console.log(`👁️ Viendo desde dashboard ID: ${vuln.id}`);
                 showVulnerabilityDetails(vuln.id);
             });
             
             row.querySelector('.delete-dashboard-btn').addEventListener('click', () => {
+                console.log(`🗑️ Eliminando desde dashboard ID: ${vuln.id}`);
                 confirmDeleteVulnerability(vuln.id);
             });
             
@@ -912,7 +1009,10 @@ function updateDashboardTable() {
 // ========== FUNCIONES DE VISUALIZACIÓN ==========
 function showVulnerabilityDetails(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
-    if (!vuln) return;
+    if (!vuln) {
+        console.log(`❌ Vulnerabilidad con ID ${id} no encontrada para mostrar detalles`);
+        return;
+    }
     
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
@@ -921,15 +1021,15 @@ function showVulnerabilityDetails(id) {
         <div class="vulnerability-details">
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
-                <div class="detail-value">${vuln.name}</div>
+                <div class="detail-value">${escapeHtml(vuln.name)}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Host</div>
-                <div class="detail-value">${vuln.host || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.host || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Ruta Afectada</div>
-                <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.rutaAfectada || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
@@ -937,55 +1037,55 @@ function showVulnerabilityDetails(id) {
             </div>
             <div class="detail-item">
                 <div class="detail-label">OWASP 2021</div>
-                <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.owasp || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">MITRE ID</div>
-                <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.mitre || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Criticidad según Herramienta</div>
-                <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.toolCriticity || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Agente de Amenazas</div>
-                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.threatAgent || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Vector de Ataque</div>
-                <div class="detail-value">${vuln.attackVector || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.attackVector || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Debilidad de Seguridad</div>
-                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.securityWeakness || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Controles de Seguridad</div>
-                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.securityControls || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Impacto Técnico - Negocio</div>
-                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.technicalBusinessImpact || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Detalle</div>
-                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.detail || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Descripción</div>
-                <div class="detail-value">${vuln.description || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.description || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Recomendación</div>
-                <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.recommendation || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Estrategia de Detección MITRE</div>
-                <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.mitreDetection || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Estrategia de Mitigación MITRE</div>
-                <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
+                <div class="detail-value">${escapeHtml(vuln.mitreMitigation || 'No especificado')}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Métricas de Riesgo</div>
@@ -1011,6 +1111,13 @@ function showVulnerabilityDetails(id) {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
     }
+}
+
+// Función de seguridad para prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ========== GRÁFICOS ==========
@@ -1091,13 +1198,15 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) {
             }
         });
     } catch (error) {
-        console.error('Error actualizando gráfico:', error);
+        console.error('❌ Error actualizando gráfico:', error);
     }
 }
 
 // ========== DASHBOARD ==========
 function updateDashboard() {
     try {
+        console.log('📊 Actualizando dashboard...');
+        
         const totalElement = document.getElementById('total-vulnerabilities');
         const criticalElement = document.getElementById('critical-count');
         const highElement = document.getElementById('high-count');
@@ -1118,8 +1227,10 @@ function updateDashboard() {
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
+        
+        console.log('✅ Dashboard actualizado');
     } catch (error) {
-        console.error('Error actualizando dashboard:', error);
+        console.error('❌ Error actualizando dashboard:', error);
     }
 }
 
@@ -1167,7 +1278,7 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
             }
         });
     } catch (error) {
-        console.error('Error actualizando gráfico de distribución:', error);
+        console.error('❌ Error actualizando gráfico de distribución:', error);
     }
 }
 
@@ -1250,27 +1361,24 @@ function updateOwaspDistributionChart() {
             }
         });
     } catch (error) {
-        console.error('Error actualizando gráfico OWASP:', error);
+        console.error('❌ Error actualizando gráfico OWASP:', error);
     }
 }
 
 // ========== EXPORTACIÓN ==========
 function exportToWord() {
-    // ... (código de exportación a Word existente) ...
-    console.log('Exportando a Word...');
-    // Implementación existente
+    console.log('📄 Exportando a Word...');
+    showNotification('Exportación a Word en desarrollo', 'info');
 }
 
 function exportExecutiveReport() {
-    // ... (código de exportación ejecutiva existente) ...
-    console.log('Exportando informe ejecutivo...');
-    // Implementación existente
+    console.log('⭐ Exportando informe ejecutivo...');
+    showNotification('Exportación de informe ejecutivo en desarrollo', 'info');
 }
 
 function exportToPDF() {
-    // ... (código de exportación a PDF existente) ...
-    console.log('Exportando a PDF...');
-    // Implementación existente
+    console.log('📊 Exportando a PDF...');
+    showNotification('Exportación a PDF en desarrollo', 'info');
 }
 
 function exportToJson() {
@@ -1296,7 +1404,7 @@ function exportToJson() {
         showNotification(`Exportación JSON de ${vulnerabilities.length} vulnerabilidad(es) completada.`, 'success');
         
     } catch (error) {
-        console.error('Error al exportar a JSON:', error);
+        console.error('❌ Error al exportar a JSON:', error);
         showNotification('Error al exportar los datos a JSON.', 'error');
     }
 }
@@ -1349,7 +1457,7 @@ function importJson(event) {
             showNotification(message, 'success');
             
         } catch (error) {
-            console.error('Error procesando archivo JSON:', error);
+            console.error('❌ Error procesando archivo JSON:', error);
             showNotification('Error al parsear el archivo JSON. Asegúrate de que el formato sea correcto.', 'error');
         }
         event.target.value = '';
@@ -1362,8 +1470,9 @@ function importJson(event) {
 function saveVulnerabilities() {
     try {
         localStorage.setItem('owaspVulnerabilities', JSON.stringify(vulnerabilities));
+        console.log('💾 Vulnerabilidades guardadas en localStorage');
     } catch (error) {
-        console.error('Error guardando en localStorage:', error);
+        console.error('❌ Error guardando en localStorage:', error);
     }
 }
 
@@ -1372,11 +1481,14 @@ function loadVulnerabilities() {
         const saved = localStorage.getItem('owaspVulnerabilities');
         if (saved) {
             vulnerabilities = JSON.parse(saved);
+            console.log(`📂 ${vulnerabilities.length} vulnerabilidades cargadas desde localStorage`);
             renderVulnerabilitiesList();
             updateDashboard();
+        } else {
+            console.log('📂 No hay vulnerabilidades guardadas en localStorage');
         }
     } catch (error) {
-        console.error('Error cargando vulnerabilidades:', error);
+        console.error('❌ Error cargando vulnerabilidades:', error);
         vulnerabilities = [];
     }
 }
@@ -1413,3 +1525,20 @@ function showNotification(message, type) {
         }, 300);
     }, 3000);
 }
+
+// ========== FUNCIÓN DE DIAGNÓSTICO ==========
+window.testVulnerabilitySystem = function() {
+    console.log('🔧 === DIAGNÓSTICO DEL SISTEMA ===');
+    console.log('Total vulnerabilidades:', vulnerabilities.length);
+    console.log('IDs disponibles:', vulnerabilities.map(v => v.id));
+    console.log('Campo edit-vulnerability-id:', document.getElementById('edit-vulnerability-id').value);
+    console.log('Estado de botones:', {
+        save: document.getElementById('save-btn').style.display,
+        update: document.getElementById('update-btn').style.display,
+        cancel: document.getElementById('cancel-edit-btn').style.display
+    });
+    
+    if (vulnerabilities.length > 0) {
+        console.log('Primera vulnerabilidad:', vulnerabilities[0]);
+    }
+};
