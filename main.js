@@ -278,12 +278,37 @@ function loadVulnerabilityForEdit(id) {
     document.getElementById('security-controls').value = vulnerability.securityControls || '';
     document.getElementById('technical-business-impact').value = vulnerability.technicalBusinessImpact || '';
     
-    // Llenar selects de factores
-    const factorIds = ['sl', 'm', 'o', 's', 'lc', 'li', 'lav', 'lac', 'ed', 'ee', 'a', 'id', 'fd', 'rd', 'nc', 'pv'];
+    // Llenar selects de factores - LISTA COMPLETA INCLUYENDO 'id'
+    const factorIds = [
+        'sl', 'm', 'o', 's',        // Factores del Agente
+        'lc', 'li', 'lav', 'lac',   // Factores de Impacto Técnico
+        'ed', 'ee', 'a', 'id',      // Factores de Vulnerabilidad (¡INCLUYE 'id'!)
+        'fd', 'rd', 'nc', 'pv'      // Factores de Impacto de Negocio
+    ];
+    
     factorIds.forEach(factorId => {
         const element = document.getElementById(factorId);
-        if (element && vulnerability[factorId]) {
-            element.value = vulnerability[factorId];
+        if (element && vulnerability[factorId] !== undefined && vulnerability[factorId] !== null) {
+            // Convertir a string si es número
+            const value = String(vulnerability[factorId]);
+            
+            // Buscar la opción que coincida con el valor
+            const optionExists = Array.from(element.options).some(option => option.value === value);
+            
+            if (optionExists) {
+                element.value = value;
+            } else {
+                // Si no encuentra el valor exacto, buscar por valor numérico
+                const numericValue = parseFloat(value);
+                const options = Array.from(element.options);
+                
+                for (let option of options) {
+                    if (option.value && parseFloat(option.value) === numericValue) {
+                        element.value = option.value;
+                        break;
+                    }
+                }
+            }
         }
     });
     
@@ -455,13 +480,30 @@ function getFormData() {
         return element ? element.value : '';
     };
     
+    // Obtener el valor del agente de amenazas
     let threatAgentValue = getValue('threat-agent');
+    
+    // Si seleccionó "Otro" y especificó un valor, usar ese
     if (threatAgentValue === 'Otro') {
         const otherValue = getValue('other-threat-agent');
         if (otherValue.trim()) {
             threatAgentValue = `Otro: ${otherValue.trim()}`;
         }
+        // Si seleccionó "Otro" pero no especificó, mantener "Otro"
     }
+    
+    // Obtener todos los valores de los selects de factores
+    const factorIds = [
+        'sl', 'm', 'o', 's',        // Factores del Agente
+        'lc', 'li', 'lav', 'lac',   // Factores de Impacto Técnico
+        'ed', 'ee', 'a', 'id',      // Factores de Vulnerabilidad (incluye 'id' para Detección de intrusiones)
+        'fd', 'rd', 'nc', 'pv'      // Factores de Impacto de Negocio
+    ];
+    
+    const factorValues = {};
+    factorIds.forEach(factorId => {
+        factorValues[factorId] = getValue(factorId);
+    });
     
     return {
         name: getValue('vulnerability-name'),
@@ -479,7 +521,9 @@ function getFormData() {
         description: getValue('description'),
         recommendation: getValue('recommendation'),
         mitreDetection: getValue('mitre-detection'),
-        mitreMitigation: getValue('mitre-mitigation')
+        mitreMitigation: getValue('mitre-mitigation'),
+        // Incluir los valores de todos los selects de factores
+        ...factorValues
     };
 }
 
