@@ -491,5 +491,30 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="main.js"></script>
+
+    <script>
+        // Script para mejorar la validación visual
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar indicador de campo obligatorio a las etiquetas
+            const requiredFields = document.querySelectorAll('input[required], select[required], textarea[required]');
+            
+            requiredFields.forEach(field => {
+                const label = document.querySelector(`label[for="${field.id}"]`);
+                if (label) {
+                    if (!label.innerHTML.includes('*')) {
+                        label.innerHTML += ' <span style="color: #dc3545;">*</span>';
+                    }
+                }
+            });
+            
+            // O hacerlo directamente para todos los campos importantes
+            const importantLabels = document.querySelectorAll('.form-label');
+            importantLabels.forEach(label => {
+                if (!label.innerHTML.includes('*')) {
+                    label.innerHTML += ' <span style="color: #dc3545;">*</span>';
+                }
+            });
+        });
+        </script>
 </body>
 </html>
