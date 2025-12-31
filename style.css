@@ -632,3 +632,30 @@ textarea.form-control.is-invalid {
         margin-bottom: 10px;
     }
 }
+
+
+.vulnerability-item .vulnerability-header {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.vulnerability-item .vulnerability-header:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 5px;
+}
+
+[data-theme="dark"] .vulnerability-item .vulnerability-header:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Para evitar que los botones hereden el cursor pointer */
+.vulnerability-item .vulnerability-header .btn,
+.vulnerability-item .vulnerability-header button {
+    cursor: default !important;
+}
+
+.vulnerability-item .vulnerability-header .edit-btn,
+.vulnerability-item .vulnerability-header .view-btn,
+.vulnerability-item .vulnerability-header .delete-btn {
+    cursor: pointer !important;
+}

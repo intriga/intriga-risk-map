@@ -745,6 +745,16 @@ function renderVulnerabilitiesList() {
             </div>
         `;
         
+        // CLICK EN TODA LA TARJETA: Mostrar modal de detalles
+        const cardContent = item.querySelector('.vulnerability-header');
+        cardContent.style.cursor = 'pointer';
+        cardContent.addEventListener('click', (e) => {
+            // Solo activar si no se hizo clic en un botón
+            if (!e.target.closest('button')) {
+                showVulnerabilityDetails(vuln.id);
+            }
+        });
+        
         // Agregar event listeners a los botones
         const editBtn = item.querySelector('.edit-btn');
         const viewBtn = item.querySelector('.view-btn');
