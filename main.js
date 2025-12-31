@@ -295,26 +295,145 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) {
     }
 }
 
-// ========== GESTIÓN DE VULNERABILIDADES ==========
+// ========== VALIDACIÓN DE TODOS LOS CAMPOS OBLIGATORIOS ==========
+function validateRequiredFields() {
+    // Lista COMPLETA de todos los campos obligatorios
+    const requiredFields = [
+        { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
+        { id: 'host', name: 'Host' },
+        { id: 'owasp-category', name: 'Categoría OWASP 2021' },
+        { id: 'ruta-afectada', name: 'Ruta Afectada' },
+        { id: 'mitre-id', name: 'MITRE ID' },
+        { id: 'tool-criticity', name: 'Criticidad según Herramienta' },
+        { id: 'threat-agent', name: 'Agente de Amenazas' },
+        { id: 'attack-vector', name: 'Vector de Ataque' },
+        { id: 'detail', name: 'Detalle' },
+        { id: 'description', name: 'Descripción' },
+        { id: 'recommendation', name: 'Recomendación' },
+        { id: 'mitre-detection', name: 'Estrategia de Detección MITRE' },
+        { id: 'mitre-mitigation', name: 'Estrategia de Mitigación MITRE' },
+        { id: 'security-weakness', name: 'Debilidad de Seguridad' },
+        { id: 'security-controls', name: 'Controles de Seguridad' },
+        { id: 'technical-business-impact', name: 'Impacto Técnico - Negocio' }
+    ];
+    
+    // También todos los selects de factores de riesgo
+    const requiredSelects = [
+        { id: 'sl', name: 'Nivel de habilidad' },
+        { id: 'm', name: 'Motivo Economico del agente' },
+        { id: 'o', name: 'Oportunidad de Ataque' },
+        { id: 's', name: 'Tamaño del Agente de Amenaza' },
+        { id: 'lc', name: 'Pérdida de confidencialidad' },
+        { id: 'li', name: 'Pérdida de integridad' },
+        { id: 'lav', name: 'Impacto en la Disponibilidad' },
+        { id: 'lac', name: 'Rastreabilidad del Ataque' },
+        { id: 'ed', name: 'Facilidad de descubrimiento' },
+        { id: 'ee', name: 'Facilidad de explotación' },
+        { id: 'a', name: 'Conocimiento de la Vulnerabilidad' },
+        { id: 'id', name: 'Detección de intrusiones' },
+        { id: 'fd', name: 'Daño financiero' },
+        { id: 'rd', name: 'Daño a la reputación' },
+        { id: 'nc', name: 'Incumplimiento' },
+        { id: 'pv', name: 'Violación de privacidad' }
+    ];
+    
+    let isValid = true;
+    let firstEmptyField = null;
+    let emptyFieldsCount = 0;
+    
+    // Limpiar estilos de error previos en TODOS los campos
+    const allInputs = document.querySelectorAll('.form-control, select.form-control');
+    allInputs.forEach(element => {
+        element.classList.remove('is-invalid', 'is-valid');
+        const existingError = element.parentElement.querySelector('.invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+    });
+    
+    // Función para validar un campo individual
+    function validateField(fieldInfo, element) {
+        if (!element) return false;
+        
+        let value;
+        if (element.tagName === 'SELECT') {
+            value = element.value;
+        } else if (element.tagName === 'TEXTAREA') {
+            value = element.value.trim();
+        } else {
+            value = element.value.trim();
+        }
+        
+        if (!value || value === '') {
+            isValid = false;
+            emptyFieldsCount++;
+            
+            // Marcar campo como inválido
+            element.classList.add('is-invalid');
+            
+            // Crear mensaje de error
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = `El campo "${fieldInfo.name}" es obligatorio.`;
+            
+            // Insertar después del campo
+            element.parentElement.appendChild(errorDiv);
+            
+            // Guardar referencia al primer campo vacío
+            if (!firstEmptyField) {
+                firstEmptyField = element;
+            }
+            return false;
+        } else {
+            element.classList.add('is-valid');
+            return true;
+        }
+    }
+    
+    // Validar todos los campos de texto/textarea
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        validateField(field, element);
+    });
+    
+    // Validar todos los selects
+    requiredSelects.forEach(field => {
+        const element = document.getElementById(field.id);
+        validateField(field, element);
+    });
+    
+    // Desplazarse al primer campo vacío
+    if (firstEmptyField) {
+        firstEmptyField.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+        firstEmptyField.focus();
+        
+        // Mostrar notificación global con conteo
+        const message = emptyFieldsCount > 1 
+            ? `Hay ${emptyFieldsCount} campos obligatorios sin completar. Por favor, revisa los campos marcados en rojo.`
+            : `Hay 1 campo obligatorio sin completar. Por favor, revisa el campo marcado en rojo.`;
+        
+        showNotification(message, 'error');
+    }
+    
+    return isValid;
+}
+
+// ========== MODIFICA LA FUNCIÓN saveVulnerability ==========
 function saveVulnerability() {
     console.log('Guardando vulnerabilidad...');
     
     try {
+        // Primero validar TODOS los campos obligatorios
+        if (!validateRequiredFields()) {
+            return; // Detener si hay campos vacíos
+        }
+        
+        // Si pasa la validación, continuar con el cálculo
         const riskData = calculateRisk();
         const formData = getFormData();
-        
-        if (!formData.name || formData.name.trim() === '') {
-            showNotification('El campo "Nombre de la Vulnerabilidad" es obligatorio.', 'error');
-            return;
-        }
-        if (!formData.host || formData.host.trim() === '') {
-            showNotification('El campo "Host" o Dominio es obligatorio.', 'error');
-            return;
-        }
-        if (!formData.owasp || formData.owasp.trim() === '') {
-            showNotification('Selecciona una "Categoría OWASP 2021".', 'error');
-            return;
-        }
         
         const vulnerability = {
             id: Date.now(),
@@ -329,8 +448,8 @@ function saveVulnerability() {
         renderVulnerabilitiesList();
         updateDashboard();
         
-        // Limpiar formulario
-        document.getElementById('vulnerability-name').value = '';
+        // Limpiar formulario y estilos de validación
+        clearFormValidation();
         
         showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
         
@@ -338,6 +457,41 @@ function saveVulnerability() {
         console.error('Error guardando vulnerabilidad:', error);
         showNotification('Error al guardar la vulnerabilidad', 'error');
     }
+}
+
+// ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
+function clearFormValidation() {
+    // Limpiar TODOS los campos del formulario
+    const allFormElements = [
+        // Text inputs
+        'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
+        'threat-agent', 'attack-vector', 'security-weakness', 'security-controls',
+        'technical-business-impact',
+        // Textareas
+        'detail', 'description', 'recommendation', 'mitre-detection', 'mitre-mitigation',
+        // Selects
+        'owasp-category', 'sl', 'm', 'o', 's', 'lc', 'li', 'lav', 'lac',
+        'ed', 'ee', 'a', 'id', 'fd', 'rd', 'nc', 'pv'
+    ];
+    
+    allFormElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.tagName === 'SELECT') {
+                element.value = element.querySelector('option[value=""]') ? '' : element.options[0].value;
+            } else {
+                element.value = '';
+            }
+            
+            element.classList.remove('is-valid', 'is-invalid');
+            
+            // Remover mensajes de error
+            const existingError = element.parentElement.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+    });
 }
 
 function getFormData() {
@@ -383,17 +537,25 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    vulnerabilities.forEach(vuln => {
+    // Ordenar por fecha (más reciente primero) o por ID
+    const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
+    
+    sortedVulnerabilities.forEach((vuln, index) => {
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
         item.innerHTML = `
+            <div class="vulnerability-header">
+                <div class="vulnerability-number">${sortedVulnerabilities.length - index}</div>
+                <div class="vulnerability-content">
+                    <h5 class="mb-2">${vuln.name}</h5>
+                </div>
+            </div>
             <div class="d-flex justify-content-between align-items-start">
                 <div style="flex: 1;">
-                    <h5>${vuln.name}</h5>
                     <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
                     <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
                     <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
-                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()}</small>
+                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
                 </div>
                 <div class="ms-3">
                     <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
@@ -593,31 +755,45 @@ function updateDashboardTable() {
         });
     });
     
-    owaspCategories.forEach((category, index) => {
-        const categoryVulns = vulnerabilitiesByCategory[index];
+    // Ordenar categorías por número de vulnerabilidades (mayor a menor)
+    const sortedCategories = [...owaspCategories].map((cat, idx) => ({
+        category: cat,
+        index: idx,
+        count: vulnerabilitiesByCategory[idx].length
+    })).filter(item => item.count > 0)
+      .sort((a, b) => b.count - a.count);
+    
+    let globalCounter = 1;
+    
+    sortedCategories.forEach((catItem, catIndex) => {
+        const categoryVulns = vulnerabilitiesByCategory[catItem.index];
         
-        if (categoryVulns.length > 0) {
-            const categoryRow = document.createElement('tr');
-            categoryRow.className = `risk-${index}`;
-            categoryRow.innerHTML = `
-                <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[index].replace('0.8', '0.2')}">
-                    ${category} (${categoryVulns.length})
+        // Encabezado de categoría
+        const categoryRow = document.createElement('tr');
+        categoryRow.className = `risk-${catItem.index}`;
+        categoryRow.innerHTML = `
+            <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[catItem.index].replace('0.8', '0.2')}">
+                ${catItem.category} (${categoryVulns.length} vulnerabilidad${categoryVulns.length !== 1 ? 'es' : ''})
+            </td>
+        `;
+        tableBody.appendChild(categoryRow);
+        
+        // Ordenar vulnerabilidades dentro de la categoría por riesgo (mayor a menor)
+        const sortedVulns = categoryVulns.sort((a, b) => b.risk - a.risk);
+        
+        sortedVulns.forEach((vuln, vulnIndex) => {
+            const row = document.createElement('tr');
+            row.className = `risk-${catItem.index}`;
+            row.innerHTML = `
+                <td style="font-weight: bold; text-align: center; width: 50px;">
+                    ${globalCounter++}
                 </td>
+                <td>${vuln.name}</td>
+                <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
+                <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
             `;
-            tableBody.appendChild(categoryRow);
-            
-            categoryVulns.forEach(vuln => {
-                const row = document.createElement('tr');
-                row.className = `risk-${index}`;
-                row.innerHTML = `
-                    <td></td>
-                    <td>${vuln.name}</td>
-                    <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
-                    <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
+            tableBody.appendChild(row);
+        });
     });
 }
 
@@ -804,12 +980,13 @@ function exportToWord() {
             htmlContent += `
                 <div class="vulnerability-container">
                     <div class="vulnerability-title" style="background-color: ${titleColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'};">
-                        Vulnerabilidad ${index + 1}: **${vuln.name || 'No especificado'}**
+                        Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}
                     </div>
                     
                     <table class="vulnerability-table" align="center">
                         <tr>
                             <td rowspan="3" class="header-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
+                                <strong>ID:</strong> ${index + 1}<br>
                                 ${vuln.name || 'No especificado'}
                             </td>
                             
@@ -1505,6 +1682,10 @@ function showVulnerabilityDetails(id) {
     
     modalBody.innerHTML = `
         <div class="vulnerability-details">
+            <div class="detail-item">
+                <div class="detail-label">Número</div>
+                <div class="detail-value">#${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
+            </div>
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
                 <div class="detail-value">${vuln.name}</div>

@@ -394,3 +394,161 @@ header {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
+.vulnerability-number {
+    background-color: var(--primary-color);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.vulnerability-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.vulnerability-content {
+    flex: 1;
+}
+
+/* Estilos para validación de formularios */
+.form-control.is-invalid,
+select.form-control.is-invalid,
+textarea.form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid:focus,
+select.form-control.is-invalid:focus,
+textarea.form-control.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control.is-valid,
+select.form-control.is-valid,
+textarea.form-control.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-valid:focus,
+select.form-control.is-valid:focus,
+textarea.form-control.is-valid:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+/* Para selects específicamente */
+select.form-control.is-invalid {
+    padding-right: 2.25rem;
+}
+
+/* Para textareas específicamente */
+textarea.form-control.is-invalid,
+textarea.form-control.is-valid {
+    background-position: right calc(0.375em + 0.1875rem) top calc(0.375em + 0.1875rem);
+}
+
+/* Estilos para tema oscuro */
+[data-theme="dark"] .form-control.is-invalid,
+[data-theme="dark"] select.form-control.is-invalid,
+[data-theme="dark"] textarea.form-control.is-invalid {
+    border-color: #e74c3c;
+}
+
+[data-theme="dark"] .form-control.is-invalid:focus,
+[data-theme="dark"] select.form-control.is-invalid:focus,
+[data-theme="dark"] textarea.form-control.is-invalid:focus {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 0.25rem rgba(231, 76, 60, 0.25);
+}
+
+[data-theme="dark"] .form-control.is-valid,
+[data-theme="dark"] select.form-control.is-valid,
+[data-theme="dark"] textarea.form-control.is-valid {
+    border-color: #27ae60;
+}
+
+[data-theme="dark"] .form-control.is-valid:focus,
+[data-theme="dark"] select.form-control.is-valid:focus,
+[data-theme="dark"] textarea.form-control.is-valid:focus {
+    border-color: #27ae60;
+    box-shadow: 0 0 0 0.25rem rgba(39, 174, 96, 0.25);
+}
+
+[data-theme="dark"] .invalid-feedback {
+    color: #e74c3c;
+}
+
+/* Animación para el mensaje de error */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.form-control.is-invalid,
+select.form-control.is-invalid,
+textarea.form-control.is-invalid {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Mejor contraste para los selects en tema oscuro */
+[data-theme="dark"] select.form-control {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+}
+
+[data-theme="dark"] select.form-control option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Estilo especial para campos validados correctamente */
+.form-control.is-valid {
+    border-left: 4px solid #198754 !important;
+}
+
+select.form-control.is-valid {
+    border-left: 4px solid #198754 !important;
+}
+
+textarea.form-control.is-valid {
+    border-left: 4px solid #198754 !important;
+}
+
+/* Estilo especial para campos inválidos */
+.form-control.is-invalid {
+    border-left: 4px solid #dc3545 !important;
+}
+
+select.form-control.is-invalid {
+    border-left: 4px solid #dc3545 !important;
+}
+
+textarea.form-control.is-invalid {
+    border-left: 4px solid #dc3545 !important;
+}
