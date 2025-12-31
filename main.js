@@ -286,7 +286,7 @@ function loadVulnerabilityForEdit(id) {
     document.getElementById('ruta-afectada').value = vulnerability.rutaAfectada || '';
     document.getElementById('owasp-category').value = vulnerability.owasp || '';
     document.getElementById('mitre-id').value = vulnerability.mitre || '';
-    document.getElementById('tool-criticity').value = vulnerability.toolCriticity || '';
+    // Campo "tool-criticity" ELIMINADO
     
     // Manejar agente de amenazas
     if (vulnerability.threatAgent) {
@@ -300,7 +300,7 @@ function loadVulnerabilityForEdit(id) {
         }
     }
     
-    document.getElementById('attack-vector').value = vulnerability.attackVector || '';
+    // Campo "attack-vector" ELIMINADO
     document.getElementById('detail').value = vulnerability.detail || '';
     document.getElementById('description').value = vulnerability.description || '';
     document.getElementById('recommendation').value = vulnerability.recommendation || '';
@@ -518,8 +518,8 @@ function clearForm() {
     
     // Limpiar campos básicos
     const basicFields = [
-        'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
-        'attack-vector', 'security-weakness', 'security-controls', 'technical-business-impact',
+        'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id',
+        'security-weakness', 'security-controls', 'technical-business-impact',
         'detail', 'description', 'recommendation', 'mitre-detection', 'mitre-mitigation'
     ];
     
@@ -590,9 +590,9 @@ function getFormData() {
         rutaAfectada: getValue('ruta-afectada'),
         owasp: getValue('owasp-category'),
         mitre: getValue('mitre-id'),
-        toolCriticity: getValue('tool-criticity'),
+        // Campo "toolCriticity" ELIMINADO
         threatAgent: threatAgentValue,
-        attackVector: getValue('attack-vector'),
+        // Campo "attackVector" ELIMINADO
         securityWeakness: getValue('security-weakness'),
         securityControls: getValue('security-controls'),
         technicalBusinessImpact: getValue('technical-business-impact'),
@@ -613,15 +613,16 @@ function getFormData() {
 function validateRequiredFields() {
     console.log('✅ Validando campos requeridos...');
     
+    // LISTA ACTUALIZADA SIN LOS CAMPOS ELIMINADOS
     const requiredFields = [
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
         { id: 'owasp-category', name: 'Categoría OWASP 2021' },
         { id: 'ruta-afectada', name: 'Ruta Afectada' },
         { id: 'mitre-id', name: 'MITRE ID' },
-        { id: 'tool-criticity', name: 'Criticidad según Herramienta' },
+        // Campo "tool-criticity" ELIMINADO
         { id: 'threat-agent', name: 'Agente de Amenazas' },
-        { id: 'attack-vector', name: 'Vector de Ataque' },
+        // Campo "attack-vector" ELIMINADO
         { id: 'detail', name: 'Detalle' },
         { id: 'description', name: 'Descripción' },
         { id: 'recommendation', name: 'Recomendación' },
@@ -1043,18 +1044,12 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-label">MITRE ID</div>
                 <div class="detail-value">${escapeHtml(vuln.mitre || 'No especificado')}</div>
             </div>
-            <div class="detail-item">
-                <div class="detail-label">Criticidad según Herramienta</div>
-                <div class="detail-value">${escapeHtml(vuln.toolCriticity || 'No especificado')}</div>
-            </div>
+            <!-- Campo "Criticidad según Herramienta" ELIMINADO del modal -->
             <div class="detail-item">
                 <div class="detail-label">Agente de Amenazas</div>
                 <div class="detail-value">${escapeHtml(vuln.threatAgent || 'No especificado')}</div>
             </div>
-            <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
-                <div class="detail-value">${escapeHtml(vuln.attackVector || 'No especificado')}</div>
-            </div>
+            <!-- Campo "Vector de Ataque" ELIMINADO del modal -->
             <div class="detail-item">
                 <div class="detail-label">Debilidad de Seguridad</div>
                 <div class="detail-value">${escapeHtml(vuln.securityWeakness || 'No especificado')}</div>
