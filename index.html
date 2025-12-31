@@ -90,8 +90,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Agente de Amenazas</label>
-                                <input type="text" class="form-control" id="threat-agent" placeholder="Ej: Agente externo">
+                                <select class="form-control" id="threat-agent" required>
+                                    <option value="">Seleccione un agente de amenaza</option>
+                                    <option value="Agente Externo">Agente Externo</option>
+                                    <option value="Agente Interno">Agente Interno</option>
+                                    <option value="Error de Software">Error de Software</option>
+                                </select>
                             </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Vector de Ataque</label>
                                 <input type="text" class="form-control" id="attack-vector" placeholder="Describa el vector de ataque">

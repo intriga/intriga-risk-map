@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     loadVulnerabilities();
+
+    // Configurar el select de agente de amenazas
+    setupThreatAgentSelect();  //
     
     const calculateBtn = document.getElementById('calculate-btn');
     const saveBtn = document.getElementById('save-btn');
@@ -402,6 +405,51 @@ function validateRequiredFields() {
         validateField(field, element);
     });
     
+    // ========== VALIDACIÓN ESPECIAL PARA "OTRO" EN AGENTE DE AMENAZAS ==========
+    const threatAgentSelect = document.getElementById('threat-agent');
+    const otherThreatAgentInput = document.getElementById('other-threat-agent');
+    
+    if (threatAgentSelect && threatAgentSelect.value === 'Otro') {
+        if (!otherThreatAgentInput || !otherThreatAgentInput.value.trim()) {
+            isValid = false;
+            emptyFieldsCount++;
+            
+            if (otherThreatAgentInput) {
+                otherThreatAgentInput.classList.add('is-invalid');
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                errorDiv.textContent = 'Debe especificar el tipo de agente cuando selecciona "Otro"';
+                
+                otherThreatAgentInput.parentElement.appendChild(errorDiv);
+                
+                if (!firstEmptyField) {
+                    firstEmptyField = otherThreatAgentInput;
+                }
+            }
+        } else {
+            // Si tiene valor, marcarlo como válido
+            otherThreatAgentInput.classList.add('is-valid');
+            otherThreatAgentInput.classList.remove('is-invalid');
+            
+            // Remover mensaje de error si existe
+            const existingError = otherThreatAgentInput.parentElement.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+    } else if (otherThreatAgentInput) {
+        // Si no seleccionó "Otro", asegurarse de que no tenga errores
+        otherThreatAgentInput.classList.remove('is-invalid', 'is-valid');
+        
+        // Remover mensaje de error si existe
+        const existingError = otherThreatAgentInput.parentElement.querySelector('.invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+    // ========== FIN DE VALIDACIÓN ESPECIAL ==========
+    
     // Desplazarse al primer campo vacío
     if (firstEmptyField) {
         firstEmptyField.scrollIntoView({ 
@@ -492,6 +540,27 @@ function clearFormValidation() {
             }
         }
     });
+
+     // Especial para el select de agente de amenazas
+     const threatAgentSelect = document.getElementById('threat-agent');
+     if (threatAgentSelect) {
+         threatAgentSelect.value = '';
+     }
+     
+     // Ocultar y limpiar el campo "Otro"
+     const otherContainer = document.getElementById('other-threat-agent-container');
+     const otherInput = document.getElementById('other-threat-agent');
+     if (otherContainer) {
+         otherContainer.style.display = 'none';
+     }
+     if (otherInput) {
+         otherInput.value = '';
+         otherInput.classList.remove('is-invalid', 'is-valid');
+         const errorDiv = otherInput.parentElement.querySelector('.invalid-feedback');
+         if (errorDiv) {
+             errorDiv.remove();
+         }
+     }
 }
 
 function getFormData() {
@@ -500,6 +569,18 @@ function getFormData() {
         return element ? element.value : '';
     };
     
+    // Obtener el valor del agente de amenazas
+    let threatAgentValue = getValue('threat-agent');
+    
+    // Si seleccionó "Otro" y especificó un valor, usar ese
+    if (threatAgentValue === 'Otro') {
+        const otherValue = getValue('other-threat-agent');
+        if (otherValue.trim()) {
+            threatAgentValue = `Otro: ${otherValue.trim()}`;
+        }
+        // Si seleccionó "Otro" pero no especificó, mantener "Otro"
+    }
+    
     return {
         name: getValue('vulnerability-name'),
         host: getValue('host'),
@@ -507,7 +588,7 @@ function getFormData() {
         owasp: getValue('owasp-category'),
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
-        threatAgent: getValue('threat-agent'),
+        threatAgent: threatAgentValue,
         attackVector: getValue('attack-vector'),
         securityWeakness: getValue('security-weakness'),
         securityControls: getValue('security-controls'),
@@ -1821,5 +1902,53 @@ function loadVulnerabilities() {
     } catch (error) {
         console.error('Error cargando vulnerabilidades:', error);
         vulnerabilities = [];
+    }
+}
+// ========== MANEJO DEL SELECT "AGENTE DE AMENAZAS" ==========
+function setupThreatAgentSelect() {
+    const threatAgentSelect = document.getElementById('threat-agent');
+    const otherContainer = document.getElementById('other-threat-agent-container');
+    const otherInput = document.getElementById('other-threat-agent');
+    
+    if (threatAgentSelect && otherContainer && otherInput) {
+        // Mostrar/ocultar campo "Otro" basado en selección
+        threatAgentSelect.addEventListener('change', function() {
+            if (this.value === 'Otro') {
+                otherContainer.style.display = 'block';
+                otherInput.required = true;
+                otherInput.focus(); // Enfocar automáticamente
+            } else {
+                otherContainer.style.display = 'none';
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+        
+        // Validar campo "Otro" si está visible
+        otherInput.addEventListener('blur', function() {
+            if (threatAgentSelect.value === 'Otro' && !this.value.trim()) {
+                this.classList.add('is-invalid');
+                
+                // Crear mensaje de error
+                let errorDiv = this.parentElement.querySelector('.invalid-feedback');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    this.parentElement.appendChild(errorDiv);
+                }
+                errorDiv.textContent = 'Debe especificar el tipo de agente cuando selecciona "Otro"';
+            }
+        });
+        
+        // Limpiar validación al escribir
+        otherInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+                const errorDiv = this.parentElement.querySelector('.invalid-feedback');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+            }
+        });
     }
 }
