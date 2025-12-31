@@ -38,6 +38,9 @@
         <div class="tab-content" id="mainTabsContent">
             <div class="tab-pane fade show active" id="calculator" role="tabpanel">
                 <div class="row">
+                    <!-- Campo oculto para ID de edición -->
+                    <input type="hidden" id="edit-vulnerability-id" value="">
+                    
                     <section class="col-12">
                         <h5 class="border-bottom">Información General de la Vulnerabilidad</h5>
                         <div class="row">
@@ -90,8 +93,20 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Agente de Amenazas</label>
-                                <input type="text" class="form-control" id="threat-agent" placeholder="Ej: Agente externo">
+                                <select class="form-control" id="threat-agent" required>
+                                    <option value="">Seleccione un agente de amenaza</option>
+                                    <option value="Agente Externo">Agente Externo</option>
+                                    <option value="Agente Interno">Agente Interno</option>
+                                    <option value="Error de Software">Error de Software</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
                             </div>
+                            
+                            <div class="col-md-6 mb-3" id="other-threat-agent-container" style="display: none;">
+                                <label class="form-label">Especifique agente de amenaza</label>
+                                <input type="text" class="form-control" id="other-threat-agent" placeholder="Especifique el tipo de agente">
+                            </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Vector de Ataque</label>
                                 <input type="text" class="form-control" id="attack-vector" placeholder="Describa el vector de ataque">
@@ -148,9 +163,9 @@
                     </section>
 
                     <section class="col-md-6">
-                        <h5 class="border-bottom" title="The first set of factors are related to the threat agent involved. The goal here is to estimate the likelihood of a successful attack by this group of threat agents. Use the worst-case threat agent.">Factores del Agente de Amenaza</h5>
+                        <h5 class="border-bottom">Factores del Agente de Amenaza</h5>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How technically skilled is this group of threat agents?">Nivel de habilidad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Nivel de habilidad</div>
                             <div class="col-8">
                                 <select class="form-control" id="sl" name="sl">
                                     <option value="1">Sin habilidades técnicas (1)</option>
@@ -162,7 +177,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How motivated is this group of threat agents to find and exploit this vulnerability?">Motivo Economico del agente</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Motivo Economico del agente</div>
                             <div class="col-8">
                                 <select class="form-control" id="m" name="m">
                                     <option value="1">Baja o ninguna recompensa (1)</option>
@@ -172,7 +187,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="What resources and opportunities are required for this group of threat agents to find and exploit this vulnerability?">Oportunidad de Ataque</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Oportunidad de Ataque</div>
                             <div class="col-8">
                                 <select class="form-control" id="o" name="o">
                                     <option value="0">Acceso completo o recursos costosos requeridos (0)</option>
@@ -183,7 +198,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How large is this group of threat agents?">Tamaño del Agente de Amenaza</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Tamaño del Agente de Amenaza</div>
                             <div class="col-8">
                                 <select class="form-control" id="s" name="s">
                                     <option value="2">Desarrolladores, administradores de sistemas (2)</option>
@@ -197,9 +212,9 @@
                     </section>
 
                     <section class="col-md-6">
-                        <h5 class="border-bottom" title="Technical impact can be broken down into factors aligned with the traditional security areas of concern: confidentiality, integrity, availability, and accountability. The goal is to estimate the magnitude of the impact on the system if the vulnerability were to be exploited.">Factores de Impacto Técnico</h5>
+                        <h5 class="border-bottom">Factores de Impacto Técnico</h5>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be disclosed and how sensitive is it?">Pérdida de confidencialidad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Pérdida de confidencialidad</div>
                             <div class="col-8">
                                 <select class="form-control" id="lc" name="lc">
                                     <option value="2">Datos no sensibles mínimos divulgados (2)</option>
@@ -211,7 +226,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be corrupted and how damaged is it?">Pérdida de integridad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Pérdida de integridad</div>
                             <div class="col-8">
                                 <select class="form-control" id="li" name="li">
                                     <option value="1">Datos mínimamente corruptos (1)</option>
@@ -223,7 +238,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much service could be lost and how vital is it?">Impacto en la Disponibilidad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Impacto en la Disponibilidad</div>
                             <div class="col-8">
                                 <select class="form-control" id="lav" name="lav">
                                     <option value="1">Servicios secundarios mínimos interrumpidos (1)</option>
@@ -235,7 +250,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="Are the threat agents' actions traceable to an individual?">Rastreabilidad del Ataque</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Rastreabilidad del Ataque</div>
                             <div class="col-8">
                                 <select class="form-control" id="lac" name="lac">
                                     <option value="1">Completamente rastreable (1)</option>
@@ -247,9 +262,9 @@
                     </section>
 
                     <section class="col-md-6">
-                        <h5 class="border-bottom" title="The next set of factors are related to the vulnerability involved. The goal here is to estimate the likelihood of the particular vulnerability involved being discovered and exploited. Assume the threat agent selected above.">Factores de Vulnerabilidad</h5>
+                        <h5 class="border-bottom">Factores de Vulnerabilidad</h5>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to discover this vulnerability?">Facilidad de descubrimiento</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Facilidad de descubrimiento</div>
                             <div class="col-8">
                                 <select class="form-control" id="ed" name="ed">
                                     <option value="1">Prácticamente imposible (1)</option>
@@ -260,7 +275,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to actually exploit this vulnerability?">Facilidad de explotación</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Facilidad de explotación</div>
                             <div class="col-8">
                                 <select class="form-control" id="ee" name="ee">
                                     <option value="1">Teórico (1)</option>
@@ -271,7 +286,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How well known is this vulnerability to this group of threat agents?">Conocimiento de la Vulnerabilidad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Conocimiento de la Vulnerabilidad</div>
                             <div class="col-8">
                                 <select class="form-control" id="a" name="a">
                                     <option value="1">Desconocido (1)</option>
@@ -282,7 +297,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How likely is an exploit to be detected?">Detección de intrusiones</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Detección de intrusiones</div>
                             <div class="col-8">
                                 <select class="form-control" id="id" name="id">
                                     <option value="1">Alta Detección (1) - Alertas activas y revisión constante.</option>
@@ -295,9 +310,9 @@
                     </section>
 
                     <section class="col-md-6">
-                        <h5 class="border-bottom" title="The business impact stems from the technical impact, but requires a deep understanding of what is important to the company running the application. In general, you should be aiming to support your risks with business impact, particularly if your audience is executive level. The business risk is what justifies investment in fixing security problems.">Factores de Impacto de Negocio</h5>
+                        <h5 class="border-bottom">Factores de Impacto de Negocio</h5>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much financial damage will result from an exploit?">Daño financiero</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Daño financiero</div>
                             <div class="col-8">
                                 <select class="form-control" id="fd" name="fd">
                                     <option value="1">Menos que el costo de arreglar la vulnerabilidad (1)</option>
@@ -308,7 +323,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="Would an exploit result in reputation damage that would harm the business?">Daño a la reputación</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Daño a la reputación</div>
                             <div class="col-8">
                                 <select class="form-control" id="rd" name="rd">
                                     <option value="1">Daño mínimo (1)</option>
@@ -319,7 +334,7 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much exposure does non-compliance introduce?">Incumplimiento</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Incumplimiento</div>
                             <div class="col-8">
                                 <select class="form-control" id="nc" name="nc">
                                     <option value="2">Violación menor (2)</option>
@@ -329,7 +344,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="h6 nomargin col-4 d-flex align-items-center" title="How much personally identifiable information could be disclosed?">Violación de privacidad</div>
+                            <div class="h6 nomargin col-4 d-flex align-items-center">Violación de privacidad</div>
                             <div class="col-8">
                                 <select class="form-control" id="pv" name="pv">
                                     <option value="3">Un individuo (3)</option>
@@ -364,6 +379,9 @@
                         <div class="text-center mt-4">
                             <button class="btn btn-primary btn-lg" id="calculate-btn">Calcular Riesgo</button>
                             <button class="btn btn-success btn-lg" id="save-btn">Guardar Vulnerabilidad</button>
+                            <button class="btn btn-warning btn-lg" id="update-btn" style="display: none;">Actualizar Vulnerabilidad</button>
+                            <button class="btn btn-secondary btn-lg" id="cancel-edit-btn" style="display: none;">Cancelar Edición</button>
+                            <button class="btn btn-outline-secondary btn-lg" id="clear-form-btn">Limpiar Formulario</button>
                         </div>
                     </section>
                 </div>
@@ -372,11 +390,17 @@
             <div class="tab-pane fade" id="vulnerabilities" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Vulnerabilidades Guardadas</h4>
-                    <span class="badge bg-primary" id="vulnerability-count">0 vulnerabilidades</span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-primary" id="vulnerability-count">0 vulnerabilidades</span>
+                        <button class="btn btn-danger btn-sm" id="delete-all-btn" title="Eliminar todas las vulnerabilidades">
+                            🗑️ Eliminar Todas
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="vulnerabilities-list">
-                    </div>
+                    <!-- Las vulnerabilidades se cargarán aquí -->
+                </div>
             </div>
 
             <div class="tab-pane fade" id="dashboard" role="tabpanel">
@@ -424,7 +448,8 @@
                                     <canvas id="owaspDistributionChart"></canvas>
                                 </div>
                                 <div class="legend" id="chart-legend">
-                                    </div>
+                                    <!-- La leyenda se generará aquí -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -455,18 +480,40 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
+                                    <th>#</th>
                                     <th>Categoría OWASP</th>
                                     <th>Descripción</th>
                                     <th>URL/Dominio</th>
                                     <th>Nivel de Riesgo</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="dashboard-vulnerabilities-list">
-                                </tbody>
+                                <!-- Las vulnerabilidades del dashboard se cargarán aquí -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
                 <input type="file" id="import-file-input" accept="application/json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="delete-modal-message">¿Está seguro que desea eliminar esta vulnerabilidad?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">Eliminar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -479,7 +526,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="modal-body">
-                    </div>
+                    <!-- Los detalles se cargarán aquí -->
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
@@ -506,15 +554,7 @@
                     }
                 }
             });
-            
-            // O hacerlo directamente para todos los campos importantes
-            const importantLabels = document.querySelectorAll('.form-label');
-            importantLabels.forEach(label => {
-                if (!label.innerHTML.includes('*')) {
-                    label.innerHTML += ' <span style="color: #dc3545;">*</span>';
-                }
-            });
         });
-        </script>
+    </script>
 </body>
 </html>
