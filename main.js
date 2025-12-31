@@ -843,14 +843,15 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
+    // CAMBIO: Ordenar por ID ASCENDENTE (más antiguas primero)
+    const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => a.id - b.id);
     
     sortedVulnerabilities.forEach((vuln, index) => {
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
         item.innerHTML = `
             <div class="vulnerability-header">
-                <div class="vulnerability-number">${sortedVulnerabilities.length - index}</div>
+                <div class="vulnerability-number">${index + 1}</div>
                 <div class="vulnerability-content">
                     <div class="d-flex justify-content-between align-items-start">
                         <div style="flex: 1;">
@@ -858,7 +859,7 @@ function renderVulnerabilitiesList() {
                             <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
                             <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
                             <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
-                            <small class="text-muted">Actualizado: ${new Date(vuln.updatedAt || vuln.date).toLocaleDateString()} ${new Date(vuln.updatedAt || vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                            <small class="text-muted">Creado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
                         </div>
                         <div class="ms-3">
                             <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
@@ -915,7 +916,7 @@ function renderVulnerabilitiesList() {
         listElement.appendChild(item);
     });
     
-    console.log(`✅ Lista de vulnerabilidades renderizada (${vulnerabilities.length} items)`);
+    console.log(`✅ Lista de vulnerabilidades renderizada (${vulnerabilities.length} items) en orden ASCENDENTE`);
 }
 
 function updateDashboardTable() {
