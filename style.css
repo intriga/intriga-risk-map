@@ -552,3 +552,59 @@ select.form-control.is-invalid {
 textarea.form-control.is-invalid {
     border-left: 4px solid #dc3545 !important;
 }
+
+/* Estilos para botones de acción */
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.bi {
+    margin-right: 3px;
+}
+
+/* Estilos para modal de edición */
+#edit-modal-body .form-control {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+#edit-modal-body .form-label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Mejorar contraste en tema oscuro */
+[data-theme="dark"] .btn-outline-info {
+    color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+[data-theme="dark"] .btn-outline-info:hover {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+[data-theme="dark"] .btn-outline-warning {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+[data-theme="dark"] .btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+[data-theme="dark"] .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Asegurar que los íconos de Bootstrap se carguen */
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css");

@@ -618,35 +618,85 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    // Ordenar por fecha (más reciente primero) o por ID
+    // Ordenar por fecha (más reciente primero)
     const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
     
     sortedVulnerabilities.forEach((vuln, index) => {
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
+        item.dataset.id = vuln.id;
+        
         item.innerHTML = `
             <div class="vulnerability-header">
                 <div class="vulnerability-number">${sortedVulnerabilities.length - index}</div>
                 <div class="vulnerability-content">
-                    <h5 class="mb-2">${vuln.name}</h5>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-start">
-                <div style="flex: 1;">
-                    <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
-                    <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
-                    <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
-                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
-                </div>
-                <div class="ms-3">
-                    <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div style="flex: 1;">
+                            <h5 class="mb-2">${vuln.name}</h5>
+                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
+                            <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
+                            <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
+                            <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                        </div>
+                        <div class="ms-3 text-end">
+                            <span class="risk-badge ${vuln.riskClass}-badge mb-2 d-inline-block">${vuln.riskLevel}</span>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info view-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-eye"></i> Ver
+                                </button>
+                                <button class="btn btn-outline-warning edit-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-outline-danger delete-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
         
-        item.addEventListener('click', () => showVulnerabilityDetails(vuln.id));
         listElement.appendChild(item);
     });
+    
+    // Agregar event listeners a los botones
+    setTimeout(() => {
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                showVulnerabilityDetails(id);
+            });
+        });
+        
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                openEditModal(id);
+            });
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                deleteVulnerability(id);
+            });
+        });
+        
+        // Click en el item completo (ver detalles)
+        document.querySelectorAll('.vulnerability-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Solo si no se hizo click en un botón
+                if (!e.target.closest('.btn')) {
+                    const id = parseInt(item.dataset.id);
+                    showVulnerabilityDetails(id);
+                }
+            });
+        });
+    }, 100);
 }
 
 // ========== DASHBOARD ==========
@@ -1764,8 +1814,8 @@ function showVulnerabilityDetails(id) {
     modalBody.innerHTML = `
         <div class="vulnerability-details">
             <div class="detail-item">
-                <div class="detail-label">Número</div>
-                <div class="detail-value">#${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
+                <div class="detail-label">ID</div>
+                <div class="detail-value">${vuln.id}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
@@ -1781,7 +1831,16 @@ function showVulnerabilityDetails(id) {
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
-                <div class="detail-value"><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> (${vuln.risk.toFixed(2)})</div>
+                <div class="detail-value">
+                    <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> 
+                    (${vuln.risk.toFixed(2)})
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Probabilidad/Impacto</div>
+                <div class="detail-value">
+                    Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)}
+                </div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">OWASP 2021</div>
@@ -1792,34 +1851,6 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Criticidad según Herramienta</div>
-                <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Agente de Amenazas</div>
-                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
-                <div class="detail-value">${vuln.attackVector || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Debilidad de Seguridad</div>
-                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Controles de Seguridad</div>
-                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Impacto Técnico - Negocio</div>
-                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Detalle</div>
-                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
                 <div class="detail-label">Descripción</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
@@ -1828,23 +1859,64 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Detección MITRE</div>
-                <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
+                <div class="detail-label">Detalles</div>
+                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Mitigación MITRE</div>
-                <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
+                <div class="detail-label">Fecha Creación</div>
+                <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
             </div>
+            ${vuln.lastUpdated ? `
             <div class="detail-item">
-                <div class="detail-label">Métricas de Riesgo</div>
-                <div class="detail-value">
-                    <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)}<br>
-                    <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}<br>
-                    <strong>Riesgo Total:</strong> ${vuln.risk.toFixed(2)}
-                </div>
+                <div class="detail-label">Última Actualización</div>
+                <div class="detail-value">${new Date(vuln.lastUpdated).toLocaleString()}</div>
             </div>
+            ` : ''}
+        </div>
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-warning me-2" id="edit-from-details" data-id="${vuln.id}">
+                <i class="bi bi-pencil"></i> Editar esta Vulnerabilidad
+            </button>
+            <button class="btn btn-danger" id="delete-from-details" data-id="${vuln.id}">
+                <i class="bi bi-trash"></i> Eliminar
+            </button>
         </div>
     `;
+    
+    // Agregar event listeners a los botones dentro del modal
+    setTimeout(() => {
+        const editBtn = document.getElementById('edit-from-details');
+        const deleteBtn = document.getElementById('delete-from-details');
+        
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                // Cerrar modal de detalles
+                const detailsModalElement = document.getElementById('vulnerabilityModal');
+                if (detailsModalElement && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(detailsModalElement);
+                    if (modal) modal.hide();
+                }
+                
+                // Abrir modal de edición
+                setTimeout(() => openEditModal(vuln.id), 300);
+            });
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                // Cerrar modal de detalles
+                const detailsModalElement = document.getElementById('vulnerabilityModal');
+                if (detailsModalElement && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(detailsModalElement);
+                    if (modal) modal.hide();
+                }
+                
+                // Eliminar
+                setTimeout(() => deleteVulnerability(vuln.id), 300);
+            });
+        }
+    }, 100);
     
     const modalElement = document.getElementById('vulnerabilityModal');
     if (modalElement && typeof bootstrap !== 'undefined') {
@@ -1951,4 +2023,200 @@ function setupThreatAgentSelect() {
             }
         });
     }
+}
+
+function openEditModal(id) {
+    const vuln = vulnerabilities.find(v => v.id === id);
+    if (!vuln) return;
+    
+    const modalBody = document.getElementById('edit-modal-body');
+    if (!modalBody) return;
+    
+    // Crear formulario de edición con todos los campos
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Editando: <strong>${vuln.name}</strong> (ID: ${vuln.id})
+                </div>
+            </div>
+        </div>
+        
+        <form id="edit-vulnerability-form">
+            <input type="hidden" id="edit-id" value="${vuln.id}">
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nombre de la Vulnerabilidad</label>
+                    <input type="text" class="form-control" id="edit-vulnerability-name" 
+                           value="${escapeHtml(vuln.name || '')}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">OWASP 2021</label>
+                    <select class="form-control" id="edit-owasp-category" required>
+                        <option value="">Seleccione categoría OWASP</option>
+                        ${owaspCategories.map(cat => 
+                            `<option value="${cat.split(' - ')[0]}" ${vuln.owasp === cat.split(' - ')[0] ? 'selected' : ''}>
+                                ${cat}
+                            </option>`
+                        ).join('')}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Host</label>
+                    <input type="text" class="form-control" id="edit-host" 
+                           value="${escapeHtml(vuln.host || '')}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Ruta Afectada</label>
+                    <input type="text" class="form-control" id="edit-ruta-afectada" 
+                           value="${escapeHtml(vuln.rutaAfectada || '')}" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">MITRE ID</label>
+                    <input type="text" class="form-control" id="edit-mitre-id" 
+                           value="${escapeHtml(vuln.mitre || '')}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Criticidad según Herramienta</label>
+                    <input type="text" class="form-control" id="edit-tool-criticity" 
+                           value="${escapeHtml(vuln.toolCriticity || '')}" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-control" id="edit-description" rows="3" required>${escapeHtml(vuln.description || '')}</textarea>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label">Recomendación</label>
+                    <textarea class="form-control" id="edit-recommendation" rows="3" required>${escapeHtml(vuln.recommendation || '')}</textarea>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <label class="form-label">Detalles Adicionales</label>
+                    <textarea class="form-control" id="edit-detail" rows="2">${escapeHtml(vuln.detail || '')}</textarea>
+                </div>
+            </div>
+            
+            <!-- Factores de Riesgo (opcional para edición rápida) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Nota:</strong> Para recalcular los factores de riesgo, edítalos en la pestaña "Calculadora" y guarda nuevamente.
+                    </div>
+                </div>
+            </div>
+        </form>
+    `;
+    
+    // Configurar botones del modal
+    const updateBtn = document.getElementById('update-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    
+    if (updateBtn) {
+        updateBtn.onclick = () => updateVulnerability(vuln.id);
+    }
+    
+    if (deleteBtn) {
+        deleteBtn.onclick = () => {
+            if (confirm(`¿Estás seguro de eliminar la vulnerabilidad "${vuln.name}"? Esta acción no se puede deshacer.`)) {
+                deleteVulnerability(vuln.id);
+                // Cerrar el modal después de eliminar
+                const modalElement = document.getElementById('editVulnerabilityModal');
+                if (modalElement && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) modal.hide();
+                }
+            }
+        };
+    }
+    
+    // Mostrar el modal
+    const modalElement = document.getElementById('editVulnerabilityModal');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+}
+
+function updateVulnerability(id) {
+    const vulnIndex = vulnerabilities.findIndex(v => v.id === id);
+    if (vulnIndex === -1) return;
+    
+    // Validar campos requeridos
+    const name = document.getElementById('edit-vulnerability-name')?.value.trim();
+    const host = document.getElementById('edit-host')?.value.trim();
+    const owasp = document.getElementById('edit-owasp-category')?.value;
+    const mitre = document.getElementById('edit-mitre-id')?.value.trim();
+    const description = document.getElementById('edit-description')?.value.trim();
+    const recommendation = document.getElementById('edit-recommendation')?.value.trim();
+    
+    if (!name || !host || !owasp || !mitre || !description || !recommendation) {
+        showNotification('Por favor, completa todos los campos requeridos', 'error');
+        return;
+    }
+    
+    // Actualizar los campos editables
+    vulnerabilities[vulnIndex] = {
+        ...vulnerabilities[vulnIndex],
+        name,
+        host,
+        owasp,
+        mitre,
+        description,
+        recommendation,
+        detail: document.getElementById('edit-detail')?.value.trim() || '',
+        rutaAfectada: document.getElementById('edit-ruta-afectada')?.value.trim() || '',
+        toolCriticity: document.getElementById('edit-tool-criticity')?.value.trim() || '',
+        lastUpdated: new Date().toISOString()
+    };
+    
+    // Guardar y actualizar
+    saveVulnerabilities();
+    renderVulnerabilitiesList();
+    updateDashboard();
+    
+    // Cerrar modal
+    const modalElement = document.getElementById('editVulnerabilityModal');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+    }
+    
+    showNotification(`Vulnerabilidad "${name}" actualizada correctamente`, 'success');
+}
+
+function deleteVulnerability(id) {
+    const vuln = vulnerabilities.find(v => v.id === id);
+    if (!vuln) return;
+    
+    if (confirm(`¿Estás seguro de eliminar la vulnerabilidad "${vuln.name}"?\n\nEsta acción no se puede deshacer.`)) {
+        vulnerabilities = vulnerabilities.filter(v => v.id !== id);
+        saveVulnerabilities();
+        renderVulnerabilitiesList();
+        updateDashboard();
+        
+        showNotification(`Vulnerabilidad "${vuln.name}" eliminada correctamente`, 'success');
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
