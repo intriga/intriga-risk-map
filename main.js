@@ -31,6 +31,7 @@ const categoryColors = [
     'rgba(210, 105, 30, 0.8)'    // A10 - Marrón
 ];
 
+
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Inicializando aplicación...');
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     loadVulnerabilities();
+    updateOldVulnerabilities();
 
     // Configurar el select de agente de amenazas
     setupThreatAgentSelect();  //
@@ -139,7 +141,7 @@ function calculateRisk() {
         // Obtener valores de los selects con valores por defecto
         const sl = parseFloat(document.getElementById('sl')?.value) || 1;
         const m = parseFloat(document.getElementById('m')?.value) || 1;
-        const o = parseFloat(document.getElementById('o')?.value) || 0;
+        const o = parseFloat(document.getElementById('opp')?.value) || 0;  // Cambiado de 'o' a 'opp'
         const s = parseFloat(document.getElementById('s')?.value) || 2;
         
         const lc = parseFloat(document.getElementById('lc')?.value) || 2;
@@ -150,7 +152,7 @@ function calculateRisk() {
         const ed = parseFloat(document.getElementById('ed')?.value) || 1;
         const ee = parseFloat(document.getElementById('ee')?.value) || 1;
         const a = parseFloat(document.getElementById('a')?.value) || 1;
-        const id = parseFloat(document.getElementById('id')?.value) || 1;
+        const id = parseFloat(document.getElementById('intrusion')?.value) || 1;  // Cambiado de 'id' a 'intrusion'
         
         const fd = parseFloat(document.getElementById('fd')?.value) || 1;
         const rd = parseFloat(document.getElementById('rd')?.value) || 1;
@@ -324,7 +326,7 @@ function validateRequiredFields() {
     const requiredSelects = [
         { id: 'sl', name: 'Nivel de habilidad' },
         { id: 'm', name: 'Motivo Economico del agente' },
-        { id: 'o', name: 'Oportunidad de Ataque' },
+        { id: 'opp', name: 'Oportunidad de Ataque' },  // Cambiado de 'o' a 'opp'
         { id: 's', name: 'Tamaño del Agente de Amenaza' },
         { id: 'lc', name: 'Pérdida de confidencialidad' },
         { id: 'li', name: 'Pérdida de integridad' },
@@ -333,7 +335,7 @@ function validateRequiredFields() {
         { id: 'ed', name: 'Facilidad de descubrimiento' },
         { id: 'ee', name: 'Facilidad de explotación' },
         { id: 'a', name: 'Conocimiento de la Vulnerabilidad' },
-        { id: 'id', name: 'Detección de intrusiones' },
+        { id: 'intrusion', name: 'Detección de intrusiones' },  // Cambiado de 'id' a 'intrusion'
         { id: 'fd', name: 'Daño financiero' },
         { id: 'rd', name: 'Daño a la reputación' },
         { id: 'nc', name: 'Incumplimiento' },
@@ -483,11 +485,45 @@ function saveVulnerability() {
         const riskData = calculateRisk();
         const formData = getFormData();
         
+        // Función para obtener valor seguro de factor
+        const getFactorValue = (id) => {
+            const element = document.getElementById(id);
+            if (element && element.value) {
+                return parseFloat(element.value);
+            }
+            return 0;
+        };
+        
         const vulnerability = {
             id: Date.now(),
             name: formData.name.trim(),
             ...riskData,
             ...formData,
+            // Guardar TODOS los valores individuales de factores
+            // Factores del Agente de Amenaza
+            sl: getFactorValue('sl'),
+            m: getFactorValue('m'),
+            o: getFactorValue('opp'),  // Oportunidad de Ataque
+            s: getFactorValue('s'),
+            
+            // Factores de Impacto Técnico
+            lc: getFactorValue('lc'),
+            li: getFactorValue('li'),
+            lav: getFactorValue('lav'),
+            lac: getFactorValue('lac'),
+            
+            // Factores de Vulnerabilidad
+            ed: getFactorValue('ed'),
+            ee: getFactorValue('ee'),
+            a: getFactorValue('a'),
+            intrusion: getFactorValue('intrusion'),  // Detección de intrusiones
+            
+            // Factores de Impacto de Negocio
+            fd: getFactorValue('fd'),
+            rd: getFactorValue('rd'),
+            nc: getFactorValue('nc'),
+            pv: getFactorValue('pv'),
+            
             date: new Date().toISOString()
         };
         
@@ -507,6 +543,7 @@ function saveVulnerability() {
     }
 }
 
+
 // ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
 function clearFormValidation() {
     // Limpiar TODOS los campos del formulario
@@ -518,8 +555,15 @@ function clearFormValidation() {
         // Textareas
         'detail', 'description', 'recommendation', 'mitre-detection', 'mitre-mitigation',
         // Selects
-        'owasp-category', 'sl', 'm', 'o', 's', 'lc', 'li', 'lav', 'lac',
-        'ed', 'ee', 'a', 'id', 'fd', 'rd', 'nc', 'pv'
+        'owasp-category', 
+        // Factores del Agente de Amenaza
+        'sl', 'm', 'opp', 's',
+        // Factores de Impacto Técnico
+        'lc', 'li', 'lav', 'lac',
+        // Factores de Vulnerabilidad
+        'ed', 'ee', 'a', 'intrusion',
+        // Factores de Impacto de Negocio
+        'fd', 'rd', 'nc', 'pv'
     ];
     
     allFormElements.forEach(id => {
@@ -541,26 +585,35 @@ function clearFormValidation() {
         }
     });
 
-     // Especial para el select de agente de amenazas
-     const threatAgentSelect = document.getElementById('threat-agent');
-     if (threatAgentSelect) {
-         threatAgentSelect.value = '';
-     }
-     
-     // Ocultar y limpiar el campo "Otro"
-     const otherContainer = document.getElementById('other-threat-agent-container');
-     const otherInput = document.getElementById('other-threat-agent');
-     if (otherContainer) {
-         otherContainer.style.display = 'none';
-     }
-     if (otherInput) {
-         otherInput.value = '';
-         otherInput.classList.remove('is-invalid', 'is-valid');
-         const errorDiv = otherInput.parentElement.querySelector('.invalid-feedback');
-         if (errorDiv) {
-             errorDiv.remove();
-         }
-     }
+    // Especial para el select de agente de amenazas
+    const threatAgentSelect = document.getElementById('threat-agent');
+    if (threatAgentSelect) {
+        threatAgentSelect.value = '';
+    }
+    
+    // Ocultar y limpiar el campo "Otro"
+    const otherContainer = document.getElementById('other-threat-agent-container');
+    const otherInput = document.getElementById('other-threat-agent');
+    if (otherContainer) {
+        otherContainer.style.display = 'none';
+    }
+    if (otherInput) {
+        otherInput.value = '';
+        otherInput.classList.remove('is-invalid', 'is-valid');
+        const errorDiv = otherInput.parentElement.querySelector('.invalid-feedback');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
+    }
+    
+    // Limpiar botones de edición si existen
+    const updateBtn = document.getElementById('update-current-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const saveBtn = document.getElementById('save-btn');
+
+    if (updateBtn) updateBtn.remove();
+    if (cancelBtn) cancelBtn.remove();
+    if (saveBtn) saveBtn.style.display = 'inline-block';
 }
 
 function getFormData() {
@@ -618,35 +671,85 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    // Ordenar por fecha (más reciente primero) o por ID
+    // Ordenar por fecha (más reciente primero)
     const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
     
     sortedVulnerabilities.forEach((vuln, index) => {
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
+        item.dataset.id = vuln.id;
+        
         item.innerHTML = `
             <div class="vulnerability-header">
                 <div class="vulnerability-number">${sortedVulnerabilities.length - index}</div>
                 <div class="vulnerability-content">
-                    <h5 class="mb-2">${vuln.name}</h5>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-start">
-                <div style="flex: 1;">
-                    <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
-                    <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
-                    <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
-                    <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
-                </div>
-                <div class="ms-3">
-                    <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div style="flex: 1;">
+                            <h5 class="mb-2">${vuln.name}</h5>
+                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
+                            <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
+                            <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
+                            <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                        </div>
+                        <div class="ms-3 text-end">
+                            <span class="risk-badge ${vuln.riskClass}-badge mb-2 d-inline-block">${vuln.riskLevel}</span>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info view-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-eye"></i> Ver
+                                </button>
+                                <button class="btn btn-outline-warning edit-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-outline-danger delete-btn" data-id="${vuln.id}">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
         
-        item.addEventListener('click', () => showVulnerabilityDetails(vuln.id));
         listElement.appendChild(item);
     });
+    
+    // Agregar event listeners a los botones
+    setTimeout(() => {
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                showVulnerabilityDetails(id);
+            });
+        });
+        
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                openEditModal(id);
+            });
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                deleteVulnerability(id);
+            });
+        });
+        
+        // Click en el item completo (ver detalles)
+        document.querySelectorAll('.vulnerability-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Solo si no se hizo click en un botón
+                if (!e.target.closest('.btn')) {
+                    const id = parseInt(item.dataset.id);
+                    showVulnerabilityDetails(id);
+                }
+            });
+        });
+    }, 100);
 }
 
 // ========== DASHBOARD ==========
@@ -1141,7 +1244,55 @@ function exportToWord() {
                             <td class="header-cell" style="font-weight: bold;">Estrategia de mitigación MITRE</td>
                             <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
                         </tr>
-                    </table>
+                                                <tr>
+                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Agente de Amenaza</td>
+                            <td colspan="2" class="data-cell">
+                                <strong>Nivel de habilidad:</strong> ${vuln.sl || 'N/A'}<br>
+                                <strong>Motivo Económico:</strong> ${vuln.m || 'N/A'}<br>
+                                <strong>Oportunidad de Ataque:</strong> ${vuln.o || 'N/A'}<br>
+                                <strong>Tamaño del Agente:</strong> ${vuln.s || 'N/A'}
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Impacto Técnico</td>
+                            <td colspan="2" class="data-cell">
+                                <strong>Pérdida de confidencialidad:</strong> ${vuln.lc || 'N/A'}<br>
+                                <strong>Pérdida de integridad:</strong> ${vuln.li || 'N/A'}<br>
+                                <strong>Impacto en disponibilidad:</strong> ${vuln.lav || 'N/A'}<br>
+                                <strong>Rastreabilidad del ataque:</strong> ${vuln.lac || 'N/A'}
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Vulnerabilidad</td>
+                            <td colspan="2" class="data-cell">
+                                <strong>Facilidad de descubrimiento:</strong> ${vuln.ed || 'N/A'}<br>
+                                <strong>Facilidad de explotación:</strong> ${vuln.ee || 'N/A'}<br>
+                                <strong>Conocimiento de vulnerabilidad:</strong> ${vuln.a || 'N/A'}<br>
+                                <strong>Detección de intrusiones:</strong> ${vuln.intrusion || vuln.id || 'N/A'}
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Impacto de Negocio</td>
+                            <td colspan="2" class="data-cell">
+                                <strong>Daño financiero:</strong> ${vuln.fd || 'N/A'}<br>
+                                <strong>Daño a reputación:</strong> ${vuln.rd || 'N/A'}<br>
+                                <strong>Incumplimiento:</strong> ${vuln.nc || 'N/A'}<br>
+                                <strong>Violación de privacidad:</strong> ${vuln.pv || 'N/A'}
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td class="header-cell" style="font-weight: bold;">Resumen de Riesgo</td>
+                            <td colspan="2" class="data-cell">
+                                <strong>Probabilidad calculada:</strong> ${vuln.likelihood ? vuln.likelihood.toFixed(2) : 'N/A'}<br>
+                                <strong>Impacto calculado:</strong> ${vuln.impact ? vuln.impact.toFixed(2) : 'N/A'}<br>
+                                <strong>Riesgo total:</strong> ${vuln.risk ? vuln.risk.toFixed(2) : 'N/A'} (${vuln.riskLevel || 'N/A'})
+                            </td>
+                        </tr>
+                    </table>                    
                     <br></br>
                 </div>
             `;
@@ -1764,8 +1915,8 @@ function showVulnerabilityDetails(id) {
     modalBody.innerHTML = `
         <div class="vulnerability-details">
             <div class="detail-item">
-                <div class="detail-label">Número</div>
-                <div class="detail-value">#${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
+                <div class="detail-label">ID</div>
+                <div class="detail-value">${vuln.id}</div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nombre</div>
@@ -1781,7 +1932,16 @@ function showVulnerabilityDetails(id) {
             </div>
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
-                <div class="detail-value"><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> (${vuln.risk.toFixed(2)})</div>
+                <div class="detail-value">
+                    <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> 
+                    (${vuln.risk.toFixed(2)})
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Probabilidad/Impacto</div>
+                <div class="detail-value">
+                    Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)}
+                </div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">OWASP 2021</div>
@@ -1792,34 +1952,6 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Criticidad según Herramienta</div>
-                <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Agente de Amenazas</div>
-                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
-                <div class="detail-value">${vuln.attackVector || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Debilidad de Seguridad</div>
-                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Controles de Seguridad</div>
-                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Impacto Técnico - Negocio</div>
-                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Detalle</div>
-                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
-            </div>
-            <div class="detail-item">
                 <div class="detail-label">Descripción</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
@@ -1828,23 +1960,64 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Detección MITRE</div>
-                <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
+                <div class="detail-label">Detalles</div>
+                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Mitigación MITRE</div>
-                <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
+                <div class="detail-label">Fecha Creación</div>
+                <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
             </div>
+            ${vuln.lastUpdated ? `
             <div class="detail-item">
-                <div class="detail-label">Métricas de Riesgo</div>
-                <div class="detail-value">
-                    <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)}<br>
-                    <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}<br>
-                    <strong>Riesgo Total:</strong> ${vuln.risk.toFixed(2)}
-                </div>
+                <div class="detail-label">Última Actualización</div>
+                <div class="detail-value">${new Date(vuln.lastUpdated).toLocaleString()}</div>
             </div>
+            ` : ''}
+        </div>
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-warning me-2" id="edit-from-details" data-id="${vuln.id}">
+                <i class="bi bi-pencil"></i> Editar esta Vulnerabilidad
+            </button>
+            <button class="btn btn-danger" id="delete-from-details" data-id="${vuln.id}">
+                <i class="bi bi-trash"></i> Eliminar
+            </button>
         </div>
     `;
+    
+    // Agregar event listeners a los botones dentro del modal
+    setTimeout(() => {
+        const editBtn = document.getElementById('edit-from-details');
+        const deleteBtn = document.getElementById('delete-from-details');
+        
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                // Cerrar modal de detalles
+                const detailsModalElement = document.getElementById('vulnerabilityModal');
+                if (detailsModalElement && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(detailsModalElement);
+                    if (modal) modal.hide();
+                }
+                
+                // Abrir modal de edición
+                setTimeout(() => openEditModal(vuln.id), 300);
+            });
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                // Cerrar modal de detalles
+                const detailsModalElement = document.getElementById('vulnerabilityModal');
+                if (detailsModalElement && typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(detailsModalElement);
+                    if (modal) modal.hide();
+                }
+                
+                // Eliminar
+                setTimeout(() => deleteVulnerability(vuln.id), 300);
+            });
+        }
+    }, 100);
     
     const modalElement = document.getElementById('vulnerabilityModal');
     if (modalElement && typeof bootstrap !== 'undefined') {
@@ -1891,19 +2064,103 @@ function saveVulnerabilities() {
     }
 }
 
+
 function loadVulnerabilities() {
     try {
         const saved = localStorage.getItem('owaspVulnerabilities');
         if (saved) {
             vulnerabilities = JSON.parse(saved);
+            
+            // Asegurar compatibilidad con vulnerabilidades antiguas
+            vulnerabilities = vulnerabilities.map(vuln => {
+                // Para compatibilidad con vulnerabilidades guardadas antes de tener factores individuales
+                return {
+                    // Valores por defecto para factores si no existen
+                    // Factores del Agente de Amenaza
+                    sl: vuln.sl !== undefined ? vuln.sl : 1,
+                    m: vuln.m !== undefined ? vuln.m : 1,
+                    o: vuln.o !== undefined ? vuln.o : 0,  // Oportunidad de Ataque por defecto 0
+                    s: vuln.s !== undefined ? vuln.s : 2,
+                    
+                    // Factores de Impacto Técnico
+                    lc: vuln.lc !== undefined ? vuln.lc : 2,
+                    li: vuln.li !== undefined ? vuln.li : 1,
+                    lav: vuln.lav !== undefined ? vuln.lav : 1,
+                    lac: vuln.lac !== undefined ? vuln.lac : 1,
+                    
+                    // Factores de Vulnerabilidad
+                    ed: vuln.ed !== undefined ? vuln.ed : 1,
+                    ee: vuln.ee !== undefined ? vuln.ee : 1,
+                    a: vuln.a !== undefined ? vuln.a : 1,
+                    // Compatibilidad con 'intrusion' y 'id' antiguo
+                    intrusion: vuln.intrusion !== undefined ? vuln.intrusion : 
+                              (vuln.id !== undefined && typeof vuln.id === 'number' ? vuln.id : 1),
+                    
+                    // Factores de Impacto de Negocio
+                    fd: vuln.fd !== undefined ? vuln.fd : 1,
+                    rd: vuln.rd !== undefined ? vuln.rd : 1,
+                    nc: vuln.nc !== undefined ? vuln.nc : 2,
+                    pv: vuln.pv !== undefined ? vuln.pv : 3,
+                    
+                    // Mantener todos los demás campos
+                    id: vuln.id,
+                    name: vuln.name,
+                    likelihood: vuln.likelihood || 0,
+                    impact: vuln.impact || 0,
+                    risk: vuln.risk || 0,
+                    riskLevel: vuln.riskLevel || 'INFORMATIVO',
+                    riskClass: vuln.riskClass || 'risk-info',
+                    
+                    // Información general
+                    host: vuln.host || '',
+                    rutaAfectada: vuln.rutaAfectada || '',
+                    owasp: vuln.owasp || '',
+                    mitre: vuln.mitre || '',
+                    toolCriticity: vuln.toolCriticity || '',
+                    
+                    // Información adicional
+                    threatAgent: vuln.threatAgent || '',
+                    attackVector: vuln.attackVector || '',
+                    securityWeakness: vuln.securityWeakness || '',
+                    securityControls: vuln.securityControls || '',
+                    technicalBusinessImpact: vuln.technicalBusinessImpact || '',
+                    detail: vuln.detail || '',
+                    description: vuln.description || '',
+                    recommendation: vuln.recommendation || '',
+                    mitreDetection: vuln.mitreDetection || '',
+                    mitreMitigation: vuln.mitreMitigation || '',
+                    
+                    // Fechas
+                    date: vuln.date || new Date().toISOString(),
+                    lastUpdated: vuln.lastUpdated
+                };
+            });
+            
+            console.log(`Cargadas ${vulnerabilities.length} vulnerabilidades`);
+            console.log('Primera vulnerabilidad cargada:', vulnerabilities.length > 0 ? {
+                nombre: vulnerabilities[0].name,
+                o: vulnerabilities[0].o,
+                intrusion: vulnerabilities[0].intrusion,
+                sl: vulnerabilities[0].sl,
+                m: vulnerabilities[0].m,
+                s: vulnerabilities[0].s
+            } : 'No hay vulnerabilidades');
+            
             renderVulnerabilitiesList();
             updateDashboard();
+            
+        } else {
+            console.log('No hay vulnerabilidades guardadas');
+            vulnerabilities = [];
         }
     } catch (error) {
         console.error('Error cargando vulnerabilidades:', error);
+        showNotification('Error al cargar las vulnerabilidades guardadas', 'error');
         vulnerabilities = [];
     }
 }
+
+
 // ========== MANEJO DEL SELECT "AGENTE DE AMENAZAS" ==========
 function setupThreatAgentSelect() {
     const threatAgentSelect = document.getElementById('threat-agent');
@@ -1950,5 +2207,449 @@ function setupThreatAgentSelect() {
                 }
             }
         });
+    }
+}
+
+function openEditModal(id) {
+    const vuln = vulnerabilities.find(v => v.id === id);
+    if (!vuln) return;
+    
+    // Cambiar a la pestaña de Calculadora
+    const calculatorTab = document.getElementById('calculator-tab');
+    if (calculatorTab && calculatorTab.click) {
+        calculatorTab.click();
+    }
+    
+    // Desplazar al inicio del formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Función para establecer valores seguros con mejor manejo de valores por defecto
+    function setValue(id, value, defaultValue = '') {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.tagName === 'SELECT') {
+                // Para selects, convertir valor a string
+                const stringValue = value !== undefined && value !== null ? value.toString() : defaultValue.toString();
+                element.value = stringValue;
+            } else {
+                element.value = value !== undefined && value !== null ? value : defaultValue;
+            }
+        }
+    }
+    
+    // Función para establecer valor en textarea
+    function setTextarea(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = value || '';
+        }
+    }
+    
+    // Cargar información general
+    setValue('vulnerability-name', vuln.name);
+    setValue('host', vuln.host);
+    setValue('ruta-afectada', vuln.rutaAfectada);
+    setValue('owasp-category', vuln.owasp);
+    setValue('mitre-id', vuln.mitre);
+    setValue('tool-criticity', vuln.toolCriticity);
+    
+    // Información adicional
+    setValue('threat-agent', vuln.threatAgent);
+    setValue('attack-vector', vuln.attackVector);
+    setTextarea('security-weakness', vuln.securityWeakness);
+    setTextarea('security-controls', vuln.securityControls);
+    setTextarea('technical-business-impact', vuln.technicalBusinessImpact);
+    setTextarea('detail', vuln.detail);
+    setTextarea('description', vuln.description);
+    setTextarea('recommendation', vuln.recommendation);
+    setTextarea('mitre-detection', vuln.mitreDetection);
+    setTextarea('mitre-mitigation', vuln.mitreMitigation);
+    
+    // VALORES POR DEFECTO PARA FACTORES DE RIESGO
+    // Estos son los valores predeterminados que usa la calculadora cuando está vacía
+    
+    // Factores del Agente de Amenaza
+    setValue('sl', vuln.sl, 1);        // Valor por defecto: 1
+    setValue('m', vuln.m, 1);          // Valor por defecto: 1
+    setValue('opp', vuln.o, 0);        // Oportunidad de Ataque - Valor por defecto: 0
+    setValue('s', vuln.s, 2);          // Valor por defecto: 2
+    
+    // Factores de Impacto Técnico
+    setValue('lc', vuln.lc, 2);        // Valor por defecto: 2
+    setValue('li', vuln.li, 1);        // Valor por defecto: 1
+    setValue('lav', vuln.lav, 1);      // Valor por defecto: 1
+    setValue('lac', vuln.lac, 1);      // Valor por defecto: 1
+    
+    // Factores de Vulnerabilidad
+    setValue('ed', vuln.ed, 1);        // Valor por defecto: 1
+    setValue('ee', vuln.ee, 1);        // Valor por defecto: 1
+    setValue('a', vuln.a, 1);          // Valor por defecto: 1
+    setValue('intrusion', vuln.intrusion || vuln.id, 1);  // Valor por defecto: 1
+    
+    // Factores de Impacto de Negocio
+    setValue('fd', vuln.fd, 1);        // Valor por defecto: 1
+    setValue('rd', vuln.rd, 1);        // Valor por defecto: 1
+    setValue('nc', vuln.nc, 2);        // Valor por defecto: 2
+    setValue('pv', vuln.pv, 3);        // Valor por defecto: 3
+    
+    // Configurar botón de guardar para actualizar
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+        // Crear un nuevo botón para actualizar
+        const updateBtn = document.createElement('button');
+        updateBtn.className = 'btn btn-warning btn-lg';
+        updateBtn.id = 'update-current-btn';
+        updateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizar Vulnerabilidad';
+        updateBtn.style.marginLeft = '10px';
+        
+        // Reemplazar el botón de guardar temporalmente
+        saveBtn.style.display = 'none';
+        saveBtn.parentNode.insertBefore(updateBtn, saveBtn.nextSibling);
+        
+        // Evento para actualizar
+        updateBtn.onclick = function() {
+            updateVulnerabilityInCalculator(vuln.id);
+        };
+        
+        // Botón para cancelar edición
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-secondary btn-lg';
+        cancelBtn.id = 'cancel-edit-btn';
+        cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar Edición';
+        cancelBtn.style.marginLeft = '10px';
+        
+        updateBtn.parentNode.insertBefore(cancelBtn, updateBtn.nextSibling);
+        
+        cancelBtn.onclick = function() {
+            // Restaurar botón original
+            saveBtn.style.display = 'inline-block';
+            updateBtn.remove();
+            cancelBtn.remove();
+            
+            // Limpiar formulario
+            clearFormValidation();
+            
+            // Mostrar notificación
+            showNotification('Edición cancelada', 'info');
+        };
+    }
+    
+    // Mostrar notificación
+    showNotification(`Editando: ${vuln.name}. Los cambios se guardarán al hacer clic en "Actualizar Vulnerabilidad".`, 'info');
+    
+    // Recalcular riesgo automáticamente con los nuevos valores
+    setTimeout(calculateRisk, 100);
+}
+
+function updateVulnerabilityInCalculator(id) {
+    const vulnIndex = vulnerabilities.findIndex(v => v.id === id);
+    if (vulnIndex === -1) return;
+    
+    try {
+        // Validar TODOS los campos obligatorios
+        if (!validateRequiredFields()) {
+            return; // Detener si hay campos vacíos
+        }
+        
+        // Calcular nuevos valores de riesgo
+        const riskData = calculateRisk();
+        const formData = getFormData();
+        
+        // Función para obtener valor seguro de factor
+        const getFactorValue = (id) => {
+            const element = document.getElementById(id);
+            if (element && element.value) {
+                return parseFloat(element.value);
+            }
+            return 0;
+        };
+        
+        // Actualizar vulnerabilidad con TODOS los factores
+        vulnerabilities[vulnIndex] = {
+            ...vulnerabilities[vulnIndex],
+            ...riskData,
+            ...formData,
+            id: id, // Mantener el mismo ID
+            
+            // Actualizar TODOS los valores individuales de factores
+            // Factores del Agente de Amenaza
+            sl: getFactorValue('sl'),
+            m: getFactorValue('m'),
+            o: getFactorValue('opp'),  // Oportunidad de Ataque
+            s: getFactorValue('s'),
+            
+            // Factores de Impacto Técnico
+            lc: getFactorValue('lc'),
+            li: getFactorValue('li'),
+            lav: getFactorValue('lav'),
+            lac: getFactorValue('lac'),
+            
+            // Factores de Vulnerabilidad
+            ed: getFactorValue('ed'),
+            ee: getFactorValue('ee'),
+            a: getFactorValue('a'),
+            intrusion: getFactorValue('intrusion'),  // Detección de intrusiones
+            
+            // Factores de Impacto de Negocio
+            fd: getFactorValue('fd'),
+            rd: getFactorValue('rd'),
+            nc: getFactorValue('nc'),
+            pv: getFactorValue('pv'),
+            
+            lastUpdated: new Date().toISOString(),
+            date: vulnerabilities[vulnIndex].date // Mantener fecha original
+        };
+        
+        // Guardar y actualizar
+        saveVulnerabilities();
+        renderVulnerabilitiesList();
+        updateDashboard();
+        
+        // Restaurar botón original
+        const saveBtn = document.getElementById('save-btn');
+        const updateBtn = document.getElementById('update-current-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        
+        if (saveBtn) saveBtn.style.display = 'inline-block';
+        if (updateBtn) updateBtn.remove();
+        if (cancelBtn) cancelBtn.remove();
+        
+        // Mostrar notificación
+        showNotification(`Vulnerabilidad "${formData.name}" actualizada correctamente`, 'success');
+        
+        // Limpiar formulario después de actualizar
+        setTimeout(() => {
+            clearFormValidation();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error actualizando vulnerabilidad:', error);
+        showNotification('Error al actualizar la vulnerabilidad', 'error');
+    }
+}
+
+function updateVulnerability(id) {
+    const vulnIndex = vulnerabilities.findIndex(v => v.id === id);
+    if (vulnIndex === -1) return;
+    
+    // Validar campos requeridos
+    const name = document.getElementById('edit-vulnerability-name')?.value.trim();
+    const host = document.getElementById('edit-host')?.value.trim();
+    const owasp = document.getElementById('edit-owasp-category')?.value;
+    const mitre = document.getElementById('edit-mitre-id')?.value.trim();
+    const description = document.getElementById('edit-description')?.value.trim();
+    const recommendation = document.getElementById('edit-recommendation')?.value.trim();
+    
+    if (!name || !host || !owasp || !mitre || !description || !recommendation) {
+        showNotification('Por favor, completa todos los campos requeridos', 'error');
+        return;
+    }
+    
+    // Actualizar los campos editables
+    vulnerabilities[vulnIndex] = {
+        ...vulnerabilities[vulnIndex],
+        name,
+        host,
+        owasp,
+        mitre,
+        description,
+        recommendation,
+        detail: document.getElementById('edit-detail')?.value.trim() || '',
+        rutaAfectada: document.getElementById('edit-ruta-afectada')?.value.trim() || '',
+        toolCriticity: document.getElementById('edit-tool-criticity')?.value.trim() || '',
+        lastUpdated: new Date().toISOString()
+    };
+    
+    // Guardar y actualizar
+    saveVulnerabilities();
+    renderVulnerabilitiesList();
+    updateDashboard();
+    
+    // Cerrar modal
+    const modalElement = document.getElementById('editVulnerabilityModal');
+    if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+    }
+    
+    showNotification(`Vulnerabilidad "${name}" actualizada correctamente`, 'success');
+}
+
+function deleteVulnerability(id) {
+    const vuln = vulnerabilities.find(v => v.id === id);
+    if (!vuln) return;
+    
+    if (confirm(`¿Estás seguro de eliminar la vulnerabilidad "${vuln.name}"?\n\nEsta acción no se puede deshacer.`)) {
+        vulnerabilities = vulnerabilities.filter(v => v.id !== id);
+        saveVulnerabilities();
+        renderVulnerabilitiesList();
+        updateDashboard();
+        
+        showNotification(`Vulnerabilidad "${vuln.name}" eliminada correctamente`, 'success');
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function repairAllVulnerabilities() {
+    if (vulnerabilities.length === 0) {
+        showNotification('No hay vulnerabilidades para reparar', 'info');
+        return;
+    }
+    
+    const originalCount = vulnerabilities.length;
+    
+    vulnerabilities = vulnerabilities.map((vuln, index) => {
+        console.log(`Reparando vulnerabilidad ${index + 1}: ${vuln.name || 'Sin nombre'}`);
+        
+        return {
+            // Campos de factores con valores por defecto
+            sl: vuln.sl || 1,
+            m: vuln.m || 1,
+            o: vuln.o || 0,  // Este es el importante - Oportunidad de Ataque
+            s: vuln.s || 2,
+            lc: vuln.lc || 2,
+            li: vuln.li || 1,
+            lav: vuln.lav || 1,
+            lac: vuln.lac || 1,
+            ed: vuln.ed || 1,
+            ee: vuln.ee || 1,
+            a: vuln.a || 1,
+            intrusion: vuln.intrusion || (typeof vuln.id === 'number' ? vuln.id : 1),
+            fd: vuln.fd || 1,
+            rd: vuln.rd || 1,
+            nc: vuln.nc || 2,
+            pv: vuln.pv || 3,
+            
+            // Mantener todos los demás campos
+            id: vuln.id,
+            name: vuln.name,
+            likelihood: vuln.likelihood,
+            impact: vuln.impact,
+            risk: vuln.risk,
+            riskLevel: vuln.riskLevel,
+            riskClass: vuln.riskClass,
+            host: vuln.host,
+            rutaAfectada: vuln.rutaAfectada,
+            owasp: vuln.owasp,
+            mitre: vuln.mitre,
+            toolCriticity: vuln.toolCriticity,
+            threatAgent: vuln.threatAgent,
+            attackVector: vuln.attackVector,
+            securityWeakness: vuln.securityWeakness,
+            securityControls: vuln.securityControls,
+            technicalBusinessImpact: vuln.technicalBusinessImpact,
+            detail: vuln.detail,
+            description: vuln.description,
+            recommendation: vuln.recommendation,
+            mitreDetection: vuln.mitreDetection,
+            mitreMitigation: vuln.mitreMitigation,
+            date: vuln.date,
+            lastUpdated: vuln.lastUpdated || new Date().toISOString()
+        };
+    });
+    
+    saveVulnerabilities();
+    renderVulnerabilitiesList();
+    updateDashboard();
+    
+    showNotification(`${originalCount} vulnerabilidades reparadas con valores por defecto`, 'success');
+}
+
+function updateOldVulnerabilities() {
+    if (vulnerabilities.length === 0) {
+        console.log('No hay vulnerabilidades para actualizar');
+        return;
+    }
+    
+    let updatedCount = 0;
+    
+    vulnerabilities = vulnerabilities.map(vuln => {
+        // Verificar si es una vulnerabilidad antigua
+        const needsUpdate = (
+            vuln.sl === undefined || 
+            vuln.o === undefined || 
+            vuln.intrusion === undefined
+        );
+        
+        if (!needsUpdate) {
+            return vuln; // Ya está actualizada
+        }
+        
+        updatedCount++;
+        
+        // Crear un nuevo objeto manualmente
+        return {
+            // Campos básicos (siempre deben existir)
+            id: vuln.id,
+            name: vuln.name,
+            date: vuln.date,
+            
+            // Campos de riesgo calculado
+            likelihood: vuln.likelihood || 0,
+            impact: vuln.impact || 0,
+            risk: vuln.risk || 0,
+            riskLevel: vuln.riskLevel || 'INFORMATIVO',
+            riskClass: vuln.riskClass || 'risk-info',
+            
+            // Información general
+            host: vuln.host || '',
+            rutaAfectada: vuln.rutaAfectada || '',
+            owasp: vuln.owasp || '',
+            mitre: vuln.mitre || '',
+            toolCriticity: vuln.toolCriticity || '',
+            
+            // Información adicional
+            threatAgent: vuln.threatAgent || '',
+            attackVector: vuln.attackVector || '',
+            securityWeakness: vuln.securityWeakness || '',
+            securityControls: vuln.securityControls || '',
+            technicalBusinessImpact: vuln.technicalBusinessImpact || '',
+            detail: vuln.detail || '',
+            description: vuln.description || '',
+            recommendation: vuln.recommendation || '',
+            mitreDetection: vuln.mitreDetection || '',
+            mitreMitigation: vuln.mitreMitigation || '',
+            lastUpdated: vuln.lastUpdated || new Date().toISOString(),
+            
+            // FACTORES DE RIESGO (los que estamos agregando)
+            // Factores del Agente de Amenaza
+            sl: vuln.sl !== undefined ? vuln.sl : 1,
+            m: vuln.m !== undefined ? vuln.m : 1,
+            o: vuln.o !== undefined ? vuln.o : 0,  // Oportunidad de Ataque
+            s: vuln.s !== undefined ? vuln.s : 2,
+            
+            // Factores de Impacto Técnico
+            lc: vuln.lc !== undefined ? vuln.lc : 2,
+            li: vuln.li !== undefined ? vuln.li : 1,
+            lav: vuln.lav !== undefined ? vuln.lav : 1,
+            lac: vuln.lac !== undefined ? vuln.lac : 1,
+            
+            // Factores de Vulnerabilidad
+            ed: vuln.ed !== undefined ? vuln.ed : 1,
+            ee: vuln.ee !== undefined ? vuln.ee : 1,
+            a: vuln.a !== undefined ? vuln.a : 1,
+            intrusion: vuln.intrusion !== undefined ? vuln.intrusion : 
+                      (vuln.id !== undefined && typeof vuln.id === 'number' ? vuln.id : 1),
+            
+            // Factores de Impacto de Negocio
+            fd: vuln.fd !== undefined ? vuln.fd : 1,
+            rd: vuln.rd !== undefined ? vuln.rd : 1,
+            nc: vuln.nc !== undefined ? vuln.nc : 2,
+            pv: vuln.pv !== undefined ? vuln.pv : 3
+        };
+    });
+    
+    if (updatedCount > 0) {
+        console.log(`Actualizadas ${updatedCount} vulnerabilidades antiguas`);
+        saveVulnerabilities();
+        renderVulnerabilitiesList();
+        updateDashboard();
+        showNotification(`${updatedCount} vulnerabilidades actualizadas`, 'success');
     }
 }
