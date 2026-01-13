@@ -1914,59 +1914,130 @@ function showVulnerabilityDetails(id) {
     
     modalBody.innerHTML = `
         <div class="vulnerability-details">
+            <!-- Encabezado con Número e ID -->
+            <div class="detail-item">
+                <div class="detail-label">Número</div>
+                <div class="detail-value">${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
+            </div>
+            
             <div class="detail-item">
                 <div class="detail-label">ID</div>
                 <div class="detail-value">${vuln.id}</div>
             </div>
+            
+            <!-- Información General -->
             <div class="detail-item">
-                <div class="detail-label">Nombre</div>
-                <div class="detail-value">${vuln.name}</div>
+                <div class="detail-label">Nombre de la Vulnerabilidad</div>
+                <div class="detail-value">${vuln.name || 'No especificado'}</div>
             </div>
+            
             <div class="detail-item">
                 <div class="detail-label">Host</div>
                 <div class="detail-value">${vuln.host || 'No especificado'}</div>
             </div>
+            
             <div class="detail-item">
                 <div class="detail-label">Ruta Afectada</div>
                 <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
+            
+            <!-- Información de Riesgo -->
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
                 <div class="detail-value">
                     <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> 
-                    (${vuln.risk.toFixed(2)})
+                    (${vuln.risk ? vuln.risk.toFixed(2) : '0.00'})
                 </div>
             </div>
-            <div class="detail-item">
-                <div class="detail-label">Probabilidad/Impacto</div>
-                <div class="detail-value">
-                    Probabilidad: ${vuln.likelihood.toFixed(2)} | Impacto: ${vuln.impact.toFixed(2)}
-                </div>
-            </div>
+            
+            <!-- Información OWASP/MITRE -->
             <div class="detail-item">
                 <div class="detail-label">OWASP 2021</div>
                 <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
             </div>
+            
             <div class="detail-item">
                 <div class="detail-label">MITRE ID</div>
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
             </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Criticidad según Herramienta</div>
+                <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
+            </div>
+            
+            <!-- Información de Amenazas -->
+            <div class="detail-item">
+                <div class="detail-label">Agente de Amenazas</div>
+                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Vector de Ataque</div>
+                <div class="detail-value">${vuln.attackVector || 'No especificado'}</div>
+            </div>
+            
+            <!-- Análisis de Seguridad -->
+            <div class="detail-item">
+                <div class="detail-label">Debilidad de Seguridad</div>
+                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Controles de Seguridad</div>
+                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Impacto Técnico - Negocio</div>
+                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
+            </div>
+            
+            <!-- Detalles y Descripción -->
+            <div class="detail-item">
+                <div class="detail-label">Detalle</div>
+                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
+            </div>
+            
             <div class="detail-item">
                 <div class="detail-label">Descripción</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
+            
+            <!-- Recomendaciones -->
             <div class="detail-item">
                 <div class="detail-label">Recomendación</div>
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
+            
+            <!-- Estrategias MITRE -->
             <div class="detail-item">
-                <div class="detail-label">Detalles</div>
-                <div class="detail-value">${vuln.detail || 'No especificado'}</div>
+                <div class="detail-label">Estrategia de Detección MITRE</div>
+                <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
             </div>
+            
             <div class="detail-item">
-                <div class="detail-label">Fecha Creación</div>
+                <div class="detail-label">Estrategia de Mitigación MITRE</div>
+                <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
+            </div>
+            
+            <!-- Factores de Riesgo (Opcional) -->
+            <div class="detail-item">
+                <div class="detail-label">Probabilidad Calculada</div>
+                <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Impacto Calculado</div>
+                <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
+            </div>
+            
+            <!-- Fechas -->
+            <div class="detail-item">
+                <div class="detail-label">Fecha de Creación</div>
                 <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
             </div>
+            
             ${vuln.lastUpdated ? `
             <div class="detail-item">
                 <div class="detail-label">Última Actualización</div>
@@ -1975,6 +2046,7 @@ function showVulnerabilityDetails(id) {
             ` : ''}
         </div>
         
+        <!-- Botones de Acción -->
         <div class="text-center mt-4">
             <button class="btn btn-warning me-2" id="edit-from-details" data-id="${vuln.id}">
                 <i class="bi bi-pencil"></i> Editar esta Vulnerabilidad
