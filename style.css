@@ -195,11 +195,47 @@ section {
     margin-bottom: 15px;
 }
 
+/* Mejorar el espacio para el texto central del gráfico */
 .chart-container {
     position: relative;
-    height: 300px;
-    width: 100%;
-    margin: 0 auto;
+    min-height: 350px;
+}
+
+/* Asegurar que el canvas ocupe todo el espacio */
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Estilos para el texto central (si usas overlay HTML) */
+.chart-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.chart-center-text .total-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.chart-center-text .total-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-color);
+    display: inline-block;
+}
+
+[data-theme="dark"] .chart-center-text .total-number {
+    color: #3498db;
 }
 
 .summary {
@@ -671,3 +707,136 @@ textarea.form-control.is-invalid {
 [data-theme="dark"] .modal-body::-webkit-scrollbar-thumb:hover {
     background: var(--secondary-color);
 }
+
+/* Estilos para gráfico con texto central */
+.chart-container {
+    position: relative;
+}
+
+.chart-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.chart-total {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.chart-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+/* Ajustar tamaño del gráfico para tema oscuro */
+[data-theme="dark"] .chart-total {
+    color: #3498db;
+}
+
+/* ESTILOS SIMPLIFICADOS PARA LA LEYENDA DEL GRÁFICO */
+
+.chartjs-legend {
+    margin-top: 15px !important;
+}
+
+.chartjs-legend .legend-item {
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 8px !important; /* Reducido */
+    font-size: 13px !important; /* REDUCIDO de 15 a 13 */
+    font-weight: normal !important; /* CAMBIADO de 600 a normal */
+}
+
+.chartjs-legend .legend-text {
+    font-size: 13px !important; /* REDUCIDO de 15 a 13 */
+    font-weight: normal !important; /* CAMBIADO de 600 a normal */
+    color: var(--text-color) !important;
+    margin-left: 8px !important; /* Reducido */
+}
+
+/* Puntos de la leyenda más pequeños */
+.chartjs-legend .legend-marker {
+    width: 12px !important; /* Reducido de 16 */
+    height: 12px !important; /* Reducido de 16 */
+    border-radius: 50% !important;
+    margin-right: 8px !important; /* Reducido de 12 */
+    border: 1px solid rgba(255, 255, 255, 0.8) !important; /* Borde más delgado */
+}
+
+/* Quitar estilos de sombra y efectos especiales */
+.chartjs-legend {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+/* Quitar los estilos específicos por nivel de riesgo que tenían shadow */
+.legend-critico .legend-text,
+.legend-alto .legend-text,
+.legend-medio .legend-text,
+.legend-bajo .legend-text,
+.legend-informativo .legend-text {
+    text-shadow: none !important;
+    font-weight: normal !important; /* Asegurar que sea normal */
+}
+
+/* Simplificar contenedor del gráfico */
+.card-body .chart-container {
+    min-height: 350px !important; /* Reducido de 400px */
+    padding: 15px !important; /* Reducido de 20px */
+}
+
+/* Quitar el título del chart que mencionabas */
+.chart-title {
+    display: none !important; /* OCULTAR el título */
+}
+/* Estilos para el texto "Total" en el centro del gráfico */
+.chart-center-total {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Asegurar que el canvas tenga posición relativa para superponer texto */
+.chart-container {
+    position: relative;
+}
+
+/* Texto superpuesto sobre el gráfico */
+.chart-total-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.chart-total-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 2px;
+    opacity: 0.9;
+}
+
+.chart-total-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+[data-theme="dark"] .chart-total-value {
+    color: #3498db;
+}
+

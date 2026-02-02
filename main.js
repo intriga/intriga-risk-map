@@ -31,8 +31,6 @@ const categoryColors = [
     'rgba(210, 105, 30, 0.8)'    // A10 - Marrón
 ];
 
-
-
 // ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
 
 function getSkillLevelText(value) {
@@ -216,6 +214,50 @@ function getViolacionPrivacidadText(value) {
     return options[value] || 'No especificado';
 }
 
+// ========== FUNCIÓN PARA DIBUJAR "TOTAL" EN EL CENTRO DEL GRÁFICO ==========
+// Función para dibujar "Total: X" en el centro del gráfico (MISMO ESTILO PARA TODO)
+function drawTotalInCenter(canvasElement, total) {
+    if (!canvasElement) return;
+    
+    const ctx = canvasElement.getContext('2d');
+    if (!ctx) return;
+    
+    const centerX = canvasElement.width / 2;
+    const centerY = canvasElement.height / 2;
+    
+    // Limpiar área central
+    const radius = 45;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.clearRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+    ctx.restore();
+    
+    // MISMO COLOR - Gris oscuro en tema claro, Gris claro en tema oscuro
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDarkTheme ? '#e0e0e0' : '#333';
+    
+    // Guardar estado del contexto
+    ctx.save();
+    
+    // CONFIGURACIÓN ÚNICA - TODO EN UN SOLO TEXTO
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+    
+    // MISMA FUENTE Y TAMAÑO PARA TODO - 24px, bold
+    ctx.font = 'bold 24px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
+    
+    // Texto completo
+    const fullText = `Total: ${total}`;
+    
+    // Dibujar todo de una vez - MISMO ESTILO
+    ctx.fillText(fullText, centerX, centerY);
+    
+    // Restaurar estado
+    ctx.restore();
+}
 
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
@@ -279,6 +321,73 @@ document.addEventListener('DOMContentLoaded', function() {
     
     setTimeout(calculateRisk, 100);
 
+    // ========== LISTENERS PARA ACTUALIZAR GRÁFICOS ==========
+    
+    // Redibujar texto "Total" cuando se cambie a la pestaña Dashboard
+    const dashboardTab = document.getElementById('dashboard-tab');
+    if (dashboardTab) {
+        dashboardTab.addEventListener('click', function() {
+            console.log('Cambiando a pestaña Dashboard...');
+            setTimeout(() => {
+                const total = vulnerabilities.length;
+                const canvas = document.getElementById('riskDistributionChart');
+                console.log('Canvas encontrado:', !!canvas, 'Chart instance:', !!riskDistributionChart);
+                
+                if (canvas && riskDistributionChart) {
+                    // Recalcular total desde los datos del chart
+                    const data = riskDistributionChart.data.datasets[0]?.data || [];
+                    const chartTotal = data.reduce((a, b) => a + b, 0);
+                    
+                    console.log('Redibujando texto Total:', chartTotal);
+                    drawTotalInCenter(canvas, chartTotal || total);
+                } else if (canvas) {
+                    // Si hay canvas pero no chart, dibujar igual
+                    console.log('Dibujando texto Total sin chart:', total);
+                    drawTotalInCenter(canvas, total);
+                }
+            }, 500);
+        });
+    }
+    
+    // También redibujar al cambiar de tema
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            setTimeout(() => {
+                if (riskDistributionChart) {
+                    const canvas = document.getElementById('riskDistributionChart');
+                    const data = riskDistributionChart.data.datasets[0]?.data || [];
+                    const chartTotal = data.reduce((a, b) => a + b, 0);
+                    
+                    if (canvas) {
+                        drawTotalInCenter(canvas, chartTotal);
+                    }
+                }
+            }, 300);
+        });
+    }
+    
+    // Redibujar al cambiar tamaño de ventana
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            if (riskDistributionChart) {
+                console.log('Redimensionando chart...');
+                riskDistributionChart.resize();
+                
+                const canvas = document.getElementById('riskDistributionChart');
+                const data = riskDistributionChart.data.datasets[0]?.data || [];
+                const chartTotal = data.reduce((a, b) => a + b, 0);
+                
+                if (canvas) {
+                    setTimeout(() => {
+                        drawTotalInCenter(canvas, chartTotal);
+                    }, 200);
+                }
+            }
+        }, 250);
+    });
+    
     console.log('Aplicación inicializada correctamente');
 });
 
@@ -962,6 +1071,16 @@ function updateDashboard() {
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
+        
+        // Forzar redibujado del texto "Total" después de actualizar
+        setTimeout(() => {
+            const total = vulnerabilities.length;
+            const canvas = document.getElementById('riskDistributionChart');
+            if (canvas) {
+                drawTotalInCenter(canvas, total);
+            }
+        }, 500);
+        
     } catch (error) {
         console.error('Error actualizando dashboard:', error);
     }
@@ -975,6 +1094,9 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
         const context = ctx.getContext('2d');
         
         if (riskDistributionChart) riskDistributionChart.destroy();
+        
+        // Calcular total
+        const total = critical + high + medium + low + info;
         
         riskDistributionChart = new Chart(context, {
             type: 'doughnut',
@@ -1002,18 +1124,96 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                backgroundColor: 'white', // Esto ayuda, pero la exportación final se fuerza en exportExecutiveReport
+                backgroundColor: 'white',
                 plugins: { 
                     legend: { 
                         position: 'bottom',
                         labels: {
-                            padding: 20,
-                            usePointStyle: true
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            pointRadius: 5,
+                            font: {
+                                size: 12,
+                                weight: 'normal',
+                                family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                            },
+                            color: 'var(--text-color)',
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    
+                                    return {
+                                        text: `${label}: ${value} (${percentage}%)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor[i],
+                                        lineWidth: 1,
+                                        hidden: false,
+                                        index: i,
+                                        fontColor: 'var(--text-color)',
+                                        fontSize: 12,
+                                        fontStyle: 'normal'
+                                    };
+                                });
+                            }
                         }
-                    } 
+                    },
+                    tooltip: {
+                        backgroundColor: 'var(--card-bg)',
+                        titleColor: 'var(--text-color)',
+                        bodyColor: 'var(--text-color)',
+                        borderColor: 'var(--border-color)',
+                        borderWidth: 1,
+                        titleFont: {
+                            size: 12,
+                            weight: 'normal'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%',
+                animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                    duration: 1000,
+                    easing: 'easeOutQuart',
+                    onComplete: function() {
+                        // ========== PUNTO 4: Dibujar texto "Total" después de la animación ==========
+                        setTimeout(() => {
+                            drawTotalInCenter(ctx, total);
+                        }, 100);
+                    }
                 }
             }
         });
+        
+        // ========== PUNTO 4: Asegurar dimensiones y dibujar inmediatamente ==========
+        setTimeout(() => {
+            // Asegurar que el canvas tenga las dimensiones correctas
+            if (ctx) {
+                ctx.canvas.style.width = '100%';
+                ctx.canvas.style.height = '100%';
+                
+                // Dibujar texto "Total" con estilo uniforme
+                drawTotalInCenter(ctx, total);
+            }
+        }, 300);
+        
     } catch (error) {
         console.error('Error actualizando gráfico de distribución:', error);
     }
@@ -1051,14 +1251,14 @@ function updateOwaspDistributionChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                backgroundColor: 'white', // Esto ayuda, pero la exportación final se fuerza en exportExecutiveReport
+                backgroundColor: 'white',
                 plugins: {
                     legend: { 
                         display: true, 
                         position: 'right', 
                         labels: {
                             font: {
-                                size: 14 // <-- Modificación anterior para tamaño de letra
+                                size: 14
                             },
                             filter: function (legendItem, data) {
                                 return data.datasets[0].data[legendItem.index] > 0;
@@ -1067,7 +1267,7 @@ function updateOwaspDistributionChart() {
                                 const data = chart.data;
                                 return data.labels.map((label, i) => {
                                     const count = data.datasets[0].data[i];
-                                    const categoryId = label.split(' - ')[0].trim(); // Obtiene "A01:2021"
+                                    const categoryId = label.split(' - ')[0].trim();
                                     
                                     if (count > 0) {
                                         return {
@@ -2097,7 +2297,7 @@ function showVulnerabilityDetails(id) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
-    // Convertir valores numéricos a texto
+    // Crear HTML para los factores de riesgo detallados
     const factoresHTML = `
         <!-- SECCIÓN DE FACTORES DE RIESGO -->
         <div class="detail-section">
@@ -2327,8 +2527,6 @@ function showVulnerabilityDetails(id) {
             </button>
         </div>
     `;
-    
-    // ... (el resto del código permanece igual)
     
     // Agregar event listeners a los botones dentro del modal
     setTimeout(() => {
