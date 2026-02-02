@@ -32,6 +32,191 @@ const categoryColors = [
 ];
 
 
+
+// ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
+
+function getSkillLevelText(value) {
+    const options = {
+        '1': 'Habilidades de penetración de seguridad',
+        '3': 'Habilidades de red y programación',
+        '5': 'Usuario avanzado de computadora',
+        '6': 'Algunas habilidades técnicas',
+        '8': 'Usuario básico de computadora',
+        '10': 'Sin habilidades técnicas'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getMotivoEconomicoText(value) {
+    const options = {
+        '1': 'Baja o ninguna recompensa',
+        '2': 'Recompensa moderadamente baja',
+        '4': 'Posible recompensa',
+        '6': 'Recompensa significativa',
+        '8': 'Alto incentivo económico',
+        '10': 'Alta recompensa'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getOportunidadAtaqueText(value) {
+    const options = {
+        '1': 'Acceso completo o recursos requeridos',
+        '4': 'Acceso especial o recursos requeridos',
+        '7': 'Algún acceso o recursos requeridos',
+        '8': 'Acceso público con restricciones',
+        '10': 'Sin acceso o recursos requeridos'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getTamanoAgenteText(value) {
+    const options = {
+        '2': 'Desarrolladores, administradores de sistemas',
+        '3': 'Personal interno autorizado',
+        '4': 'Usuarios de intranet',
+        '5': 'Socios',
+        '6': 'Usuarios autenticados',
+        '8': 'Clientes registrados',
+        '10': 'Usuarios anónimos de Internet'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getPerdidaConfidencialidadText(value) {
+    const options = {
+        '2': 'Datos no sensibles mínimos divulgados',
+        '4': 'Datos internos no críticos',
+        '6': 'Datos críticos mínimos divulgados',
+        '7': 'Datos críticos extensos divulgados',
+        '8': 'Información confidencial crítica',
+        '10': 'Todos los datos divulgados'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getPerdidaIntegridadText(value) {
+    const options = {
+        '1': 'Datos mínimamente corruptos',
+        '3': 'Datos mínimamente muy corruptos',
+        '5': 'Datos extensamente corruptos',
+        '7': 'Datos extensamente muy corruptos',
+        '8': 'Datos críticos alterados',
+        '10': 'Todos los datos totalmente corruptos'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getImpactoDisponibilidadText(value) {
+    const options = {
+        '1': 'Servicios secundarios mínimos interrumpidos',
+        '5': 'Servicios primarios mínimos interrumpidos / Servicios secundarios extensos interrumpidos',
+        '6': 'Múltiples servicios afectados',
+        '7': 'Servicios primarios extensos interrumpidos',
+        '8': 'Operación crítica interrumpida',
+        '10': 'Todos los servicios completamente perdidos'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getRastreabilidadAtaqueText(value) {
+    const options = {
+        '1': 'Completamente rastreable',
+        '7': 'Posiblemente rastreable',
+        '8': 'Difícilmente rastreable',
+        '10': 'Completamente anónimo'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getFacilidadDescubrimientoText(value) {
+    const options = {
+        '1': 'Prácticamente imposible',
+        '3': 'Difícil',
+        '4': 'Moderadamente difícil',
+        '7': 'Fácil',
+        '10': 'Herramientas automatizadas disponibles'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getFacilidadExplotacionText(value) {
+    const options = {
+        '1': 'Teórico',
+        '3': 'Difícil',
+        '4': 'Moderadamente difícil',
+        '5': 'Fácil',
+        '10': 'Herramientas automatizadas disponibles'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getConocimientoVulnerabilidadText(value) {
+    const options = {
+        '1': 'Desconocido',
+        '4': 'Oculto',
+        '6': 'Obvio',
+        '8': 'Ampliamente conocido',
+        '10': 'Conocimiento público'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getDeteccionIntrusionText(value) {
+    const options = {
+        '1': 'Alta Detección - Alertas activas y revisión constante',
+        '3': 'Buena Detección - Se registra y se revisa periódicamente',
+        '8': 'Baja Detección - Se registra, pero no se revisa activamente',
+        '10': 'Sin Detección - No se registra o es imposible de detectar'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getDanioFinancieroText(value) {
+    const options = {
+        '1': 'Menos que el costo de arreglar la vulnerabilidad',
+        '3': 'Efecto menor en las ganancias anuales',
+        '5': 'Impacto moderado en ganancias',
+        '7': 'Efecto significativo en las ganancias anuales',
+        '9': 'Impacto financiero severo',
+        '10': 'Bancarrota'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getDanioReputacionText(value) {
+    const options = {
+        '1': 'Daño mínimo',
+        '4': 'Pérdida de cuentas principales',
+        '5': 'Pérdida de buena voluntad',
+        '7': 'Crisis de confianza en la marca',
+        '10': 'Daño a la marca'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getIncumplimientoText(value) {
+    const options = {
+        '2': 'Violación menor',
+        '5': 'Violación clara',
+        '6': 'Incumplimiento grave',
+        '7': 'Violación de alto perfil'
+    };
+    return options[value] || 'No especificado';
+}
+
+function getViolacionPrivacidadText(value) {
+    const options = {
+        '3': 'Un individuo',
+        '4': 'Decenas de personas',
+        '5': 'Cientos de personas',
+        '7': 'Miles de personas',
+        '10': 'Millones de personas'
+    };
+    return options[value] || 'No especificado';
+}
+
+
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Inicializando aplicación...');
@@ -1912,6 +2097,90 @@ function showVulnerabilityDetails(id) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
+    // Convertir valores numéricos a texto
+    const factoresHTML = `
+        <!-- SECCIÓN DE FACTORES DE RIESGO -->
+        <div class="detail-section">
+            <h5 class="detail-section-title">Factores de Riesgo - Agente de Amenaza</h5>
+            <div class="detail-item">
+                <div class="detail-label">Nivel de habilidad</div>
+                <div class="detail-value">${getSkillLevelText(vuln.sl)} (Valor: ${vuln.sl})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Motivo Económico del agente</div>
+                <div class="detail-value">${getMotivoEconomicoText(vuln.m)} (Valor: ${vuln.m})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Oportunidad de Ataque</div>
+                <div class="detail-value">${getOportunidadAtaqueText(vuln.o)} (Valor: ${vuln.o})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Tamaño del Agente de Amenaza</div>
+                <div class="detail-value">${getTamanoAgenteText(vuln.s)} (Valor: ${vuln.s})</div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h5 class="detail-section-title">Factores de Riesgo - Impacto Técnico</h5>
+            <div class="detail-item">
+                <div class="detail-label">Pérdida de confidencialidad</div>
+                <div class="detail-value">${getPerdidaConfidencialidadText(vuln.lc)} (Valor: ${vuln.lc})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Pérdida de integridad</div>
+                <div class="detail-value">${getPerdidaIntegridadText(vuln.li)} (Valor: ${vuln.li})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Impacto en la Disponibilidad</div>
+                <div class="detail-value">${getImpactoDisponibilidadText(vuln.lav)} (Valor: ${vuln.lav})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Rastreabilidad del Ataque</div>
+                <div class="detail-value">${getRastreabilidadAtaqueText(vuln.lac)} (Valor: ${vuln.lac})</div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h5 class="detail-section-title">Factores de Riesgo - Vulnerabilidad</h5>
+            <div class="detail-item">
+                <div class="detail-label">Facilidad de descubrimiento</div>
+                <div class="detail-value">${getFacilidadDescubrimientoText(vuln.ed)} (Valor: ${vuln.ed})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Facilidad de explotación</div>
+                <div class="detail-value">${getFacilidadExplotacionText(vuln.ee)} (Valor: ${vuln.ee})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Conocimiento de la Vulnerabilidad</div>
+                <div class="detail-value">${getConocimientoVulnerabilidadText(vuln.a)} (Valor: ${vuln.a})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Detección de intrusiones</div>
+                <div class="detail-value">${getDeteccionIntrusionText(vuln.intrusion)} (Valor: ${vuln.intrusion})</div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h5 class="detail-section-title">Factores de Riesgo - Impacto de Negocio</h5>
+            <div class="detail-item">
+                <div class="detail-label">Daño financiero</div>
+                <div class="detail-value">${getDanioFinancieroText(vuln.fd)} (Valor: ${vuln.fd})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Daño a la reputación</div>
+                <div class="detail-value">${getDanioReputacionText(vuln.rd)} (Valor: ${vuln.rd})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Incumplimiento</div>
+                <div class="detail-value">${getIncumplimientoText(vuln.nc)} (Valor: ${vuln.nc})</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Violación de privacidad</div>
+                <div class="detail-value">${getViolacionPrivacidadText(vuln.pv)} (Valor: ${vuln.pv})</div>
+            </div>
+        </div>
+    `;
+    
     modalBody.innerHTML = `
         <div class="vulnerability-details">
             <!-- Encabezado con Número e ID -->
@@ -1948,6 +2217,16 @@ function showVulnerabilityDetails(id) {
                     <span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span> 
                     (${vuln.risk ? vuln.risk.toFixed(2) : '0.00'})
                 </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Probabilidad Calculada</div>
+                <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Impacto Calculado</div>
+                <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
             </div>
             
             <!-- Información OWASP/MITRE -->
@@ -2021,16 +2300,8 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
             </div>
             
-            <!-- Factores de Riesgo (Opcional) -->
-            <div class="detail-item">
-                <div class="detail-label">Probabilidad Calculada</div>
-                <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">Impacto Calculado</div>
-                <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
-            </div>
+            <!-- FACTORES DE RIESGO DETALLADOS -->
+            ${factoresHTML}
             
             <!-- Fechas -->
             <div class="detail-item">
@@ -2056,6 +2327,8 @@ function showVulnerabilityDetails(id) {
             </button>
         </div>
     `;
+    
+    // ... (el resto del código permanece igual)
     
     // Agregar event listeners a los botones dentro del modal
     setTimeout(() => {
