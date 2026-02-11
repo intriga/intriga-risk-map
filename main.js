@@ -5,16 +5,16 @@ let currentTheme = 'light';
 
 // Categorías OWASP TOP 10 2021
 const owaspCategories = [
-    "A01:2021 - Broken Access Control",
-    "A02:2021 - Cryptographic Failures", 
-    "A03:2021 - Injection",
-    "A04:2021 - Insecure Design",
-    "A05:2021 - Security Misconfiguration",
-    "A06:2021 - Vulnerable Components",
-    "A07:2021 - Authentication Failures",
-    "A08:2021 - Software Integrity Failures",
-    "A09:2021 - Security Logging Failures",
-    "A10:2021 - Server-Side Request Forgery"
+    "A01:2021 - Control de Acceso Roto",
+    "A02:2021 - Fallas Criptográficas", 
+    "A03:2021 - Inyección",
+    "A04:2021 - Diseño Inseguro",
+    "A05:2021 - Configuración de Seguridad Incorrecta",
+    "A06:2021 - Componentes Vulnerables",
+    "A07:2021 - Fallas de Autenticación",
+    "A08:2021 - Fallas de Integridad de Software",
+    "A09:2021 - Fallas de Registro y Monitoreo",
+    "A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)"
 ];
 
 // Colores para cada categoría OWASP
@@ -30,6 +30,27 @@ const categoryColors = [
     'rgba(40, 159, 64, 0.8)',    // A09 - Verde
     'rgba(210, 105, 30, 0.8)'    // A10 - Marrón
 ];
+
+// ========== FUNCIÓN PARA OBTENER TEXTO COMPLETO DE OWASP ==========
+// 👇 COLOCA LA FUNCIÓN AQUÍ 👇
+function getOwaspFullText(value) {
+    if (!value) return '';
+    
+    const owaspMap = {
+        'A01:2021': 'A01:2021 - Control de Acceso Roto',
+        'A02:2021': 'A02:2021 - Fallas Criptográficas',
+        'A03:2021': 'A03:2021 - Inyección',
+        'A04:2021': 'A04:2021 - Diseño Inseguro',
+        'A05:2021': 'A05:2021 - Configuración de Seguridad Incorrecta',
+        'A06:2021': 'A06:2021 - Componentes Vulnerables',
+        'A07:2021': 'A07:2021 - Fallas de Autenticación',
+        'A08:2021': 'A08:2021 - Fallas de Integridad de Software',
+        'A09:2021': 'A09:2021 - Fallas de Registro y Monitoreo',
+        'A10:2021': 'A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)'
+    };
+    
+    return owaspMap[value] || value;
+}
 
 // ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
 
@@ -605,7 +626,6 @@ function validateRequiredFields() {
         { id: 'mitre-id', name: 'MITRE ID' },
         { id: 'tool-criticity', name: 'Criticidad según Herramienta' },
         { id: 'threat-agent', name: 'Agente de Amenazas' },
-        { id: 'attack-vector', name: 'Vector de Ataque' },
         { id: 'detail', name: 'Detalle' },
         { id: 'description', name: 'Descripción' },
         { id: 'recommendation', name: 'Recomendación' },
@@ -932,11 +952,10 @@ function getFormData() {
         name: getValue('vulnerability-name'),
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
-        owasp: getValue('owasp-category'),
+        owasp: getOwaspFullText(getValue('owasp-category')),
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
         threatAgent: threatAgentValue,
-        attackVector: getValue('attack-vector'),
         securityWeakness: getValue('security-weakness'),
         securityControls: getValue('security-controls'),
         technicalBusinessImpact: getValue('technical-business-impact'),
@@ -2396,7 +2415,7 @@ function showVulnerabilityDetails(id) {
             
             <!-- Información General -->
             <div class="detail-item">
-                <div class="detail-label">Nombre de la Vulnerabilidad</div>
+                <div class="detail-label">Vector de Ataque (Vulnerabilidad)</div>
                 <div class="detail-value">${vuln.name || 'No especificado'}</div>
             </div>
             
@@ -2450,12 +2469,7 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-label">Agente de Amenazas</div>
                 <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
             </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
-                <div class="detail-value">${vuln.attackVector || 'No especificado'}</div>
-            </div>
-            
+                        
             <!-- Análisis de Seguridad -->
             <div class="detail-item">
                 <div class="detail-label">Debilidad de Seguridad</div>
@@ -2663,7 +2677,6 @@ function loadVulnerabilities() {
                     
                     // Información adicional
                     threatAgent: vuln.threatAgent || '',
-                    attackVector: vuln.attackVector || '',
                     securityWeakness: vuln.securityWeakness || '',
                     securityControls: vuln.securityControls || '',
                     technicalBusinessImpact: vuln.technicalBusinessImpact || '',
@@ -2792,13 +2805,13 @@ function openEditModal(id) {
     setValue('vulnerability-name', vuln.name);
     setValue('host', vuln.host);
     setValue('ruta-afectada', vuln.rutaAfectada);
-    setValue('owasp-category', vuln.owasp);
+    const owaspCode = vuln.owasp ? vuln.owasp.split(' - ')[0] : '';
+    setValue('owasp-category', owaspCode);
     setValue('mitre-id', vuln.mitre);
     setValue('tool-criticity', vuln.toolCriticity);
     
     // Información adicional
     setValue('threat-agent', vuln.threatAgent);
-    setValue('attack-vector', vuln.attackVector);
     setTextarea('security-weakness', vuln.securityWeakness);
     setTextarea('security-controls', vuln.securityControls);
     setTextarea('technical-business-impact', vuln.technicalBusinessImpact);
@@ -3143,13 +3156,12 @@ function updateOldVulnerabilities() {
             // Información general
             host: vuln.host || '',
             rutaAfectada: vuln.rutaAfectada || '',
-            owasp: vuln.owasp || '',
+            owasp: vuln.owasp && !vuln.owasp.includes(' - ') ? getOwaspFullText(vuln.owasp) : (vuln.owasp || ''),
             mitre: vuln.mitre || '',
             toolCriticity: vuln.toolCriticity || '',
             
             // Información adicional
             threatAgent: vuln.threatAgent || '',
-            attackVector: vuln.attackVector || '',
             securityWeakness: vuln.securityWeakness || '',
             securityControls: vuln.securityControls || '',
             technicalBusinessImpact: vuln.technicalBusinessImpact || '',
@@ -3196,3 +3208,4 @@ function updateOldVulnerabilities() {
         showNotification(`${updatedCount} vulnerabilidades actualizadas`, 'success');
     }
 }
+
