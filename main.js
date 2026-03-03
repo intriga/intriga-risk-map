@@ -3,8 +3,8 @@ let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
 let currentTheme = 'light';
 
-// Categorías OWASP TOP 10 2021
-const owaspCategories = [
+// Categorías OWASP TOP 10 WEB 2021
+const owaspWebCategories = [
     "A01:2021 - Control de Acceso Roto",
     "A02:2021 - Fallas Criptográficas", 
     "A03:2021 - Inyección",
@@ -17,43 +17,149 @@ const owaspCategories = [
     "A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)"
 ];
 
-// Colores para cada categoría OWASP
-const categoryColors = [
-    'rgba(255, 99, 132, 0.8)',   // A01 - Rojo
-    'rgba(54, 162, 235, 0.8)',   // A02 - Azul
-    'rgba(255, 206, 86, 0.8)',   // A03 - Amarillo
-    'rgba(75, 192, 192, 0.8)',   // A04 - Verde azulado
-    'rgba(153, 102, 255, 0.8)',  // A05 - Púrpura
-    'rgba(255, 159, 64, 0.8)',   // A06 - Naranja
-    'rgba(199, 199, 199, 0.8)',  // A07 - Gris
-    'rgba(83, 102, 255, 0.8)',   // A08 - Azul índigo
-    'rgba(40, 159, 64, 0.8)',    // A09 - Verde
-    'rgba(210, 105, 30, 0.8)'    // A10 - Marrón
+// Categorías OWASP TOP 10 API 2023
+const owaspApiCategories = [
+    "API1:2023 - Broken Object Level Authorization",
+    "API2:2023 - Broken Authentication",
+    "API3:2023 - Broken Object Property Level Authorization",
+    "API4:2023 - Unrestricted Resource Consumption",
+    "API5:2023 - Broken Function Level Authorization",
+    "API6:2023 - Unrestricted Access to Sensitive Business Flows",
+    "API7:2023 - Server Side Request Forgery",
+    "API8:2023 - Security Misconfiguration",
+    "API9:2023 - Improper Inventory Management",
+    "API10:2023 - Unsafe Consumption of APIs"
 ];
 
+// Categorías OWASP TOP 10 MOBILE 2024
+const owaspMobileCategories = [
+    "M1:2024 - Improper Credential Usage",
+    "M2:2024 - Inadequate Supply Chain Security",
+    "M3:2024 - Insecure Authentication/Authorization",
+    "M4:2024 - Insufficient Input/Output Validation",
+    "M5:2024 - Insecure Communication",
+    "M6:2024 - Inadequate Privacy Controls",
+    "M7:2024 - Insufficient Binary Protections",
+    "M8:2024 - Security Misconfiguration",
+    "M9:2024 - Insecure Data Storage",
+    "M10:2024 - Insufficient Cryptography"
+];
+
+// Colores para cada categoría
+const categoryColors = {
+    web: [
+        'rgba(54, 162, 235, 0.8)',   // Azul
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(54, 162, 235, 0.8)'
+    ],
+    api: [
+        'rgba(255, 99, 132, 0.8)',   // Rojo
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(255, 99, 132, 0.8)'
+    ],
+    mobile: [
+        'rgba(75, 192, 192, 0.8)',   // Verde azulado
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(75, 192, 192, 0.8)'
+    ]
+};
+
+// ========== FUNCIÓN PARA CONFIGURAR SELECTOR DE ESTÁNDAR OWASP ==========
+function setupOwaspStandardSelector() {
+    const standardSelect = document.getElementById('owasp-standard');
+    const categorySelect = document.getElementById('owasp-category');
+    
+    if (standardSelect && categorySelect) {
+        standardSelect.addEventListener('change', function() {
+            const standard = this.value;
+            let categories = [];
+            
+            switch(standard) {
+                case 'web':
+                    categories = owaspWebCategories;
+                    break;
+                case 'api':
+                    categories = owaspApiCategories;
+                    break;
+                case 'mobile':
+                    categories = owaspMobileCategories;
+                    break;
+                default:
+                    categories = [];
+            }
+            
+            // Limpiar y llenar el select de categorías
+            categorySelect.innerHTML = '<option value="">Seleccione categoría OWASP</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        });
+        
+        // Trigger inicial para cargar las categorías por defecto (web)
+        standardSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+// ========== FUNCIÓN PARA MIGRAR VULNERABILIDADES EXISTENTES ==========
+function migrateVulnerabilities() {
+    let migrated = false;
+    vulnerabilities = vulnerabilities.map(vuln => {
+        if (!vuln.owaspStandard) {
+            migrated = true;
+            // Detectar si es una categoría API o Mobile basado en el texto
+            let standard = 'web';
+            if (vuln.owasp) {
+                if (vuln.owasp.startsWith('API')) {
+                    standard = 'api';
+                } else if (vuln.owasp.startsWith('M')) {
+                    standard = 'mobile';
+                }
+            }
+            return {
+                ...vuln,
+                owaspStandard: standard
+            };
+        }
+        return vuln;
+    });
+    
+    if (migrated) {
+        saveVulnerabilities();
+        console.log('Vulnerabilidades migradas al nuevo formato con estándar OWASP');
+    }
+}
+
 // ========== FUNCIÓN PARA OBTENER TEXTO COMPLETO DE OWASP ==========
-// 👇 COLOCA LA FUNCIÓN AQUÍ 👇
 function getOwaspFullText(value) {
     if (!value) return '';
-    
-    const owaspMap = {
-        'A01:2021': 'A01:2021 - Control de Acceso Roto',
-        'A02:2021': 'A02:2021 - Fallas Criptográficas',
-        'A03:2021': 'A03:2021 - Inyección',
-        'A04:2021': 'A04:2021 - Diseño Inseguro',
-        'A05:2021': 'A05:2021 - Configuración de Seguridad Incorrecta',
-        'A06:2021': 'A06:2021 - Componentes Vulnerables',
-        'A07:2021': 'A07:2021 - Fallas de Autenticación',
-        'A08:2021': 'A08:2021 - Fallas de Integridad de Software',
-        'A09:2021': 'A09:2021 - Fallas de Registro y Monitoreo',
-        'A10:2021': 'A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)'
-    };
-    
-    return owaspMap[value] || value;
+    return value; // Ahora el valor ya es el texto completo
 }
 
 // ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
-
 function getSkillLevelText(value) {
     const options = {
         '1': 'Habilidades de penetración de seguridad',
@@ -236,7 +342,6 @@ function getViolacionPrivacidadText(value) {
 }
 
 // ========== FUNCIÓN PARA DIBUJAR "TOTAL" EN EL CENTRO DEL GRÁFICO ==========
-// Función para dibujar "Total: X" en el centro del gráfico (MISMO ESTILO PARA TODO)
 function drawTotalInCenter(canvasElement, total) {
     if (!canvasElement) return;
     
@@ -255,29 +360,41 @@ function drawTotalInCenter(canvasElement, total) {
     ctx.clearRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
     ctx.restore();
     
-    // MISMO COLOR - Gris oscuro en tema claro, Gris claro en tema oscuro
     const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDarkTheme ? '#e0e0e0' : '#333';
     
-    // Guardar estado del contexto
     ctx.save();
-    
-    // CONFIGURACIÓN ÚNICA - TODO EN UN SOLO TEXTO
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = textColor;
-    
-    // MISMA FUENTE Y TAMAÑO PARA TODO - 24px, bold
     ctx.font = 'bold 24px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
     
-    // Texto completo
     const fullText = `Total: ${total}`;
-    
-    // Dibujar todo de una vez - MISMO ESTILO
     ctx.fillText(fullText, centerX, centerY);
     
-    // Restaurar estado
     ctx.restore();
+}
+
+// ========== FUNCIÓN AUXILIAR PARA BADGE DE ESTÁNDAR ==========
+function getStandardBadgeClass(standard) {
+    switch(standard) {
+        case 'web':
+            return 'bg-primary';
+        case 'api':
+            return 'bg-danger';
+        case 'mobile':
+            return 'bg-success';
+        default:
+            return 'bg-secondary';
+    }
+}
+
+// ========== FUNCIÓN AUXILIAR PARA DETERMINAR ESTÁNDAR DE CATEGORÍA ==========
+function getStandardFromCategory(category) {
+    if (owaspWebCategories.includes(category)) return 'web';
+    if (owaspApiCategories.includes(category)) return 'api';
+    if (owaspMobileCategories.includes(category)) return 'mobile';
+    return 'web';
 }
 
 // ========== INICIALIZACIÓN ==========
@@ -291,17 +408,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     loadVulnerabilities();
+    migrateVulnerabilities(); // Migrar vulnerabilidades existentes
     updateOldVulnerabilities();
-
+    
     // Configurar el select de agente de amenazas
-    setupThreatAgentSelect();  //
+    setupThreatAgentSelect();
+    
+    // Configurar el selector de estándar OWASP
+    setupOwaspStandardSelector();
     
     const calculateBtn = document.getElementById('calculate-btn');
     const saveBtn = document.getElementById('save-btn');
-    const exportWordBtn = document.getElementById('export-all-btn'); // Modificado el ID a 'export-all-btn'
+    const exportWordBtn = document.getElementById('export-all-btn');
     const exportPdfBtn = document.getElementById('export-pdf-btn');
     const exportJsonBtn = document.getElementById('export-json-btn');
-    // Botón de exportación ejecutiva
     const exportExecutiveBtn = document.getElementById('export-executive-btn');
     
     if (calculateBtn) {
@@ -324,7 +444,6 @@ document.addEventListener('DOMContentLoaded', function() {
         exportJsonBtn.addEventListener('click', exportToJson);
     } 
     
-    // VINCULACIÓN: Informe Ejecutivo
     if (exportExecutiveBtn) {
         exportExecutiveBtn.addEventListener('click', exportExecutiveReport);
     } else {
@@ -342,9 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     setTimeout(calculateRisk, 100);
 
-    // ========== LISTENERS PARA ACTUALIZAR GRÁFICOS ==========
-    
-    // Redibujar texto "Total" cuando se cambie a la pestaña Dashboard
+    // Listeners para actualizar gráficos
     const dashboardTab = document.getElementById('dashboard-tab');
     if (dashboardTab) {
         dashboardTab.addEventListener('click', function() {
@@ -352,25 +469,18 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const total = vulnerabilities.length;
                 const canvas = document.getElementById('riskDistributionChart');
-                console.log('Canvas encontrado:', !!canvas, 'Chart instance:', !!riskDistributionChart);
                 
                 if (canvas && riskDistributionChart) {
-                    // Recalcular total desde los datos del chart
                     const data = riskDistributionChart.data.datasets[0]?.data || [];
                     const chartTotal = data.reduce((a, b) => a + b, 0);
-                    
-                    console.log('Redibujando texto Total:', chartTotal);
                     drawTotalInCenter(canvas, chartTotal || total);
                 } else if (canvas) {
-                    // Si hay canvas pero no chart, dibujar igual
-                    console.log('Dibujando texto Total sin chart:', total);
                     drawTotalInCenter(canvas, total);
                 }
             }, 500);
         });
     }
     
-    // También redibujar al cambiar de tema
     if (themeToggle) {
         themeToggle.addEventListener('click', function() {
             setTimeout(() => {
@@ -387,13 +497,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Redibujar al cambiar tamaño de ventana
     let resizeTimeout;
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(function() {
             if (riskDistributionChart) {
-                console.log('Redimensionando chart...');
                 riskDistributionChart.resize();
                 
                 const canvas = document.getElementById('riskDistributionChart');
@@ -453,10 +561,9 @@ function calculateRisk() {
     console.log('Calculando riesgo...');
     
     try {
-        // Obtener valores de los selects con valores por defecto
         const sl = parseFloat(document.getElementById('sl')?.value) || 1;
         const m = parseFloat(document.getElementById('m')?.value) || 1;
-        const o = parseFloat(document.getElementById('opp')?.value) || 0;  // Cambiado de 'o' a 'opp'
+        const o = parseFloat(document.getElementById('opp')?.value) || 0;
         const s = parseFloat(document.getElementById('s')?.value) || 2;
         
         const lc = parseFloat(document.getElementById('lc')?.value) || 2;
@@ -467,22 +574,18 @@ function calculateRisk() {
         const ed = parseFloat(document.getElementById('ed')?.value) || 1;
         const ee = parseFloat(document.getElementById('ee')?.value) || 1;
         const a = parseFloat(document.getElementById('a')?.value) || 1;
-        const id = parseFloat(document.getElementById('intrusion')?.value) || 1;  // Cambiado de 'id' a 'intrusion'
+        const id = parseFloat(document.getElementById('intrusion')?.value) || 1;
         
         const fd = parseFloat(document.getElementById('fd')?.value) || 1;
         const rd = parseFloat(document.getElementById('rd')?.value) || 1;
         const nc = parseFloat(document.getElementById('nc')?.value) || 2;
         const pv = parseFloat(document.getElementById('pv')?.value) || 3;
         
-        // Calcular promedios (Risk 0-10)
         const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
         const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
-        const risk = (likelihood + impact) / 2; // Promedio entre probabilidad e impacto (0-10)
-        
-        // Escalar el riesgo de 0-10 a 0-81
+        const risk = (likelihood + impact) / 2;
         const scaledRisk = risk * 8.1;
         
-        // Actualizar UI
         const lsElement = document.querySelector('.LS');
         const isElement = document.querySelector('.IS');
         
@@ -490,7 +593,6 @@ function calculateRisk() {
         if (isElement) isElement.textContent = impact.toFixed(2);
         
         let riskLevel, riskClass;
-        // Aplicar la clasificación (0-81)
         if (scaledRisk > 75) {
             riskLevel = 'CRÍTICO';
             riskClass = 'risk-critico';
@@ -529,34 +631,31 @@ function calculateRisk() {
     }
 }
 
-// Funciones auxiliares para color del Chart.js
 function getRiskChartColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
-        case 'CRÍTICO': return 'rgba(255, 0, 0, 0.7)'; // Rojo
-        case 'ALTO': return 'rgba(255, 107, 107, 0.7)'; // Naranja
-        case 'MEDIO': return 'rgba(255, 209, 102, 0.7)'; // Amarillo
-        case 'BAJO': return 'rgba(6, 214, 160, 0.7)'; // Verde
-        case 'INFORMATIVO': return 'rgba(17, 138, 178, 0.7)'; // Azul
-        default: return 'rgba(170, 170, 170, 0.7)'; // Gris
+        case 'CRÍTICO': return 'rgba(255, 0, 0, 0.7)';
+        case 'ALTO': return 'rgba(255, 107, 107, 0.7)';
+        case 'MEDIO': return 'rgba(255, 209, 102, 0.7)';
+        case 'BAJO': return 'rgba(6, 214, 160, 0.7)';
+        case 'INFORMATIVO': return 'rgba(17, 138, 178, 0.7)';
+        default: return 'rgba(170, 170, 170, 0.7)';
     }
 }
 
 function getRiskChartBorder(riskLevel) {
     switch(riskLevel.toUpperCase()) {
-        case 'CRÍTICO': return 'rgba(255, 0, 0, 1)'; // Rojo
-        case 'ALTO': return 'rgba(255, 107, 107, 1)'; // Naranja
-        case 'MEDIO': return 'rgba(255, 209, 102, 1)'; // Amarillo
-        case 'BAJO': return 'rgba(6, 214, 160, 1)'; // Verde
-        case 'INFORMATIVO': return 'rgba(17, 138, 178, 1)'; // Azul
-        default: return 'rgba(170, 170, 170, 1)'; // Gris
+        case 'CRÍTICO': return 'rgba(255, 0, 0, 1)';
+        case 'ALTO': return 'rgba(255, 107, 107, 1)';
+        case 'MEDIO': return 'rgba(255, 209, 102, 1)';
+        case 'BAJO': return 'rgba(6, 214, 160, 1)';
+        case 'INFORMATIVO': return 'rgba(17, 138, 178, 1)';
+        default: return 'rgba(170, 170, 170, 1)';
     }
 }
 
 function updateRiskChart(likelihood, impact, risk, riskLevel) {
     const ctx = document.getElementById('riskChart');
-    if (!ctx) {
-        return;
-    }
+    if (!ctx) return;
     
     try {
         const context = ctx.getContext('2d');
@@ -617,11 +716,11 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) {
 
 // ========== VALIDACIÓN DE TODOS LOS CAMPOS OBLIGATORIOS ==========
 function validateRequiredFields() {
-    // Lista COMPLETA de todos los campos obligatorios
     const requiredFields = [
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
-        { id: 'owasp-category', name: 'Categoría OWASP 2021' },
+        { id: 'owasp-standard', name: 'Estándar OWASP' },
+        { id: 'owasp-category', name: 'Categoría OWASP' },
         { id: 'ruta-afectada', name: 'Ruta Afectada' },
         { id: 'mitre-id', name: 'MITRE ID' },
         { id: 'tool-criticity', name: 'Criticidad según Herramienta' },
@@ -636,11 +735,10 @@ function validateRequiredFields() {
         { id: 'technical-business-impact', name: 'Impacto Técnico - Negocio' }
     ];
     
-    // También todos los selects de factores de riesgo
     const requiredSelects = [
         { id: 'sl', name: 'Nivel de habilidad' },
         { id: 'm', name: 'Motivo Economico del agente' },
-        { id: 'opp', name: 'Oportunidad de Ataque' },  // Cambiado de 'o' a 'opp'
+        { id: 'opp', name: 'Oportunidad de Ataque' },
         { id: 's', name: 'Tamaño del Agente de Amenaza' },
         { id: 'lc', name: 'Pérdida de confidencialidad' },
         { id: 'li', name: 'Pérdida de integridad' },
@@ -649,7 +747,7 @@ function validateRequiredFields() {
         { id: 'ed', name: 'Facilidad de descubrimiento' },
         { id: 'ee', name: 'Facilidad de explotación' },
         { id: 'a', name: 'Conocimiento de la Vulnerabilidad' },
-        { id: 'intrusion', name: 'Detección de intrusiones' },  // Cambiado de 'id' a 'intrusion'
+        { id: 'intrusion', name: 'Detección de intrusiones' },
         { id: 'fd', name: 'Daño financiero' },
         { id: 'rd', name: 'Daño a la reputación' },
         { id: 'nc', name: 'Incumplimiento' },
@@ -660,7 +758,6 @@ function validateRequiredFields() {
     let firstEmptyField = null;
     let emptyFieldsCount = 0;
     
-    // Limpiar estilos de error previos en TODOS los campos
     const allInputs = document.querySelectorAll('.form-control, select.form-control');
     allInputs.forEach(element => {
         element.classList.remove('is-invalid', 'is-valid');
@@ -670,7 +767,6 @@ function validateRequiredFields() {
         }
     });
     
-    // Función para validar un campo individual
     function validateField(fieldInfo, element) {
         if (!element) return false;
         
@@ -687,18 +783,14 @@ function validateRequiredFields() {
             isValid = false;
             emptyFieldsCount++;
             
-            // Marcar campo como inválido
             element.classList.add('is-invalid');
             
-            // Crear mensaje de error
             const errorDiv = document.createElement('div');
             errorDiv.className = 'invalid-feedback';
             errorDiv.textContent = `El campo "${fieldInfo.name}" es obligatorio.`;
             
-            // Insertar después del campo
             element.parentElement.appendChild(errorDiv);
             
-            // Guardar referencia al primer campo vacío
             if (!firstEmptyField) {
                 firstEmptyField = element;
             }
@@ -709,19 +801,16 @@ function validateRequiredFields() {
         }
     }
     
-    // Validar todos los campos de texto/textarea
     requiredFields.forEach(field => {
         const element = document.getElementById(field.id);
         validateField(field, element);
     });
     
-    // Validar todos los selects
     requiredSelects.forEach(field => {
         const element = document.getElementById(field.id);
         validateField(field, element);
     });
     
-    // ========== VALIDACIÓN ESPECIAL PARA "OTRO" EN AGENTE DE AMENAZAS ==========
     const threatAgentSelect = document.getElementById('threat-agent');
     const otherThreatAgentInput = document.getElementById('other-threat-agent');
     
@@ -744,29 +833,23 @@ function validateRequiredFields() {
                 }
             }
         } else {
-            // Si tiene valor, marcarlo como válido
             otherThreatAgentInput.classList.add('is-valid');
             otherThreatAgentInput.classList.remove('is-invalid');
             
-            // Remover mensaje de error si existe
             const existingError = otherThreatAgentInput.parentElement.querySelector('.invalid-feedback');
             if (existingError) {
                 existingError.remove();
             }
         }
     } else if (otherThreatAgentInput) {
-        // Si no seleccionó "Otro", asegurarse de que no tenga errores
         otherThreatAgentInput.classList.remove('is-invalid', 'is-valid');
         
-        // Remover mensaje de error si existe
         const existingError = otherThreatAgentInput.parentElement.querySelector('.invalid-feedback');
         if (existingError) {
             existingError.remove();
         }
     }
-    // ========== FIN DE VALIDACIÓN ESPECIAL ==========
     
-    // Desplazarse al primer campo vacío
     if (firstEmptyField) {
         firstEmptyField.scrollIntoView({ 
             behavior: 'smooth', 
@@ -774,7 +857,6 @@ function validateRequiredFields() {
         });
         firstEmptyField.focus();
         
-        // Mostrar notificación global con conteo
         const message = emptyFieldsCount > 1 
             ? `Hay ${emptyFieldsCount} campos obligatorios sin completar. Por favor, revisa los campos marcados en rojo.`
             : `Hay 1 campo obligatorio sin completar. Por favor, revisa el campo marcado en rojo.`;
@@ -785,21 +867,18 @@ function validateRequiredFields() {
     return isValid;
 }
 
-// ========== MODIFICA LA FUNCIÓN saveVulnerability ==========
+// ========== FUNCIÓN saveVulnerability MODIFICADA ==========
 function saveVulnerability() {
     console.log('Guardando vulnerabilidad...');
     
     try {
-        // Primero validar TODOS los campos obligatorios
         if (!validateRequiredFields()) {
-            return; // Detener si hay campos vacíos
+            return;
         }
         
-        // Si pasa la validación, continuar con el cálculo
         const riskData = calculateRisk();
         const formData = getFormData();
         
-        // Función para obtener valor seguro de factor
         const getFactorValue = (id) => {
             const element = document.getElementById(id);
             if (element && element.value) {
@@ -813,31 +892,22 @@ function saveVulnerability() {
             name: formData.name.trim(),
             ...riskData,
             ...formData,
-            // Guardar TODOS los valores individuales de factores
-            // Factores del Agente de Amenaza
             sl: getFactorValue('sl'),
             m: getFactorValue('m'),
-            o: getFactorValue('opp'),  // Oportunidad de Ataque
+            o: getFactorValue('opp'),
             s: getFactorValue('s'),
-            
-            // Factores de Impacto Técnico
             lc: getFactorValue('lc'),
             li: getFactorValue('li'),
             lav: getFactorValue('lav'),
             lac: getFactorValue('lac'),
-            
-            // Factores de Vulnerabilidad
             ed: getFactorValue('ed'),
             ee: getFactorValue('ee'),
             a: getFactorValue('a'),
-            intrusion: getFactorValue('intrusion'),  // Detección de intrusiones
-            
-            // Factores de Impacto de Negocio
+            intrusion: getFactorValue('intrusion'),
             fd: getFactorValue('fd'),
             rd: getFactorValue('rd'),
             nc: getFactorValue('nc'),
             pv: getFactorValue('pv'),
-            
             date: new Date().toISOString()
         };
         
@@ -846,7 +916,6 @@ function saveVulnerability() {
         renderVulnerabilitiesList();
         updateDashboard();
         
-        // Limpiar formulario y estilos de validación
         clearFormValidation();
         
         showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
@@ -857,26 +926,16 @@ function saveVulnerability() {
     }
 }
 
-
 // ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
 function clearFormValidation() {
-    // Limpiar TODOS los campos del formulario
     const allFormElements = [
-        // Text inputs
         'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
         'threat-agent', 'attack-vector', 'security-weakness', 'security-controls',
-        'technical-business-impact',
-        // Textareas
+        'technical-business-impact', 'owasp-standard', 'owasp-category',
         'detail', 'description', 'recommendation', 'mitre-detection', 'mitre-mitigation',
-        // Selects
-        'owasp-category', 
-        // Factores del Agente de Amenaza
         'sl', 'm', 'opp', 's',
-        // Factores de Impacto Técnico
         'lc', 'li', 'lav', 'lac',
-        // Factores de Vulnerabilidad
         'ed', 'ee', 'a', 'intrusion',
-        // Factores de Impacto de Negocio
         'fd', 'rd', 'nc', 'pv'
     ];
     
@@ -884,14 +943,18 @@ function clearFormValidation() {
         const element = document.getElementById(id);
         if (element) {
             if (element.tagName === 'SELECT') {
-                element.value = element.querySelector('option[value=""]') ? '' : element.options[0].value;
+                if (id === 'owasp-standard') {
+                    element.value = 'web';
+                    element.dispatchEvent(new Event('change'));
+                } else {
+                    element.value = element.querySelector('option[value=""]') ? '' : element.options[0].value;
+                }
             } else {
                 element.value = '';
             }
             
             element.classList.remove('is-valid', 'is-invalid');
             
-            // Remover mensajes de error
             const existingError = element.parentElement.querySelector('.invalid-feedback');
             if (existingError) {
                 existingError.remove();
@@ -899,13 +962,11 @@ function clearFormValidation() {
         }
     });
 
-    // Especial para el select de agente de amenazas
     const threatAgentSelect = document.getElementById('threat-agent');
     if (threatAgentSelect) {
         threatAgentSelect.value = '';
     }
     
-    // Ocultar y limpiar el campo "Otro"
     const otherContainer = document.getElementById('other-threat-agent-container');
     const otherInput = document.getElementById('other-threat-agent');
     if (otherContainer) {
@@ -920,7 +981,6 @@ function clearFormValidation() {
         }
     }
     
-    // Limpiar botones de edición si existen
     const updateBtn = document.getElementById('update-current-btn');
     const cancelBtn = document.getElementById('cancel-edit-btn');
     const saveBtn = document.getElementById('save-btn');
@@ -936,23 +996,21 @@ function getFormData() {
         return element ? element.value : '';
     };
     
-    // Obtener el valor del agente de amenazas
     let threatAgentValue = getValue('threat-agent');
     
-    // Si seleccionó "Otro" y especificó un valor, usar ese
     if (threatAgentValue === 'Otro') {
         const otherValue = getValue('other-threat-agent');
         if (otherValue.trim()) {
             threatAgentValue = `Otro: ${otherValue.trim()}`;
         }
-        // Si seleccionó "Otro" pero no especificó, mantener "Otro"
     }
     
     return {
         name: getValue('vulnerability-name'),
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
-        owasp: getOwaspFullText(getValue('owasp-category')),
+        owaspStandard: getValue('owasp-standard') || 'web',
+        owasp: getValue('owasp-category'),
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
         threatAgent: threatAgentValue,
@@ -984,10 +1042,12 @@ function renderVulnerabilitiesList() {
     
     listElement.innerHTML = '';
     
-    // Ordenar por fecha (más reciente primero)
     const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
     
     sortedVulnerabilities.forEach((vuln, index) => {
+        const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
+                            vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
+        
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
         item.dataset.id = vuln.id;
@@ -1000,7 +1060,12 @@ function renderVulnerabilitiesList() {
                         <div style="flex: 1;">
                             <h5 class="mb-2">${vuln.name}</h5>
                             <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
-                            <p class="mb-1"><strong>OWASP:</strong> ${vuln.owasp || 'No especificado'} | <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}</p>
+                            <p class="mb-1">
+                                <strong>OWASP:</strong> 
+                                <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)} me-1">${standardText}</span>
+                                ${vuln.owasp || 'No especificado'} | 
+                                <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}
+                            </p>
                             <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
                             <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
                         </div>
@@ -1026,7 +1091,6 @@ function renderVulnerabilitiesList() {
         listElement.appendChild(item);
     });
     
-    // Agregar event listeners a los botones
     setTimeout(() => {
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1052,10 +1116,8 @@ function renderVulnerabilitiesList() {
             });
         });
         
-        // Click en el item completo (ver detalles)
         document.querySelectorAll('.vulnerability-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                // Solo si no se hizo click en un botón
                 if (!e.target.closest('.btn')) {
                     const id = parseInt(item.dataset.id);
                     showVulnerabilityDetails(id);
@@ -1091,7 +1153,6 @@ function updateDashboard() {
         updateOwaspDistributionChart();
         updateDashboardTable();
         
-        // Forzar redibujado del texto "Total" después de actualizar
         setTimeout(() => {
             const total = vulnerabilities.length;
             const canvas = document.getElementById('riskDistributionChart');
@@ -1114,7 +1175,6 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
         
         if (riskDistributionChart) riskDistributionChart.destroy();
         
-        // Calcular total
         const total = critical + high + medium + low + info;
         
         riskDistributionChart = new Chart(context, {
@@ -1212,7 +1272,6 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
                     duration: 1000,
                     easing: 'easeOutQuart',
                     onComplete: function() {
-                        // ========== PUNTO 4: Dibujar texto "Total" después de la animación ==========
                         setTimeout(() => {
                             drawTotalInCenter(ctx, total);
                         }, 100);
@@ -1221,14 +1280,10 @@ function updateRiskDistributionChart(critical, high, medium, low, info) {
             }
         });
         
-        // ========== PUNTO 4: Asegurar dimensiones y dibujar inmediatamente ==========
         setTimeout(() => {
-            // Asegurar que el canvas tenga las dimensiones correctas
             if (ctx) {
                 ctx.canvas.style.width = '100%';
                 ctx.canvas.style.height = '100%';
-                
-                // Dibujar texto "Total" con estilo uniforme
                 drawTotalInCenter(ctx, total);
             }
         }, 300);
@@ -1245,24 +1300,69 @@ function updateOwaspDistributionChart() {
     try {
         const context = ctx.getContext('2d');
         
-        const owaspCounts = Array(owaspCategories.length).fill(0);
+        // Crear un array con todas las categorías de los tres estándares
+        const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
+        
+        // Crear un array de colores para cada categoría
+        const allColors = [
+            // Web - Azules
+            ...owaspWebCategories.map(() => 'rgba(54, 162, 235, 0.8)'),
+            // API - Rojos
+            ...owaspApiCategories.map(() => 'rgba(255, 99, 132, 0.8)'),
+            // Mobile - Verdes
+            ...owaspMobileCategories.map(() => 'rgba(75, 192, 192, 0.8)')
+        ];
+        
+        // Contar vulnerabilidades por categoría
+        const counts = Array(allCategories.length).fill(0);
+        
         vulnerabilities.forEach(vuln => {
             if (vuln.owasp) {
-                const index = owaspCategories.findIndex(cat => cat.startsWith(vuln.owasp));
-                if (index !== -1) owaspCounts[index]++;
+                const index = allCategories.findIndex(cat => cat === vuln.owasp);
+                if (index !== -1) {
+                    counts[index]++;
+                }
             }
         });
         
+        // Filtrar categorías sin vulnerabilidades
+        const nonZeroIndices = counts
+            .map((count, index) => ({ count, index }))
+            .filter(item => item.count > 0)
+            .map(item => item.index);
+        
+        const filteredLabels = nonZeroIndices.map(i => {
+            const cat = allCategories[i];
+            // Acortar la etiqueta para mejor visualización
+            if (cat.startsWith('A')) return cat.split(' - ')[0] + ' (Web)';
+            if (cat.startsWith('API')) return cat.split(' - ')[0] + ' (API)';
+            if (cat.startsWith('M')) return cat.split(' - ')[0] + ' (Mobile)';
+            return cat;
+        });
+        
+        const filteredData = nonZeroIndices.map(i => counts[i]);
+        const filteredColors = nonZeroIndices.map(i => allColors[i]);
+        
         if (owaspDistributionChart) owaspDistributionChart.destroy();
+        
+        if (filteredData.length === 0) {
+            // Si no hay datos, mostrar un mensaje
+            context.clearRect(0, 0, ctx.width, ctx.height);
+            context.font = '14px Arial';
+            context.fillStyle = '#999';
+            context.textAlign = 'center';
+            context.fillText('No hay datos para mostrar', ctx.width/2, ctx.height/2);
+            return;
+        }
         
         owaspDistributionChart = new Chart(context, {
             type: 'doughnut',
             data: {
-                labels: owaspCategories,
+                labels: filteredLabels,
                 datasets: [{
-                    data: owaspCounts,
-                    backgroundColor: categoryColors,
-                    borderColor: categoryColors.map(color => color.replace('0.8', '1')),
+                    data: filteredData,
+                    backgroundColor: filteredColors,
+                    borderColor: filteredColors.map(color => color.replace('0.8', '1')),
                     borderWidth: 2,
                     hoverOffset: 15
                 }]
@@ -1270,36 +1370,27 @@ function updateOwaspDistributionChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                backgroundColor: 'white',
                 plugins: {
                     legend: { 
                         display: true, 
-                        position: 'right', 
+                        position: 'right',
                         labels: {
                             font: {
-                                size: 14
-                            },
-                            filter: function (legendItem, data) {
-                                return data.datasets[0].data[legendItem.index] > 0;
+                                size: 11
                             },
                             generateLabels: function(chart) {
                                 const data = chart.data;
                                 return data.labels.map((label, i) => {
-                                    const count = data.datasets[0].data[i];
-                                    const categoryId = label.split(' - ')[0].trim();
-                                    
-                                    if (count > 0) {
-                                        return {
-                                            text: `${categoryId}: ${count}`, 
-                                            fillStyle: data.datasets[0].backgroundColor[i],
-                                            strokeStyle: data.datasets[0].borderColor[i],
-                                            lineWidth: data.datasets[0].borderWidth,
-                                            hidden: false,
-                                            index: i
-                                        };
-                                    }
-                                    return null;
-                                }).filter(item => item !== null); 
+                                    const value = data.datasets[0].data[i];
+                                    return {
+                                        text: `${label}: ${value}`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor[i],
+                                        lineWidth: 2,
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
                             }
                         }
                     },
@@ -1315,10 +1406,29 @@ function updateOwaspDistributionChart() {
                         }
                     }
                 },
-                cutout: '55%',
-                animation: { animateScale: true, animateRotate: true }
+                cutout: '60%',
+                animation: { 
+                    animateScale: true, 
+                    animateRotate: true 
+                }
             }
         });
+        
+        // Agregar texto central con el total
+        setTimeout(() => {
+            const total = filteredData.reduce((a, b) => a + b, 0);
+            if (total > 0) {
+                // Dibujar texto en el centro
+                context.save();
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.font = 'bold 16px Arial';
+                context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
+                context.fillText(total.toString(), ctx.width/2, ctx.height/2);
+                context.restore();
+            }
+        }, 300);
+        
     } catch (error) {
         console.error('Error actualizando gráfico OWASP:', error);
     }
@@ -1331,52 +1441,68 @@ function updateDashboardTable() {
     tableBody.innerHTML = '';
     
     if (vulnerabilities.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
         return;
     }
     
     const vulnerabilitiesByCategory = {};
-    owaspCategories.forEach((_, index) => {
+    
+    const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
+    
+    allCategories.forEach((_, index) => {
         vulnerabilitiesByCategory[index] = vulnerabilities.filter(v => {
             if (!v.owasp) return false;
-            return owaspCategories[index].startsWith(v.owasp);
+            return allCategories[index] === v.owasp;
         });
     });
     
-    // Ordenar categorías por número de vulnerabilidades (mayor a menor)
-    const sortedCategories = [...owaspCategories].map((cat, idx) => ({
+    const sortedCategories = allCategories.map((cat, idx) => ({
         category: cat,
         index: idx,
-        count: vulnerabilitiesByCategory[idx].length
+        count: vulnerabilitiesByCategory[idx].length,
+        standard: getStandardFromCategory(cat)
     })).filter(item => item.count > 0)
       .sort((a, b) => b.count - a.count);
     
     let globalCounter = 1;
     
-    sortedCategories.forEach((catItem, catIndex) => {
+    sortedCategories.forEach((catItem) => {
         const categoryVulns = vulnerabilitiesByCategory[catItem.index];
         
-        // Encabezado de categoría
+        let categoryColor;
+        if (catItem.standard === 'web') {
+            categoryColor = 'rgba(54, 162, 235, 0.2)';
+        } else if (catItem.standard === 'api') {
+            categoryColor = 'rgba(255, 99, 132, 0.2)';
+        } else {
+            categoryColor = 'rgba(75, 192, 192, 0.2)';
+        }
+        
         const categoryRow = document.createElement('tr');
-        categoryRow.className = `risk-${catItem.index}`;
         categoryRow.innerHTML = `
-            <td colspan="4" style="font-weight: bold; background-color: ${categoryColors[catItem.index].replace('0.8', '0.2')}">
+            <td colspan="6" style="font-weight: bold; background-color: ${categoryColor}">
                 ${catItem.category} (${categoryVulns.length} vulnerabilidad${categoryVulns.length !== 1 ? 'es' : ''})
             </td>
         `;
         tableBody.appendChild(categoryRow);
         
-        // Ordenar vulnerabilidades dentro de la categoría por riesgo (mayor a menor)
         const sortedVulns = categoryVulns.sort((a, b) => b.risk - a.risk);
         
-        sortedVulns.forEach((vuln, vulnIndex) => {
+        sortedVulns.forEach((vuln) => {
             const row = document.createElement('tr');
-            row.className = `risk-${catItem.index}`;
+            
+            const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
+                                vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
+            
             row.innerHTML = `
                 <td style="font-weight: bold; text-align: center; width: 50px;">
                     ${globalCounter++}
                 </td>
-                <td>${vuln.name}</td>
+                <td>${vuln.owasp || 'No especificado'}</td>
+                <td>
+                    <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${standardText}</span>
+                </td>
+                <td>${vuln.name || 'No especificado'}</td>
                 <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
                 <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
             `;
@@ -1385,9 +1511,9 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD (COMPLETO) ==========
+// ========== EXPORTACIÓN A WORD ==========
 function exportToWord() {
-    console.log('Ejecutando exportToWord (Completo)...');
+    console.log('Ejecutando exportToWord...');
     
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
@@ -1400,304 +1526,35 @@ function exportToWord() {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Reporte de Vulnerabilidades</title>
                 <style>
-                    body { 
-                        font-family: Arial, sans-serif; 
-                        margin: 0;
-                        padding: 20px;
-                        line-height: 1.4;
-                        color: #333;
-                        font-size: 12px;
-                        min-height: 100vh;
-                        width: 100%;
-                        background-color: #ffffff;
-                    }
-                    .report-header {
-                        text-align: center;
-                        margin-bottom: 20px;
-                        border-bottom: 2px solid #2c3e50;
-                        padding-bottom: 15px;
-                        width: 80%;
-                        max-width: 800px;
-                        margin-left: auto; 
-                        margin-right: auto;
-                    }
-
-                    .vulnerability-title {
-                        font-size: 14px;
-                        font-weight: bold;
-                        color: #333;
-                        margin-bottom: 15px;
-                        padding: 8px;
-                        border-radius: 0;
-                        width: 80%;
-                        max-width: 800px;
-                        text-align: center;
-                        margin-left: auto;
-                        margin-right: auto;
-                        border: 1px solid #000;
-                        background-color: #f8f9fa;
-                        line-height: 1.4;
-                    }
-
-                    .vulnerability-table tr:first-child .header-cell {
-                        font-size: 28px !important;
-                        font-weight: bold;
-                        text-align: center !important;
-                        background-color: #e9ecef;
-                        padding: 30px 35px;
-                        line-height: 1.2;
-                        height: 100px;
-                    }
-
-                    .report-header h1 {
-                        font-size: 18px;
-                        margin-bottom: 10px;
-                    }
-                    
-                    .report-header p {
-                        font-size: 12px;
-                        margin-bottom: 5px;
-                    }
-
-                    .vulnerability-container {
-                        margin-bottom: 80px; 
-                        page-break-after: always; 
-                        width: 100%;
-                        max-width: 1400px;
-                    }
-                    
-                    .vulnerability-table {
-                        width: 100%; 
-                        border-collapse: collapse;
-                        margin: 40px auto;
-                        font-size: 16px;
-                        border: 3px solid #000;
-                        max-width: 1400px;
-                        background-color: white;
-                    }
-                    
-                    .vulnerability-table td {
-                        border: 3px solid #000;
-                        padding: 25px 30px;
-                        vertical-align: top;
-                        font-size: 16px;
-                        text-align: left;
-                        line-height: 1.8;
-                        min-height: 60px;
-                    }
-
-                    .vulnerability-table tr td:first-child {
-                        width: 30% !important;
-                        font-weight: bold;
-                        font-size: 17px;
-                    }
-                    
-                    .vulnerability-table tr td:not(:first-child) {
-                        width: 70% !important;
-                    }
-
-                    .vulnerability-table tr:nth-child(-n+3) td:first-child {
-                        width: 25% !important;
-                    }
-
-                    .vulnerability-table tr:nth-child(-n+3) td:not(:first-child) {
-                        width: 75% !important;
-                    }
-
-                    .header-cell {
-                        background-color: #f2f2f2; 
-                        font-weight: bold;
-                        font-size: 17px;
-                        text-align: left;
-                        padding: 25px 30px;
-                        min-height: 60px;
-                    }
-
-                    .data-cell {
-                        background-color: #ffffff;
-                        font-weight: normal;
-                        font-size: 16px;
-                        text-align: left;
-                        min-height: 60px;
-                    }
-
-                    .vulnerability-table tr:nth-child(1) td:nth-child(3),
-                    .vulnerability-table tr:nth-child(2) td:nth-child(3),
-                    .vulnerability-table tr:nth-child(3) td:nth-child(3) {
-                        text-align: center !important;
-                        font-size: 22px;
-                        font-weight: bold;
-                        padding: 30px 35px;
-                        min-height: 70px;
-                    }
-
-                    .vulnerability-table tr:first-child td {
-                        font-size: 20px !important;
-                        padding: 30px 35px !important;
-                        height: 100px;
-                    }
-
-                    .list-item {
-                        margin-bottom: 12px;
-                        padding-left: 20px;
-                        font-size: 16px;
-                        text-align: left;
-                        line-height: 1.8;
-                    }
-
-                    .vulnerability-table tr {
-                        height: 80px;
-                    }
+                    body { font-family: Arial; margin: 20px; }
+                    .vuln { margin-bottom: 30px; page-break-after: always; }
+                    table { width: 100%; border-collapse: collapse; }
+                    td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+                    .label { font-weight: bold; width: 30%; }
                 </style>
             </head>
             <body>
-                <div class="report-header">
-                    <h1 style="font-size: 16px;">Reporte de Vulnerabilidades de Seguridad</h1>
-                    <p style="font-size: 10px;"><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                    <p style="font-size: 10px;"><strong>Total de vulnerabilidades:</strong> ${vulnerabilities.length}</p>
-                </div>
         `;
 
         vulnerabilities.forEach((vuln, index) => {
-            const titleColor = getRiskHeaderColor(vuln.riskLevel);
-            const riskHighlightColor = titleColor;
+            const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
+                                vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
             
             htmlContent += `
-                <div class="vulnerability-container">
-                    <div class="vulnerability-title" style="background-color: ${titleColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'};">
-                        Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}
-                    </div>
-                    
-                    <table class="vulnerability-table" align="center">
-                        <tr>
-                            <td rowspan="3" class="header-cell" style="font-weight: bold; width: 25%; background-color: #ffffff; text-align: justify;">
-                                <strong>ID:</strong> ${index + 1}<br>
-                                ${vuln.name || 'No especificado'}
-                            </td>
-                            
-                            <td class="header-cell" style="width: 15%; background-color: #f2f2f2; font-weight: bold; text-align: center;">
-                                Resultados del análisis
-                            </td>
-                            <td class="data-cell" style="width: 60%; background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
-                                ${vuln.riskLevel || 'No especificado'}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="background-color: #f2f2f2; font-weight: bold; text-align: center;">
-                                Nivel de Riesgo
-                            </td>
-                            <td class="data-cell" style="background-color: ${riskHighlightColor}; color: ${vuln.riskLevel === 'MEDIO' ? '#333' : 'white'}; font-weight: bold; text-align: center;">
-                                ${vuln.riskLevel || 'No especificado'}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="background-color: #f2f2f2; font-weight: bold; text-align: center;">
-                                Resultado del Escáner
-                            </td>
-                            <td class="data-cell" style="background-color: #ffffff; text-align: center;">
-                                -
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold; width: 25%;">Host</td>
-                            <td colspan="2" class="data-cell" style="width: 75%;">${vuln.host || vuln.attackVector || vuln.threatAgent || 'No especificado'}</td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold; width: 25%;">Ruta afectada</td>
-                            <td colspan="2" class="data-cell" style="width: 75%;">${vuln.rutaAfectada || vuln.securityWeakness || 'No especificado'}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Detalle</td>
-                            <td colspan="2" class="data-cell">${vuln.detail || 'No especificado'}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Descripción del análisis</td>
-                            <td colspan="2" class="data-cell">${vuln.description || 'No especificado'}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Recomendación</td>
-                            <td colspan="2" class="data-cell">${vuln.recommendation || 'No especificado'}</td>
-                        </tr>
-
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">ID OWASP top 10</td>
-                            <td colspan="2" class="data-cell">${vuln.owasp || 'No especificado'}</td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">MITRE ID</td>
-                            <td colspan="2" class="data-cell">${formatMitreIds(vuln.mitre)}</td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Estrategia de detección MITRE</td>
-                            <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreDetection)}</td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Estrategia de mitigación MITRE</td>
-                            <td colspan="2" class="data-cell">${formatMitreStrategies(vuln.mitreMitigation)}</td>
-                        </tr>
-                                                <tr>
-                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Agente de Amenaza</td>
-                            <td colspan="2" class="data-cell">
-                                <strong>Nivel de habilidad:</strong> ${vuln.sl || 'N/A'}<br>
-                                <strong>Motivo Económico:</strong> ${vuln.m || 'N/A'}<br>
-                                <strong>Oportunidad de Ataque:</strong> ${vuln.o || 'N/A'}<br>
-                                <strong>Tamaño del Agente:</strong> ${vuln.s || 'N/A'}
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Impacto Técnico</td>
-                            <td colspan="2" class="data-cell">
-                                <strong>Pérdida de confidencialidad:</strong> ${vuln.lc || 'N/A'}<br>
-                                <strong>Pérdida de integridad:</strong> ${vuln.li || 'N/A'}<br>
-                                <strong>Impacto en disponibilidad:</strong> ${vuln.lav || 'N/A'}<br>
-                                <strong>Rastreabilidad del ataque:</strong> ${vuln.lac || 'N/A'}
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Vulnerabilidad</td>
-                            <td colspan="2" class="data-cell">
-                                <strong>Facilidad de descubrimiento:</strong> ${vuln.ed || 'N/A'}<br>
-                                <strong>Facilidad de explotación:</strong> ${vuln.ee || 'N/A'}<br>
-                                <strong>Conocimiento de vulnerabilidad:</strong> ${vuln.a || 'N/A'}<br>
-                                <strong>Detección de intrusiones:</strong> ${vuln.intrusion || vuln.id || 'N/A'}
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Factores de Riesgo - Impacto de Negocio</td>
-                            <td colspan="2" class="data-cell">
-                                <strong>Daño financiero:</strong> ${vuln.fd || 'N/A'}<br>
-                                <strong>Daño a reputación:</strong> ${vuln.rd || 'N/A'}<br>
-                                <strong>Incumplimiento:</strong> ${vuln.nc || 'N/A'}<br>
-                                <strong>Violación de privacidad:</strong> ${vuln.pv || 'N/A'}
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <td class="header-cell" style="font-weight: bold;">Resumen de Riesgo</td>
-                            <td colspan="2" class="data-cell">
-                                <strong>Probabilidad calculada:</strong> ${vuln.likelihood ? vuln.likelihood.toFixed(2) : 'N/A'}<br>
-                                <strong>Impacto calculado:</strong> ${vuln.impact ? vuln.impact.toFixed(2) : 'N/A'}<br>
-                                <strong>Riesgo total:</strong> ${vuln.risk ? vuln.risk.toFixed(2) : 'N/A'} (${vuln.riskLevel || 'N/A'})
-                            </td>
-                        </tr>
-                    </table>                    
-                    <br></br>
+                <div class="vuln">
+                    <h2>Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}</h2>
+                    <table>
+                        <tr><td class="label">Estándar OWASP:</td><td>${standardText}</td></tr>
+                        <tr><td class="label">Categoría OWASP:</td><td>${vuln.owasp || 'No especificado'}</td></tr>
+                        <tr><td class="label">Host:</td><td>${vuln.host || 'No especificado'}</td></tr>
+                        <tr><td class="label">Ruta afectada:</td><td>${vuln.rutaAfectada || 'No especificado'}</td></tr>
+                        <tr><td class="label">Nivel de Riesgo:</td><td>${vuln.riskLevel} (${vuln.risk?.toFixed(2) || '0'})</td></tr>
+                        <tr><td class="label">MITRE ID:</td><td>${vuln.mitre || 'No especificado'}</td></tr>
+                        <tr><td class="label">Descripción:</td><td>${vuln.description || 'No especificado'}</td></tr>
+                        <tr><td class="label">Recomendación:</td><td>${vuln.recommendation || 'No especificado'}</td></tr>
+                    </table>
                 </div>
             `;
         });
@@ -1708,13 +1565,13 @@ function exportToWord() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `reporte_completo_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
+        a.download = `reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showNotification(`Reporte completo exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
+        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
         
     } catch (error) {
         console.error('Error al exportar:', error);
@@ -1722,9 +1579,8 @@ function exportToWord() {
     }
 }
 
-
 function exportExecutiveReport() {
-    console.log('Ejecutando exportExecutiveReport (Informe Ejecutivo)...');
+    console.log('Ejecutando exportExecutiveReport...');
 
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para generar el informe ejecutivo.', 'error');
@@ -1732,9 +1588,8 @@ function exportExecutiveReport() {
     }
 
     try {
-        // Asegurarse de que los gráficos se hayan generado
         if (!riskDistributionChart || !owaspDistributionChart) {
-             updateDashboard(); // Forzar la actualización de los gráficos si no existen
+            updateDashboard();
         }
 
         const totalVulnerabilities = vulnerabilities.length;
@@ -1742,148 +1597,83 @@ function exportExecutiveReport() {
         const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
         const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
         const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
-
-        // **SOLUCIÓN MEJORADA: Crear canvas temporal con fondo blanco**
+        const infoCount = vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length;
+        
+        const webCount = vulnerabilities.filter(v => v.owaspStandard === 'web').length;
+        const apiCount = vulnerabilities.filter(v => v.owaspStandard === 'api').length;
+        const mobileCount = vulnerabilities.filter(v => v.owaspStandard === 'mobile').length;
+        
         const riskChartImage = createChartWithWhiteBackground(riskDistributionChart);
         const owaspChartImage = createChartWithWhiteBackground(owaspDistributionChart);
         
-        // El resto del código permanece igual...
         let htmlContent = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Informe Ejecutivo de Riesgos</title>
                 <style>
-                    body { 
-                        font-family: Arial, sans-serif; 
-                        margin: 0;
-                        padding: 30px;
-                        line-height: 1.6;
-                        color: #333;
-                        font-size: 12pt;
-                        width: 100%;
-                        background-color: #ffffff;
-                    }
-                    .report-header {
-                        text-align: center;
-                        margin-bottom: 40px;
-                        padding-bottom: 20px;
-                        border-bottom: 3px solid #000080;
-                    }
-                    .report-header h1 {
-                        font-size: 20pt;
-                        color: #000080;
-                        margin-bottom: 10px;
-                    }
-                    .section-title {
-                        font-size: 16pt;
-                        color: #2c3e50;
-                        border-bottom: 2px solid #ccc;
-                        padding-bottom: 5px;
-                        margin-top: 30px;
-                        margin-bottom: 20px;
-                        page-break-before: auto;
-                    }
-                    .summary-table {
-                        width: 80%;
-                        border-collapse: collapse;
-                        margin: 20px 0;
-                        font-size: 11pt;
-                        border: 1px solid #ddd;
-                    }
-                    .summary-table th, .summary-table td {
-                        border: 1px solid #ddd;
-                        padding: 10px;
-                        text-align: left;
-                    }
-                    .summary-table th {
-                        background-color: #f2f2f2;
-                        font-weight: bold;
-                    }
-                    .chart-container {
-                        text-align: center;
-                        margin: 40px 0;
-                        page-break-inside: avoid;
-                    }
-                    .chart-caption {
-                        font-size: 10pt;
-                        color: #666;
-                        margin-top: 10px;
-                    }
-                    .total { background-color: #e6f3ff; font-weight: bold; }
-                    .critical { color: #dc3545; font-weight: bold; }
-                    .high { color: #fd7e14; font-weight: bold; }
+                    body { font-family: Arial; margin: 30px; }
+                    .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000080; }
+                    h1 { color: #000080; }
+                    .section { margin: 30px 0; }
+                    table { width: 80%; border-collapse: collapse; margin: 20px 0; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    .chart { text-align: center; margin: 40px 0; }
+                    .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; color: white; }
+                    .bg-primary { background-color: #007bff; }
+                    .bg-danger { background-color: #dc3545; }
+                    .bg-success { background-color: #28a745; }
                 </style>
             </head>
             <body>
-                <div class="report-header">
+                <div class="header">
                     <h1>Informe Ejecutivo de Riesgos de Seguridad</h1>
-                    <p><strong>Proyecto/Sistema:</strong> [Nombre del proyecto]</p>
-                    <p><strong>Fecha de Evaluación:</strong> ${new Date().toLocaleDateString()}</p>
-                    <p><strong>Total de Vulnerabilidades Identificadas:</strong> ${totalVulnerabilities}</p>
+                    <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>Total de Vulnerabilidades:</strong> ${totalVulnerabilities}</p>
                 </div>
 
-                <div class="section-title">Resumen de Vulnerabilidades</div>
-                <table class="summary-table">
-                    <tr>
-                        <th>Métrica</th>
-                        <th>Valor</th>
-                        <th>Descripción</th>
-                    </tr>
-                    <tr class="total">
-                        <td>Total de Vulnerabilidades</td>
-                        <td>${totalVulnerabilities}</td>
-                        <td>Número total de hallazgos de seguridad identificados.</td>
-                    </tr>
-                    <tr>
-                        <td>Vulnerabilidades Críticas</td>
-                        <td class="critical">${criticalCount}</td>
-                        <td>Requieren atención inmediata.</td>
-                    </tr>
-                    <tr>
-                        <td>Vulnerabilidades Altas</td>
-                        <td class="high">${highCount}</td>
-                        <td>Deben ser mitigadas con alta prioridad.</td>
-                    </tr>
-                    <tr>
-                        <td>Vulnerabilidades Medias</td>
-                        <td>${mediumCount}</td>
-                        <td>Riesgo moderado, mitigar en el ciclo de desarrollo actual.</td>
-                    </tr>
-                    <tr>
-                        <td>Vulnerabilidades Bajas/Informativas</td>
-                        <td>${lowCount + vulnerabilities.filter(v => v.riskLevel === 'INFORMATIVO').length}</td>
-                        <td>Riesgo menor o informativo.</td>
-                    </tr>
-                </table>
-
-                <div class="section-title">Distribución de Riesgos</div>
-                <p>El siguiente gráfico representa la distribución de todas las vulnerabilidades según el nivel de riesgo calculado por el motor Intriga (OWASP Risk Rating Methodology, adaptado a escala 0-81).</p>
-                <div class="chart-container">
-                    <img src="${riskChartImage}" alt="Distribución por Nivel de Riesgo" style="width: 500px; height: 500px; border: 1px solid #ccc;"/>
-                    <div class="chart-caption">Figura 1: Distribución por Nivel de Riesgo (Crítico, Alto, Medio, Bajo, Informativo).</div>
+                <div class="section">
+                    <h2>Resumen por Estándar OWASP</h2>
+                    <table>
+                        <tr><th>Estándar</th><th>Cantidad</th><th>Porcentaje</th></tr>
+                        <tr><td><span class="badge bg-primary">Web</span></td><td>${webCount}</td><td>${Math.round(webCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td><span class="badge bg-danger">API</span></td><td>${apiCount}</td><td>${Math.round(apiCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td><span class="badge bg-success">Mobile</span></td><td>${mobileCount}</td><td>${Math.round(mobileCount/totalVulnerabilities*100)}%</td></tr>
+                    </table>
                 </div>
 
-                <div class="section-title">Distribución por Categoría OWASP Top 10 (2021)</div>
-                <p>La siguiente gráfica muestra cómo se distribuyen los hallazgos según las categorías definidas por el OWASP Top 10 (2021), indicando las áreas más afectadas del sistema.</p>
-                <div class="chart-container">
-                    <img src="${owaspChartImage}" alt="Distribución por Categoría OWASP" style="width: 500px; height: 500px; border: 1px solid #ccc;"/>
-                    <div class="chart-caption">Figura 2: Distribución por Categoría OWASP Top 10 (2021).</div>
+                <div class="section">
+                    <h2>Resumen por Nivel de Riesgo</h2>
+                    <table>
+                        <tr><th>Nivel</th><th>Cantidad</th><th>Porcentaje</th></tr>
+                        <tr><td>Crítico</td><td>${criticalCount}</td><td>${Math.round(criticalCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td>Alto</td><td>${highCount}</td><td>${Math.round(highCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td>Medio</td><td>${mediumCount}</td><td>${Math.round(mediumCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td>Bajo</td><td>${lowCount}</td><td>${Math.round(lowCount/totalVulnerabilities*100)}%</td></tr>
+                        <tr><td>Informativo</td><td>${infoCount}</td><td>${Math.round(infoCount/totalVulnerabilities*100)}%</td></tr>
+                    </table>
                 </div>
-                
-                <p style="page-break-before: always;">-- Fin del Informe Ejecutivo --</p>
+
+                <div class="chart">
+                    <h2>Distribución por Nivel de Riesgo</h2>
+                    <img src="${riskChartImage}" style="width: 500px;"/>
+                </div>
+
+                <div class="chart">
+                    <h2>Distribución por Categoría OWASP</h2>
+                    <img src="${owaspChartImage}" style="width: 500px;"/>
+                </div>
             </body>
             </html>
         `;
 
-        // Generación y descarga del archivo .doc
         const blob = new Blob([htmlContent], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `informe_ejecutivo_riesgos_${new Date().toISOString().split('T')[0]}.doc`;
+        a.download = `informe_ejecutivo_${new Date().toISOString().split('T')[0]}.doc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1893,29 +1683,24 @@ function exportExecutiveReport() {
         
     } catch (error) {
         console.error('Error al exportar Informe Ejecutivo:', error);
-        showNotification('Error al exportar el Informe Ejecutivo. Asegúrese de que los gráficos se hayan cargado.', 'error');
+        showNotification('Error al exportar el Informe Ejecutivo.', 'error');
     }
 }
 
-// Función auxiliar para crear gráficos con fondo blanco
 function createChartWithWhiteBackground(chart) {
-    // Crear un canvas temporal
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = chart.width;
     tempCanvas.height = chart.height;
     const tempCtx = tempCanvas.getContext('2d');
     
-    // Rellenar con fondo blanco
     tempCtx.fillStyle = 'white';
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    
-    // Dibujar el gráfico sobre el fondo blanco
     tempCtx.drawImage(chart.canvas, 0, 0);
     
     return tempCanvas.toDataURL('image/png');
 }
 
-// ========== EXPORTACIÓN A PDF (MEJORADA CON BORDES VISIBLES) ==========
+// ========== EXPORTACIÓN A PDF ==========
 function exportToPDF() {
     console.log('Ejecutando exportToPDF...');
     
@@ -1940,7 +1725,6 @@ function exportToPDF() {
             
             let yPosition = 20;
             
-            // Título principal MÁS DESTACADO - SOLO EL NOMBRE
             const riskColor = getRiskPdfColor(vuln.riskLevel);
             doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
             doc.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F');
@@ -1949,82 +1733,56 @@ function exportToPDF() {
             doc.setFont(undefined, 'bold');
             doc.setTextColor(riskColor.textColor);
             
-            const title = `${vuln.name || 'Vulnerabilidad'}`;
+            const title = `${vuln.name || 'Vulnerabilidad'} (${vuln.owaspStandard?.toUpperCase() || 'WEB'})`;
             const titleWidth = doc.getTextWidth(title);
             const titleX = margin + ((pageWidth - 2 * margin - titleWidth) / 2);
             doc.text(title, titleX, yPosition + 8);
             
             yPosition += 20;
 
-            // Configuración de columnas
-            const col1Width = 45;  // Ancho para etiquetas
-            const col2Width = pageWidth - col1Width - 2 * margin; // Ancho restante para valores
+            const col1Width = 45;
+            const col2Width = pageWidth - col1Width - 2 * margin;
 
-            // Fila 1: Nombre de vulnerabilidad
             drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Nombre de vulnerabilidad', vuln.name || 'No especificado');
+                              'Estándar OWASP', 
+                              vuln.owaspStandard === 'web' ? 'Web' : 
+                              vuln.owaspStandard === 'api' ? 'API' : 'Mobile');
             yPosition += 10;
 
-            // Fila 2: Resultados del análisis | ALTO
             drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Resultados del análisis', vuln.riskLevel, true, vuln.riskLevel);
+                              'Categoría OWASP', vuln.owasp || 'No especificado');
             yPosition += 10;
 
-            // Fila 3: Nivel de Riesgo | ALTO
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'Nombre', vuln.name || 'No especificado');
+            yPosition += 10;
+
             drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
                               'Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
             yPosition += 10;
 
-            // Fila 4: Host | [valor]
             drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
                               'Host', vuln.host || 'No especificado');
             yPosition += 10;
 
-            // Fila 5: Ruta afectada | [valor]
             drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Ruta afectada:', vuln.rutaAfectada || 'No especificado');
+                              'Ruta afectada', vuln.rutaAfectada || 'No especificado');
             yPosition += 10;
 
-            // Fila 6: Resultado del Escáner | -
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Resultado del Escáner', '-');
-            yPosition += 10;
-
-            // Fila 7: Detalle | [valor combinado]
-            const detailHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                  'Detalle:', vuln.detail || 'No especificado');
-            yPosition += detailHeight;
-
-            // Fila 8: Descripción del análisis | [valor combinado]
             const descHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                'Descripción del análisis', vuln.description || 'No especificado');
+                                                'Descripción', vuln.description || 'No especificado');
             yPosition += descHeight;
 
-            // Fila 9: Recomendación | [valor combinado]
             const recHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
                                                'Recomendación', vuln.recommendation || 'No especificado');
             yPosition += recHeight;
 
-            // Fila 10: ID OWASP top 10 | [valor combinado]
-            const owaspHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                 'ID OWASP top 10', vuln.owasp || 'No especificado');
-            yPosition += owaspHeight;
+            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
+                              'MITRE ID', vuln.mitre || 'No especificado');
+            yPosition += 10;
 
-            // Fila 11: MITRE ID | [valor combinado]
-            const mitreHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                 'MITRE ID', formatMitreForPdf(vuln.mitre));
-            yPosition += mitreHeight;
-
-            // Fila 12: Estrategia de detección MITRE | [valor combinado]
-            const detectionHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                     'Estrategia de detección MITRE', formatMitreForPdf(vuln.mitreDetection));
-            yPosition += detectionHeight;
-
-            // Fila 13: Estrategia de mitigación MITRE | [valor combinado]
-            const mitigationHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                      'Estrategia de mitigación MITRE', formatMitreForPdf(vuln.mitreMitigation));
-            yPosition += mitigationHeight;
-
+            const factorsHeight = drawFactorsRowPDF(doc, margin, yPosition, col1Width, col2Width, vuln);
+            yPosition += factorsHeight;
         });
         
         doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -2036,23 +1794,17 @@ function exportToPDF() {
     }
 }
 
-
-// Función para dibujar filas de 2 columnas con bordes MÁS VISIBLES
 function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
     doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.8); // Línea más gruesa
+    doc.setLineWidth(0.8);
     
     const totalWidth = col1Width + col2Width;
     const rowHeight = 10;
     
-    // Dibujar rectángulo exterior con línea más gruesa
     doc.rect(x, y, totalWidth, rowHeight);
-    
-    // Dibujar línea vertical entre columnas MÁS GRUESA
     doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
     
-    // Fondos de celdas - gris más oscuro para mejor contraste
-    doc.setFillColor(220, 220, 220); // Gris más oscuro para etiquetas
+    doc.setFillColor(220, 220, 220);
     doc.rect(x, y, col1Width, rowHeight, 'F');
     
     if (isRiskCell && riskLevel) {
@@ -2060,20 +1812,16 @@ function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRi
         doc.setFillColor(color.r, color.g, color.b);
         doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
     } else {
-        doc.setFillColor(255, 255, 255); // Blanco para valores
+        doc.setFillColor(255, 255, 255);
         doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
     }
     
-    // Textos - tamaño de fuente aumentado para mejor legibilidad
     doc.setFontSize(9);
-    
-    // Columna 1 (Etiqueta) - Negrita y más grande
     doc.setFont(undefined, 'bold');
     doc.setTextColor(0, 0, 0);
     const labelLines = doc.splitTextToSize(label, col1Width - 6);
     doc.text(labelLines, x + 3, y + 6);
     
-    // Columna 2 (Valor)
     if (isRiskCell && riskLevel) {
         const color = getRiskPdfColor(riskLevel);
         doc.setTextColor(color.textColor);
@@ -2085,54 +1833,53 @@ function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRi
     const valueLines = doc.splitTextToSize(value, col2Width - 6);
     doc.text(valueLines, x + col1Width + 3, y + 6);
     
-    // Reset color
     doc.setTextColor(0, 0, 0);
     
     return rowHeight;
 }
 
-// Función para filas combinadas (2 columnas) con bordes MÁS VISIBLES
 function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
     doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.8); // Línea más gruesa
+    doc.setLineWidth(0.8);
     
     const totalWidth = col1Width + col2Width;
     
-    // Calcular altura dinámica basada en el contenido
     doc.setFontSize(9);
     const valueLines = doc.splitTextToSize(value || 'No especificado', col2Width - 6);
-    const lineHeight = 5; // Más espacio entre líneas
-    const minHeight = 12; // Altura mínima aumentada
+    const lineHeight = 5;
+    const minHeight = 12;
     const contentHeight = Math.max(minHeight, valueLines.length * lineHeight);
     const rowHeight = contentHeight;
     
-    // Dibujar bordes VISIBLES Y GRUESOS
     doc.rect(x, y, totalWidth, rowHeight);
     doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
     
-    // Fondo columna 1 (gris más oscuro)
     doc.setFillColor(220, 220, 220);
     doc.rect(x, y, col1Width, rowHeight, 'F');
-    
-    // Fondo columna 2 (blanco)
     doc.setFillColor(255, 255, 255);
     doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
     
-    // Textos - tamaño aumentado para mejor legibilidad
     doc.setTextColor(0, 0, 0);
-    
-    // Etiqueta (negrita, centrada verticalmente)
     doc.setFont(undefined, 'bold');
     const labelLines = doc.splitTextToSize(label, col1Width - 6);
     const labelY = y + (rowHeight / 2) - ((labelLines.length * lineHeight) / 2) + 3;
     doc.text(labelLines, x + 3, labelY);
     
-    // Valor (normal, centrado verticalmente)
     doc.setFont(undefined, 'normal');
     const valueY = y + (rowHeight / 2) - ((valueLines.length * lineHeight) / 2) + 3;
     doc.text(valueLines, x + col1Width + 3, valueY);
     
     return rowHeight;
+}
+
+function drawFactorsRowPDF(doc, x, y, col1Width, col2Width, vuln) {
+    const factorsText = 
+        `SL: ${vuln.sl || 1} | M: ${vuln.m || 1} | O: ${vuln.o || 0} | S: ${vuln.s || 2} | ` +
+        `LC: ${vuln.lc || 2} | LI: ${vuln.li || 1} | LAV: ${vuln.lav || 1} | LAC: ${vuln.lac || 1} | ` +
+        `ED: ${vuln.ed || 1} | EE: ${vuln.ee || 1} | A: ${vuln.a || 1} | ID: ${vuln.intrusion || 1} | ` +
+        `FD: ${vuln.fd || 1} | RD: ${vuln.rd || 1} | NC: ${vuln.nc || 2} | PV: ${vuln.pv || 3}`;
+    
+    return drawCombinedRowPDF(doc, x, y, col1Width, col2Width, 'Factores de Riesgo', factorsText);
 }
 
 // ========== EXPORTACIÓN E IMPORTACIÓN JSON ==========
@@ -2167,7 +1914,7 @@ function exportToJson() {
 }
 
 function importJson(event) {
-    console.log('Ejecutando importJson (Modo Fusión)...');
+    console.log('Ejecutando importJson...');
     const file = event.target.files[0];
     
     if (!file) {
@@ -2189,41 +1936,42 @@ function importJson(event) {
                 showNotification('El archivo JSON debe contener un array de vulnerabilidades.', 'error');
                 return;
             }
-            if (newVulnerabilities.length > 0 && (!newVulnerabilities[0].name || !newVulnerabilities[0].riskLevel)) {
-                showNotification('El archivo JSON no tiene el formato de vulnerabilidades esperado.', 'error');
-                return;
-            }
             
-            const initialCount = vulnerabilities.length;
-
-            const existingIds = new Set(vulnerabilities.map(v => v.id));
-
-            const uniqueNewVulnerabilities = newVulnerabilities.filter(vuln => {
-                if (vuln.id && existingIds.has(vuln.id)) {
-                    return false;
+            // Migrar vulnerabilidades importadas si no tienen owaspStandard
+            newVulnerabilities = newVulnerabilities.map(vuln => {
+                if (!vuln.owaspStandard) {
+                    let standard = 'web';
+                    if (vuln.owasp) {
+                        if (vuln.owasp.startsWith('API')) {
+                            standard = 'api';
+                        } else if (vuln.owasp.startsWith('M')) {
+                            standard = 'mobile';
+                        }
+                    }
+                    return { ...vuln, owaspStandard: standard };
                 }
-                return true;
+                return vuln;
             });
             
+            const existingIds = new Set(vulnerabilities.map(v => v.id));
+            const uniqueNewVulnerabilities = newVulnerabilities.filter(vuln => !existingIds.has(vuln.id));
             const duplicatesCount = newVulnerabilities.length - uniqueNewVulnerabilities.length;
 
             vulnerabilities = vulnerabilities.concat(uniqueNewVulnerabilities);
             
-            const mergedCount = vulnerabilities.length - initialCount;
-
             saveVulnerabilities();
             renderVulnerabilitiesList();
             updateDashboard();
             
-            let message = `${mergedCount} vulnerabilidades únicas cargadas y fusionadas.`;
+            let message = `${uniqueNewVulnerabilities.length} vulnerabilidades únicas cargadas y fusionadas.`;
             if (duplicatesCount > 0) {
-                 message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
+                message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
             }
             showNotification(message, 'success');
             
         } catch (error) {
             console.error('Error procesando archivo JSON:', error);
-            showNotification('Error al parsear el archivo JSON. Asegúrate de que el formato sea correcto.', 'error');
+            showNotification('Error al parsear el archivo JSON.', 'error');
         }
         event.target.value = '';
     };
@@ -2243,35 +1991,14 @@ function getRiskPdfColor(riskLevel) {
     }
 }
 
-function formatMitreForPdf(text) {
-    if (!text) return 'No especificado';
-    const lines = text.split(/[,;\n]/).filter(line => line.trim());
-    if (lines.length > 1) {
-        return lines.map(line => `• ${line.trim()}`).join('\n');
-    }
-    if (text.includes('\n')) {
-        return text.split('\n')
-            .filter(line => line.trim())
-            .map(line => `• ${line.trim()}`)
-            .join('\n');
-    }
-    return text;
-}
-
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
-        case 'CRÍTICO':
-            return '#dc3545'; // Rojo
-        case 'ALTO':
-            return '#fd7e14'; // Naranja
-        case 'MEDIO':
-            return '#ffc107'; // Amarillo
-        case 'BAJO':
-            return '#20c997'; // Verde
-        case 'INFORMATIVO':
-            return '#17a2b8'; // Azul
-        default:
-            return '#6c757d'; // Gris
+        case 'CRÍTICO': return '#dc3545';
+        case 'ALTO': return '#fd7e14';
+        case 'MEDIO': return '#ffc107';
+        case 'BAJO': return '#20c997';
+        case 'INFORMATIVO': return '#17a2b8';
+        default: return '#6c757d';
     }
 }
 
@@ -2316,9 +2043,10 @@ function showVulnerabilityDetails(id) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
-    // Crear HTML para los factores de riesgo detallados
+    const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
+                        vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
+    
     const factoresHTML = `
-        <!-- SECCIÓN DE FACTORES DE RIESGO -->
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Agente de Amenaza</h5>
             <div class="detail-item">
@@ -2402,7 +2130,6 @@ function showVulnerabilityDetails(id) {
     
     modalBody.innerHTML = `
         <div class="vulnerability-details">
-            <!-- Encabezado con Número e ID -->
             <div class="detail-item">
                 <div class="detail-label">Número</div>
                 <div class="detail-value">${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
@@ -2413,7 +2140,18 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.id}</div>
             </div>
             
-            <!-- Información General -->
+            <div class="detail-item">
+                <div class="detail-label">Estándar OWASP</div>
+                <div class="detail-value">
+                    <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${standardText}</span>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Categoría OWASP</div>
+                <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
+            </div>
+            
             <div class="detail-item">
                 <div class="detail-label">Vector de Ataque (Vulnerabilidad)</div>
                 <div class="detail-value">${vuln.name || 'No especificado'}</div>
@@ -2429,7 +2167,6 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
             
-            <!-- Información de Riesgo -->
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
                 <div class="detail-value">
@@ -2448,12 +2185,6 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
             </div>
             
-            <!-- Información OWASP/MITRE -->
-            <div class="detail-item">
-                <div class="detail-label">OWASP 2021</div>
-                <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
-            </div>
-            
             <div class="detail-item">
                 <div class="detail-label">MITRE ID</div>
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
@@ -2464,13 +2195,11 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
             </div>
             
-            <!-- Información de Amenazas -->
             <div class="detail-item">
                 <div class="detail-label">Agente de Amenazas</div>
                 <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
             </div>
                         
-            <!-- Análisis de Seguridad -->
             <div class="detail-item">
                 <div class="detail-label">Debilidad de Seguridad</div>
                 <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
@@ -2486,7 +2215,6 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
             </div>
             
-            <!-- Detalles y Descripción -->
             <div class="detail-item">
                 <div class="detail-label">Detalle</div>
                 <div class="detail-value">${vuln.detail || 'No especificado'}</div>
@@ -2497,13 +2225,11 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
             
-            <!-- Recomendaciones -->
             <div class="detail-item">
                 <div class="detail-label">Recomendación</div>
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             
-            <!-- Estrategias MITRE -->
             <div class="detail-item">
                 <div class="detail-label">Estrategia de Detección MITRE</div>
                 <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
@@ -2514,10 +2240,8 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
             </div>
             
-            <!-- FACTORES DE RIESGO DETALLADOS -->
             ${factoresHTML}
             
-            <!-- Fechas -->
             <div class="detail-item">
                 <div class="detail-label">Fecha de Creación</div>
                 <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
@@ -2531,7 +2255,6 @@ function showVulnerabilityDetails(id) {
             ` : ''}
         </div>
         
-        <!-- Botones de Acción -->
         <div class="text-center mt-4">
             <button class="btn btn-warning me-2" id="edit-from-details" data-id="${vuln.id}">
                 <i class="bi bi-pencil"></i> Editar esta Vulnerabilidad
@@ -2542,35 +2265,30 @@ function showVulnerabilityDetails(id) {
         </div>
     `;
     
-    // Agregar event listeners a los botones dentro del modal
     setTimeout(() => {
         const editBtn = document.getElementById('edit-from-details');
         const deleteBtn = document.getElementById('delete-from-details');
         
         if (editBtn) {
             editBtn.addEventListener('click', () => {
-                // Cerrar modal de detalles
                 const detailsModalElement = document.getElementById('vulnerabilityModal');
                 if (detailsModalElement && typeof bootstrap !== 'undefined') {
                     const modal = bootstrap.Modal.getInstance(detailsModalElement);
                     if (modal) modal.hide();
                 }
                 
-                // Abrir modal de edición
                 setTimeout(() => openEditModal(vuln.id), 300);
             });
         }
         
         if (deleteBtn) {
             deleteBtn.addEventListener('click', () => {
-                // Cerrar modal de detalles
                 const detailsModalElement = document.getElementById('vulnerabilityModal');
                 if (detailsModalElement && typeof bootstrap !== 'undefined') {
                     const modal = bootstrap.Modal.getInstance(detailsModalElement);
                     if (modal) modal.hide();
                 }
                 
-                // Eliminar
                 setTimeout(() => deleteVulnerability(vuln.id), 300);
             });
         }
@@ -2621,45 +2339,32 @@ function saveVulnerabilities() {
     }
 }
 
-
 function loadVulnerabilities() {
     try {
         const saved = localStorage.getItem('owaspVulnerabilities');
         if (saved) {
             vulnerabilities = JSON.parse(saved);
             
-            // Asegurar compatibilidad con vulnerabilidades antiguas
             vulnerabilities = vulnerabilities.map(vuln => {
-                // Para compatibilidad con vulnerabilidades guardadas antes de tener factores individuales
                 return {
-                    // Valores por defecto para factores si no existen
-                    // Factores del Agente de Amenaza
                     sl: vuln.sl !== undefined ? vuln.sl : 1,
                     m: vuln.m !== undefined ? vuln.m : 1,
-                    o: vuln.o !== undefined ? vuln.o : 0,  // Oportunidad de Ataque por defecto 0
+                    o: vuln.o !== undefined ? vuln.o : 0,
                     s: vuln.s !== undefined ? vuln.s : 2,
-                    
-                    // Factores de Impacto Técnico
                     lc: vuln.lc !== undefined ? vuln.lc : 2,
                     li: vuln.li !== undefined ? vuln.li : 1,
                     lav: vuln.lav !== undefined ? vuln.lav : 1,
                     lac: vuln.lac !== undefined ? vuln.lac : 1,
-                    
-                    // Factores de Vulnerabilidad
                     ed: vuln.ed !== undefined ? vuln.ed : 1,
                     ee: vuln.ee !== undefined ? vuln.ee : 1,
                     a: vuln.a !== undefined ? vuln.a : 1,
-                    // Compatibilidad con 'intrusion' y 'id' antiguo
                     intrusion: vuln.intrusion !== undefined ? vuln.intrusion : 
                               (vuln.id !== undefined && typeof vuln.id === 'number' ? vuln.id : 1),
-                    
-                    // Factores de Impacto de Negocio
                     fd: vuln.fd !== undefined ? vuln.fd : 1,
                     rd: vuln.rd !== undefined ? vuln.rd : 1,
                     nc: vuln.nc !== undefined ? vuln.nc : 2,
                     pv: vuln.pv !== undefined ? vuln.pv : 3,
                     
-                    // Mantener todos los demás campos
                     id: vuln.id,
                     name: vuln.name,
                     likelihood: vuln.likelihood || 0,
@@ -2668,14 +2373,13 @@ function loadVulnerabilities() {
                     riskLevel: vuln.riskLevel || 'INFORMATIVO',
                     riskClass: vuln.riskClass || 'risk-info',
                     
-                    // Información general
                     host: vuln.host || '',
                     rutaAfectada: vuln.rutaAfectada || '',
+                    owaspStandard: vuln.owaspStandard || 'web',
                     owasp: vuln.owasp || '',
                     mitre: vuln.mitre || '',
                     toolCriticity: vuln.toolCriticity || '',
                     
-                    // Información adicional
                     threatAgent: vuln.threatAgent || '',
                     securityWeakness: vuln.securityWeakness || '',
                     securityControls: vuln.securityControls || '',
@@ -2686,25 +2390,14 @@ function loadVulnerabilities() {
                     mitreDetection: vuln.mitreDetection || '',
                     mitreMitigation: vuln.mitreMitigation || '',
                     
-                    // Fechas
                     date: vuln.date || new Date().toISOString(),
                     lastUpdated: vuln.lastUpdated
                 };
             });
             
             console.log(`Cargadas ${vulnerabilities.length} vulnerabilidades`);
-            console.log('Primera vulnerabilidad cargada:', vulnerabilities.length > 0 ? {
-                nombre: vulnerabilities[0].name,
-                o: vulnerabilities[0].o,
-                intrusion: vulnerabilities[0].intrusion,
-                sl: vulnerabilities[0].sl,
-                m: vulnerabilities[0].m,
-                s: vulnerabilities[0].s
-            } : 'No hay vulnerabilidades');
-            
             renderVulnerabilitiesList();
             updateDashboard();
-            
         } else {
             console.log('No hay vulnerabilidades guardadas');
             vulnerabilities = [];
@@ -2716,7 +2409,6 @@ function loadVulnerabilities() {
     }
 }
 
-
 // ========== MANEJO DEL SELECT "AGENTE DE AMENAZAS" ==========
 function setupThreatAgentSelect() {
     const threatAgentSelect = document.getElementById('threat-agent');
@@ -2724,12 +2416,11 @@ function setupThreatAgentSelect() {
     const otherInput = document.getElementById('other-threat-agent');
     
     if (threatAgentSelect && otherContainer && otherInput) {
-        // Mostrar/ocultar campo "Otro" basado en selección
         threatAgentSelect.addEventListener('change', function() {
             if (this.value === 'Otro') {
                 otherContainer.style.display = 'block';
                 otherInput.required = true;
-                otherInput.focus(); // Enfocar automáticamente
+                otherInput.focus();
             } else {
                 otherContainer.style.display = 'none';
                 otherInput.required = false;
@@ -2737,12 +2428,10 @@ function setupThreatAgentSelect() {
             }
         });
         
-        // Validar campo "Otro" si está visible
         otherInput.addEventListener('blur', function() {
             if (threatAgentSelect.value === 'Otro' && !this.value.trim()) {
                 this.classList.add('is-invalid');
                 
-                // Crear mensaje de error
                 let errorDiv = this.parentElement.querySelector('.invalid-feedback');
                 if (!errorDiv) {
                     errorDiv = document.createElement('div');
@@ -2753,7 +2442,6 @@ function setupThreatAgentSelect() {
             }
         });
         
-        // Limpiar validación al escribir
         otherInput.addEventListener('input', function() {
             if (this.value.trim()) {
                 this.classList.remove('is-invalid');
@@ -2770,30 +2458,30 @@ function openEditModal(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
     if (!vuln) return;
     
-    // Cambiar a la pestaña de Calculadora
     const calculatorTab = document.getElementById('calculator-tab');
     if (calculatorTab && calculatorTab.click) {
         calculatorTab.click();
     }
     
-    // Desplazar al inicio del formulario
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Función para establecer valores seguros con mejor manejo de valores por defecto
     function setValue(id, value, defaultValue = '') {
         const element = document.getElementById(id);
         if (element) {
             if (element.tagName === 'SELECT') {
-                // Para selects, convertir valor a string
                 const stringValue = value !== undefined && value !== null ? value.toString() : defaultValue.toString();
                 element.value = stringValue;
+                
+                // Trigger change event para selects dependientes
+                if (id === 'owasp-standard') {
+                    element.dispatchEvent(new Event('change'));
+                }
             } else {
                 element.value = value !== undefined && value !== null ? value : defaultValue;
             }
         }
     }
     
-    // Función para establecer valor en textarea
     function setTextarea(id, value) {
         const element = document.getElementById(id);
         if (element) {
@@ -2801,16 +2489,18 @@ function openEditModal(id) {
         }
     }
     
-    // Cargar información general
     setValue('vulnerability-name', vuln.name);
     setValue('host', vuln.host);
     setValue('ruta-afectada', vuln.rutaAfectada);
-    const owaspCode = vuln.owasp ? vuln.owasp.split(' - ')[0] : '';
-    setValue('owasp-category', owaspCode);
+    setValue('owasp-standard', vuln.owaspStandard || 'web');
+    
+    // Esperar a que se carguen las categorías antes de seleccionar
+    setTimeout(() => {
+        setValue('owasp-category', vuln.owasp);
+    }, 100);
+    
     setValue('mitre-id', vuln.mitre);
     setValue('tool-criticity', vuln.toolCriticity);
-    
-    // Información adicional
     setValue('threat-agent', vuln.threatAgent);
     setTextarea('security-weakness', vuln.securityWeakness);
     setTextarea('security-controls', vuln.securityControls);
@@ -2821,53 +2511,38 @@ function openEditModal(id) {
     setTextarea('mitre-detection', vuln.mitreDetection);
     setTextarea('mitre-mitigation', vuln.mitreMitigation);
     
-    // VALORES POR DEFECTO PARA FACTORES DE RIESGO
-    // Estos son los valores predeterminados que usa la calculadora cuando está vacía
+    setValue('sl', vuln.sl, 1);
+    setValue('m', vuln.m, 1);
+    setValue('opp', vuln.o, 0);
+    setValue('s', vuln.s, 2);
+    setValue('lc', vuln.lc, 2);
+    setValue('li', vuln.li, 1);
+    setValue('lav', vuln.lav, 1);
+    setValue('lac', vuln.lac, 1);
+    setValue('ed', vuln.ed, 1);
+    setValue('ee', vuln.ee, 1);
+    setValue('a', vuln.a, 1);
+    setValue('intrusion', vuln.intrusion || vuln.id, 1);
+    setValue('fd', vuln.fd, 1);
+    setValue('rd', vuln.rd, 1);
+    setValue('nc', vuln.nc, 2);
+    setValue('pv', vuln.pv, 3);
     
-    // Factores del Agente de Amenaza
-    setValue('sl', vuln.sl, 1);        // Valor por defecto: 1
-    setValue('m', vuln.m, 1);          // Valor por defecto: 1
-    setValue('opp', vuln.o, 0);        // Oportunidad de Ataque - Valor por defecto: 0
-    setValue('s', vuln.s, 2);          // Valor por defecto: 2
-    
-    // Factores de Impacto Técnico
-    setValue('lc', vuln.lc, 2);        // Valor por defecto: 2
-    setValue('li', vuln.li, 1);        // Valor por defecto: 1
-    setValue('lav', vuln.lav, 1);      // Valor por defecto: 1
-    setValue('lac', vuln.lac, 1);      // Valor por defecto: 1
-    
-    // Factores de Vulnerabilidad
-    setValue('ed', vuln.ed, 1);        // Valor por defecto: 1
-    setValue('ee', vuln.ee, 1);        // Valor por defecto: 1
-    setValue('a', vuln.a, 1);          // Valor por defecto: 1
-    setValue('intrusion', vuln.intrusion || vuln.id, 1);  // Valor por defecto: 1
-    
-    // Factores de Impacto de Negocio
-    setValue('fd', vuln.fd, 1);        // Valor por defecto: 1
-    setValue('rd', vuln.rd, 1);        // Valor por defecto: 1
-    setValue('nc', vuln.nc, 2);        // Valor por defecto: 2
-    setValue('pv', vuln.pv, 3);        // Valor por defecto: 3
-    
-    // Configurar botón de guardar para actualizar
     const saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
-        // Crear un nuevo botón para actualizar
         const updateBtn = document.createElement('button');
         updateBtn.className = 'btn btn-warning btn-lg';
         updateBtn.id = 'update-current-btn';
         updateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizar Vulnerabilidad';
         updateBtn.style.marginLeft = '10px';
         
-        // Reemplazar el botón de guardar temporalmente
         saveBtn.style.display = 'none';
         saveBtn.parentNode.insertBefore(updateBtn, saveBtn.nextSibling);
         
-        // Evento para actualizar
         updateBtn.onclick = function() {
             updateVulnerabilityInCalculator(vuln.id);
         };
         
-        // Botón para cancelar edición
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn btn-secondary btn-lg';
         cancelBtn.id = 'cancel-edit-btn';
@@ -2877,23 +2552,16 @@ function openEditModal(id) {
         updateBtn.parentNode.insertBefore(cancelBtn, updateBtn.nextSibling);
         
         cancelBtn.onclick = function() {
-            // Restaurar botón original
             saveBtn.style.display = 'inline-block';
             updateBtn.remove();
             cancelBtn.remove();
-            
-            // Limpiar formulario
             clearFormValidation();
-            
-            // Mostrar notificación
             showNotification('Edición cancelada', 'info');
         };
     }
     
-    // Mostrar notificación
     showNotification(`Editando: ${vuln.name}. Los cambios se guardarán al hacer clic en "Actualizar Vulnerabilidad".`, 'info');
     
-    // Recalcular riesgo automáticamente con los nuevos valores
     setTimeout(calculateRisk, 100);
 }
 
@@ -2902,16 +2570,13 @@ function updateVulnerabilityInCalculator(id) {
     if (vulnIndex === -1) return;
     
     try {
-        // Validar TODOS los campos obligatorios
         if (!validateRequiredFields()) {
-            return; // Detener si hay campos vacíos
+            return;
         }
         
-        // Calcular nuevos valores de riesgo
         const riskData = calculateRisk();
         const formData = getFormData();
         
-        // Función para obtener valor seguro de factor
         const getFactorValue = (id) => {
             const element = document.getElementById(id);
             if (element && element.value) {
@@ -2920,48 +2585,35 @@ function updateVulnerabilityInCalculator(id) {
             return 0;
         };
         
-        // Actualizar vulnerabilidad con TODOS los factores
         vulnerabilities[vulnIndex] = {
             ...vulnerabilities[vulnIndex],
             ...riskData,
             ...formData,
-            id: id, // Mantener el mismo ID
-            
-            // Actualizar TODOS los valores individuales de factores
-            // Factores del Agente de Amenaza
+            id: id,
             sl: getFactorValue('sl'),
             m: getFactorValue('m'),
-            o: getFactorValue('opp'),  // Oportunidad de Ataque
+            o: getFactorValue('opp'),
             s: getFactorValue('s'),
-            
-            // Factores de Impacto Técnico
             lc: getFactorValue('lc'),
             li: getFactorValue('li'),
             lav: getFactorValue('lav'),
             lac: getFactorValue('lac'),
-            
-            // Factores de Vulnerabilidad
             ed: getFactorValue('ed'),
             ee: getFactorValue('ee'),
             a: getFactorValue('a'),
-            intrusion: getFactorValue('intrusion'),  // Detección de intrusiones
-            
-            // Factores de Impacto de Negocio
+            intrusion: getFactorValue('intrusion'),
             fd: getFactorValue('fd'),
             rd: getFactorValue('rd'),
             nc: getFactorValue('nc'),
             pv: getFactorValue('pv'),
-            
             lastUpdated: new Date().toISOString(),
-            date: vulnerabilities[vulnIndex].date // Mantener fecha original
+            date: vulnerabilities[vulnIndex].date
         };
         
-        // Guardar y actualizar
         saveVulnerabilities();
         renderVulnerabilitiesList();
         updateDashboard();
         
-        // Restaurar botón original
         const saveBtn = document.getElementById('save-btn');
         const updateBtn = document.getElementById('update-current-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
@@ -2970,10 +2622,8 @@ function updateVulnerabilityInCalculator(id) {
         if (updateBtn) updateBtn.remove();
         if (cancelBtn) cancelBtn.remove();
         
-        // Mostrar notificación
         showNotification(`Vulnerabilidad "${formData.name}" actualizada correctamente`, 'success');
         
-        // Limpiar formulario después de actualizar
         setTimeout(() => {
             clearFormValidation();
         }, 500);
@@ -2982,53 +2632,6 @@ function updateVulnerabilityInCalculator(id) {
         console.error('Error actualizando vulnerabilidad:', error);
         showNotification('Error al actualizar la vulnerabilidad', 'error');
     }
-}
-
-function updateVulnerability(id) {
-    const vulnIndex = vulnerabilities.findIndex(v => v.id === id);
-    if (vulnIndex === -1) return;
-    
-    // Validar campos requeridos
-    const name = document.getElementById('edit-vulnerability-name')?.value.trim();
-    const host = document.getElementById('edit-host')?.value.trim();
-    const owasp = document.getElementById('edit-owasp-category')?.value;
-    const mitre = document.getElementById('edit-mitre-id')?.value.trim();
-    const description = document.getElementById('edit-description')?.value.trim();
-    const recommendation = document.getElementById('edit-recommendation')?.value.trim();
-    
-    if (!name || !host || !owasp || !mitre || !description || !recommendation) {
-        showNotification('Por favor, completa todos los campos requeridos', 'error');
-        return;
-    }
-    
-    // Actualizar los campos editables
-    vulnerabilities[vulnIndex] = {
-        ...vulnerabilities[vulnIndex],
-        name,
-        host,
-        owasp,
-        mitre,
-        description,
-        recommendation,
-        detail: document.getElementById('edit-detail')?.value.trim() || '',
-        rutaAfectada: document.getElementById('edit-ruta-afectada')?.value.trim() || '',
-        toolCriticity: document.getElementById('edit-tool-criticity')?.value.trim() || '',
-        lastUpdated: new Date().toISOString()
-    };
-    
-    // Guardar y actualizar
-    saveVulnerabilities();
-    renderVulnerabilitiesList();
-    updateDashboard();
-    
-    // Cerrar modal
-    const modalElement = document.getElementById('editVulnerabilityModal');
-    if (modalElement && typeof bootstrap !== 'undefined') {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) modal.hide();
-    }
-    
-    showNotification(`Vulnerabilidad "${name}" actualizada correctamente`, 'success');
 }
 
 function deleteVulnerability(id) {
@@ -3045,78 +2648,6 @@ function deleteVulnerability(id) {
     }
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function repairAllVulnerabilities() {
-    if (vulnerabilities.length === 0) {
-        showNotification('No hay vulnerabilidades para reparar', 'info');
-        return;
-    }
-    
-    const originalCount = vulnerabilities.length;
-    
-    vulnerabilities = vulnerabilities.map((vuln, index) => {
-        console.log(`Reparando vulnerabilidad ${index + 1}: ${vuln.name || 'Sin nombre'}`);
-        
-        return {
-            // Campos de factores con valores por defecto
-            sl: vuln.sl || 1,
-            m: vuln.m || 1,
-            o: vuln.o || 0,  // Este es el importante - Oportunidad de Ataque
-            s: vuln.s || 2,
-            lc: vuln.lc || 2,
-            li: vuln.li || 1,
-            lav: vuln.lav || 1,
-            lac: vuln.lac || 1,
-            ed: vuln.ed || 1,
-            ee: vuln.ee || 1,
-            a: vuln.a || 1,
-            intrusion: vuln.intrusion || (typeof vuln.id === 'number' ? vuln.id : 1),
-            fd: vuln.fd || 1,
-            rd: vuln.rd || 1,
-            nc: vuln.nc || 2,
-            pv: vuln.pv || 3,
-            
-            // Mantener todos los demás campos
-            id: vuln.id,
-            name: vuln.name,
-            likelihood: vuln.likelihood,
-            impact: vuln.impact,
-            risk: vuln.risk,
-            riskLevel: vuln.riskLevel,
-            riskClass: vuln.riskClass,
-            host: vuln.host,
-            rutaAfectada: vuln.rutaAfectada,
-            owasp: vuln.owasp,
-            mitre: vuln.mitre,
-            toolCriticity: vuln.toolCriticity,
-            threatAgent: vuln.threatAgent,
-            attackVector: vuln.attackVector,
-            securityWeakness: vuln.securityWeakness,
-            securityControls: vuln.securityControls,
-            technicalBusinessImpact: vuln.technicalBusinessImpact,
-            detail: vuln.detail,
-            description: vuln.description,
-            recommendation: vuln.recommendation,
-            mitreDetection: vuln.mitreDetection,
-            mitreMitigation: vuln.mitreMitigation,
-            date: vuln.date,
-            lastUpdated: vuln.lastUpdated || new Date().toISOString()
-        };
-    });
-    
-    saveVulnerabilities();
-    renderVulnerabilitiesList();
-    updateDashboard();
-    
-    showNotification(`${originalCount} vulnerabilidades reparadas con valores por defecto`, 'success');
-}
-
 function updateOldVulnerabilities() {
     if (vulnerabilities.length === 0) {
         console.log('No hay vulnerabilidades para actualizar');
@@ -3126,41 +2657,46 @@ function updateOldVulnerabilities() {
     let updatedCount = 0;
     
     vulnerabilities = vulnerabilities.map(vuln => {
-        // Verificar si es una vulnerabilidad antigua
         const needsUpdate = (
             vuln.sl === undefined || 
             vuln.o === undefined || 
-            vuln.intrusion === undefined
+            vuln.intrusion === undefined ||
+            vuln.owaspStandard === undefined
         );
         
         if (!needsUpdate) {
-            return vuln; // Ya está actualizada
+            return vuln;
         }
         
         updatedCount++;
         
-        // Crear un nuevo objeto manualmente
+        let standard = vuln.owaspStandard || 'web';
+        if (!vuln.owaspStandard && vuln.owasp) {
+            if (vuln.owasp.startsWith('API')) {
+                standard = 'api';
+            } else if (vuln.owasp.startsWith('M')) {
+                standard = 'mobile';
+            }
+        }
+        
         return {
-            // Campos básicos (siempre deben existir)
             id: vuln.id,
             name: vuln.name,
             date: vuln.date,
             
-            // Campos de riesgo calculado
             likelihood: vuln.likelihood || 0,
             impact: vuln.impact || 0,
             risk: vuln.risk || 0,
             riskLevel: vuln.riskLevel || 'INFORMATIVO',
             riskClass: vuln.riskClass || 'risk-info',
             
-            // Información general
             host: vuln.host || '',
             rutaAfectada: vuln.rutaAfectada || '',
-            owasp: vuln.owasp && !vuln.owasp.includes(' - ') ? getOwaspFullText(vuln.owasp) : (vuln.owasp || ''),
+            owaspStandard: standard,
+            owasp: vuln.owasp || '',
             mitre: vuln.mitre || '',
             toolCriticity: vuln.toolCriticity || '',
             
-            // Información adicional
             threatAgent: vuln.threatAgent || '',
             securityWeakness: vuln.securityWeakness || '',
             securityControls: vuln.securityControls || '',
@@ -3172,27 +2708,19 @@ function updateOldVulnerabilities() {
             mitreMitigation: vuln.mitreMitigation || '',
             lastUpdated: vuln.lastUpdated || new Date().toISOString(),
             
-            // FACTORES DE RIESGO (los que estamos agregando)
-            // Factores del Agente de Amenaza
             sl: vuln.sl !== undefined ? vuln.sl : 1,
             m: vuln.m !== undefined ? vuln.m : 1,
-            o: vuln.o !== undefined ? vuln.o : 0,  // Oportunidad de Ataque
+            o: vuln.o !== undefined ? vuln.o : 0,
             s: vuln.s !== undefined ? vuln.s : 2,
-            
-            // Factores de Impacto Técnico
             lc: vuln.lc !== undefined ? vuln.lc : 2,
             li: vuln.li !== undefined ? vuln.li : 1,
             lav: vuln.lav !== undefined ? vuln.lav : 1,
             lac: vuln.lac !== undefined ? vuln.lac : 1,
-            
-            // Factores de Vulnerabilidad
             ed: vuln.ed !== undefined ? vuln.ed : 1,
             ee: vuln.ee !== undefined ? vuln.ee : 1,
             a: vuln.a !== undefined ? vuln.a : 1,
             intrusion: vuln.intrusion !== undefined ? vuln.intrusion : 
                       (vuln.id !== undefined && typeof vuln.id === 'number' ? vuln.id : 1),
-            
-            // Factores de Impacto de Negocio
             fd: vuln.fd !== undefined ? vuln.fd : 1,
             rd: vuln.rd !== undefined ? vuln.rd : 1,
             nc: vuln.nc !== undefined ? vuln.nc : 2,
@@ -3208,4 +2736,3 @@ function updateOldVulnerabilities() {
         showNotification(`${updatedCount} vulnerabilidades actualizadas`, 'success');
     }
 }
-
