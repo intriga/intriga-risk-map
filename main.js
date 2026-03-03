@@ -1303,14 +1303,82 @@ function updateOwaspDistributionChart() {
         // Crear un array con todas las categorías de los tres estándares
         const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
         
-        // Crear un array de colores para cada categoría
+        // Colores simples y consistentes para todas las categorías (30 colores únicos)
         const allColors = [
-            // Web - Azules
-            ...owaspWebCategories.map(() => 'rgba(54, 162, 235, 0.8)'),
-            // API - Rojos
-            ...owaspApiCategories.map(() => 'rgba(255, 99, 132, 0.8)'),
-            // Mobile - Verdes
-            ...owaspMobileCategories.map(() => 'rgba(75, 192, 192, 0.8)')
+            // Web - Colores simples (10 colores)
+            'rgba(255, 99, 132, 0.9)',   // A01 - Rojo
+            'rgba(54, 162, 235, 0.9)',   // A02 - Azul
+            'rgba(255, 206, 86, 0.9)',   // A03 - Amarillo
+            'rgba(75, 192, 192, 0.9)',   // A04 - Verde azulado
+            'rgba(153, 102, 255, 0.9)',  // A05 - Púrpura
+            'rgba(255, 159, 64, 0.9)',   // A06 - Naranja
+            'rgba(199, 199, 199, 0.9)',  // A07 - Gris
+            'rgba(83, 102, 255, 0.9)',   // A08 - Azul índigo
+            'rgba(40, 159, 64, 0.9)',    // A09 - Verde
+            'rgba(210, 105, 30, 0.9)',   // A10 - Marrón
+            
+            // API - Repetimos los mismos colores pero en diferente orden
+            'rgba(255, 99, 132, 0.8)',   // API1 - Rojo
+            'rgba(54, 162, 235, 0.8)',   // API2 - Azul
+            'rgba(255, 206, 86, 0.8)',   // API3 - Amarillo
+            'rgba(75, 192, 192, 0.8)',   // API4 - Verde azulado
+            'rgba(153, 102, 255, 0.8)',  // API5 - Púrpura
+            'rgba(255, 159, 64, 0.8)',   // API6 - Naranja
+            'rgba(199, 199, 199, 0.8)',  // API7 - Gris
+            'rgba(83, 102, 255, 0.8)',   // API8 - Azul índigo
+            'rgba(40, 159, 64, 0.8)',    // API9 - Verde
+            'rgba(210, 105, 30, 0.8)',   // API10 - Marrón
+            
+            // Mobile - Mismos colores pero con diferente opacidad/saturación
+            'rgba(255, 99, 132, 0.7)',   // M1 - Rojo
+            'rgba(54, 162, 235, 0.7)',   // M2 - Azul
+            'rgba(255, 206, 86, 0.7)',   // M3 - Amarillo
+            'rgba(75, 192, 192, 0.7)',   // M4 - Verde azulado
+            'rgba(153, 102, 255, 0.7)',  // M5 - Púrpura
+            'rgba(255, 159, 64, 0.7)',   // M6 - Naranja
+            'rgba(199, 199, 199, 0.7)',  // M7 - Gris
+            'rgba(83, 102, 255, 0.7)',   // M8 - Azul índigo
+            'rgba(40, 159, 64, 0.7)',    // M9 - Verde
+            'rgba(210, 105, 30, 0.7)'    // M10 - Marrón
+        ];
+        
+        // Colores para los bordes (más intensos)
+        const allBorderColors = [
+            // Web
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(83, 102, 255, 1)',
+            'rgba(40, 159, 64, 1)',
+            'rgba(210, 105, 30, 1)',
+            
+            // API
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(83, 102, 255, 1)',
+            'rgba(40, 159, 64, 1)',
+            'rgba(210, 105, 30, 1)',
+            
+            // Mobile
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(83, 102, 255, 1)',
+            'rgba(40, 159, 64, 1)',
+            'rgba(210, 105, 30, 1)'
         ];
         
         // Contar vulnerabilidades por categoría
@@ -1318,7 +1386,14 @@ function updateOwaspDistributionChart() {
         
         vulnerabilities.forEach(vuln => {
             if (vuln.owasp) {
-                const index = allCategories.findIndex(cat => cat === vuln.owasp);
+                // Buscar coincidencia exacta o parcial
+                const index = allCategories.findIndex(cat => {
+                    if (cat === vuln.owasp) return true;
+                    const catCode = cat.split(' - ')[0];
+                    const vulnCode = vuln.owasp.split(' - ')[0];
+                    return catCode === vulnCode;
+                });
+                
                 if (index !== -1) {
                     counts[index]++;
                 }
@@ -1331,22 +1406,9 @@ function updateOwaspDistributionChart() {
             .filter(item => item.count > 0)
             .map(item => item.index);
         
-        const filteredLabels = nonZeroIndices.map(i => {
-            const cat = allCategories[i];
-            // Acortar la etiqueta para mejor visualización
-            if (cat.startsWith('A')) return cat.split(' - ')[0] + ' (Web)';
-            if (cat.startsWith('API')) return cat.split(' - ')[0] + ' (API)';
-            if (cat.startsWith('M')) return cat.split(' - ')[0] + ' (Mobile)';
-            return cat;
-        });
-        
-        const filteredData = nonZeroIndices.map(i => counts[i]);
-        const filteredColors = nonZeroIndices.map(i => allColors[i]);
-        
-        if (owaspDistributionChart) owaspDistributionChart.destroy();
-        
-        if (filteredData.length === 0) {
-            // Si no hay datos, mostrar un mensaje
+        // Si no hay datos, mostrar mensaje
+        if (nonZeroIndices.length === 0) {
+            if (owaspDistributionChart) owaspDistributionChart.destroy();
             context.clearRect(0, 0, ctx.width, ctx.height);
             context.font = '14px Arial';
             context.fillStyle = '#999';
@@ -1355,6 +1417,24 @@ function updateOwaspDistributionChart() {
             return;
         }
         
+        // Preparar datos filtrados
+        const filteredLabels = nonZeroIndices.map(i => {
+            const cat = allCategories[i];
+            const code = cat.split(' - ')[0];
+            if (cat.startsWith('A')) return `${code} (Web)`;
+            if (cat.startsWith('API')) return `${code} (API)`;
+            if (cat.startsWith('M')) return `${code} (Mobile)`;
+            return cat;
+        });
+        
+        const filteredData = nonZeroIndices.map(i => counts[i]);
+        const filteredColors = nonZeroIndices.map(i => allColors[i]);
+        const filteredBorderColors = nonZeroIndices.map(i => allBorderColors[i]);
+        
+        // Destruir gráfico anterior si existe
+        if (owaspDistributionChart) owaspDistributionChart.destroy();
+        
+        // Crear nuevo gráfico
         owaspDistributionChart = new Chart(context, {
             type: 'doughnut',
             data: {
@@ -1362,7 +1442,7 @@ function updateOwaspDistributionChart() {
                 datasets: [{
                     data: filteredData,
                     backgroundColor: filteredColors,
-                    borderColor: filteredColors.map(color => color.replace('0.8', '1')),
+                    borderColor: filteredBorderColors,
                     borderWidth: 2,
                     hoverOffset: 15
                 }]
@@ -1376,8 +1456,12 @@ function updateOwaspDistributionChart() {
                         position: 'right',
                         labels: {
                             font: {
-                                size: 11
+                                size: 11,
+                                family: "'Segoe UI', Arial, sans-serif"
                             },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
                             generateLabels: function(chart) {
                                 const data = chart.data;
                                 return data.labels.map((label, i) => {
@@ -1395,39 +1479,60 @@ function updateOwaspDistributionChart() {
                         }
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 12, weight: 'bold' },
+                        bodyFont: { size: 11 },
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
                                 const value = context.parsed;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                
+                                const fullCategory = allCategories[nonZeroIndices[context.dataIndex]];
+                                return [
+                                    `${fullCategory}`,
+                                    `Cantidad: ${value} (${percentage}%)`
+                                ];
                             }
                         }
                     }
                 },
-                cutout: '60%',
+                cutout: '65%',
                 animation: { 
                     animateScale: true, 
-                    animateRotate: true 
+                    animateRotate: true,
+                    duration: 1000
                 }
             }
         });
         
-        // Agregar texto central con el total
+        // Agregar texto central con el total después de la animación
         setTimeout(() => {
             const total = filteredData.reduce((a, b) => a + b, 0);
-            if (total > 0) {
-                // Dibujar texto en el centro
+            if (total > 0 && ctx) {
+                const centerX = ctx.width / 2;
+                const centerY = ctx.height / 2;
+                
+                // Limpiar área central
                 context.save();
+                context.beginPath();
+                context.arc(centerX, centerY, 40, 0, Math.PI * 2);
+                context.clip();
+                context.clearRect(centerX - 40, centerY - 40, 80, 80);
+                
+                // Dibujar texto
                 context.textAlign = 'center';
                 context.textBaseline = 'middle';
-                context.font = 'bold 16px Arial';
-                context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
-                context.fillText(total.toString(), ctx.width/2, ctx.height/2);
+                context.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+                
+                const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                context.fillStyle = isDarkTheme ? '#e0e0e0' : '#333';
+                
+                context.fillText(total.toString(), centerX, centerY);
                 context.restore();
             }
-        }, 300);
+        }, 500);
         
     } catch (error) {
         console.error('Error actualizando gráfico OWASP:', error);
