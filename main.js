@@ -1149,17 +1149,42 @@ function updateDashboard() {
         if (highElement) highElement.textContent = highCount;
         if (mediumElement) mediumElement.textContent = mediumCount;
         
+        // Obtener dimensiones del contenedor antes de crear los charts
+        const riskChartContainer = document.querySelector('#riskDistributionChart').parentElement;
+        const owaspChartContainer = document.querySelector('#owaspDistributionChart').parentElement;
+        
+        // Forzar dimensiones explícitas en los canvas
+        const riskCanvas = document.getElementById('riskDistributionChart');
+        const owaspCanvas = document.getElementById('owaspDistributionChart');
+        
+        if (riskCanvas && riskChartContainer) {
+            // Establecer dimensiones explícitas basadas en el contenedor
+            riskCanvas.style.width = '100%';
+            riskCanvas.style.height = '300px';
+            riskCanvas.width = riskChartContainer.clientWidth || 400;
+            riskCanvas.height = 300;
+        }
+        
+        if (owaspCanvas && owaspChartContainer) {
+            owaspCanvas.style.width = '100%';
+            owaspCanvas.style.height = '300px';
+            owaspCanvas.width = owaspChartContainer.clientWidth || 400;
+            owaspCanvas.height = 300;
+        }
+        
+        // Actualizar los charts
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
         
+        // Dibujar el total en el centro después de un pequeño retraso
         setTimeout(() => {
             const total = vulnerabilities.length;
             const canvas = document.getElementById('riskDistributionChart');
-            if (canvas) {
+            if (canvas && riskDistributionChart) {
                 drawTotalInCenter(canvas, total);
             }
-        }, 500);
+        }, 300);
         
     } catch (error) {
         console.error('Error actualizando dashboard:', error);
@@ -2066,13 +2091,87 @@ function importJson(event) {
             
             saveVulnerabilities();
             renderVulnerabilitiesList();
-            updateDashboard();
             
-            let message = `${uniqueNewVulnerabilities.length} vulnerabilidades únicas cargadas y fusionadas.`;
-            if (duplicatesCount > 0) {
-                message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
+            // --- INICIO DE LAS CORRECCIONES PARA LOS CHARTS ---
+            
+            // Destruir los charts existentes explícitamente
+            if (riskDistributionChart) {
+                riskDistributionChart.destroy();
+                riskDistributionChart = null;
             }
-            showNotification(message, 'success');
+            
+            if (owaspDistributionChart) {
+                owaspDistributionChart.destroy();
+                owaspDistributionChart = null;
+            }
+            
+            // Forzar un reflow del DOM antes de actualizar el dashboard
+            // Esto ayuda a que los contenedores recuperen sus dimensiones correctas
+            setTimeout(() => {
+                // Actualizar el dashboard (esto recreará los charts)
+                updateDashboard();
+                
+                // Forzar el redimensionamiento de los charts después de un pequeño retraso
+                setTimeout(() => {
+                    // Obtener los elementos canvas
+                    const riskCanvas = document.getElementById('riskDistributionChart');
+                    const owaspCanvas = document.getElementById('owaspDistributionChart');
+                    
+                    if (riskCanvas && riskDistributionChart) {
+                        // Forzar el redimensionamiento del chart
+                        riskDistributionChart.resize();
+                        
+                        // Redibujar el texto central
+                        const total = vulnerabilities.length;
+                        drawTotalInCenter(riskCanvas, total);
+                    }
+                    
+                    if (owaspCanvas && owaspDistributionChart) {
+                        // Forzar el redimensionamiento del chart
+                        owaspDistributionChart.resize();
+                        
+                        // Para el chart OWASP, también necesitamos el total
+                        const canvas = owaspCanvas;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            setTimeout(() => {
+                                const total = vulnerabilities.length;
+                                const centerX = canvas.width / 2;
+                                const centerY = canvas.height / 2;
+                                
+                                // Limpiar área central
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
+                                ctx.clip();
+                                ctx.clearRect(centerX - 40, centerY - 40, 80, 80);
+                                
+                                // Dibujar texto
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+                                
+                                const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                                ctx.fillStyle = isDarkTheme ? '#e0e0e0' : '#333';
+                                
+                                ctx.fillText(total.toString(), centerX, centerY);
+                                ctx.restore();
+                            }, 100);
+                        }
+                    }
+                    
+                    // Mostrar notificación de éxito después de que los charts se hayan ajustado
+                    let message = `${uniqueNewVulnerabilities.length} vulnerabilidades únicas cargadas y fusionadas.`;
+                    if (duplicatesCount > 0) {
+                        message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
+                    }
+                    showNotification(message, 'success');
+                    
+                }, 300); // Pequeño retraso para permitir que los charts se rendericen
+                
+            }, 100); // Pequeño retraso para permitir la actualización del DOM
+            
+            // --- FIN DE LAS CORRECCIONES ---
             
         } catch (error) {
             console.error('Error procesando archivo JSON:', error);
