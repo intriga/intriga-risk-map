@@ -3,46 +3,46 @@ let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
 let currentTheme = 'light';
 
-// Categorías OWASP TOP 10 WEB 2021
+// Categorías OWASP TOP 10 WEB 2025 (español)
 const owaspWebCategories = [
-    "A01:2021 - Control de Acceso Roto",
-    "A02:2021 - Fallas Criptográficas", 
-    "A03:2021 - Inyección",
-    "A04:2021 - Diseño Inseguro",
-    "A05:2021 - Configuración de Seguridad Incorrecta",
-    "A06:2021 - Componentes Vulnerables",
-    "A07:2021 - Fallas de Autenticación",
-    "A08:2021 - Fallas de Integridad de Software",
-    "A09:2021 - Fallas de Registro y Monitoreo",
-    "A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)"
+    "A01:2025 - Control de Acceso Roto",
+    "A02:2025 - Configuración de Seguridad Incorrecta",
+    "A03:2025 - Fallas en la Cadena de Suministro de Software",
+    "A04:2025 - Fallas Criptográficas",
+    "A05:2025 - Inyección",
+    "A06:2025 - Diseño Inseguro",
+    "A07:2025 - Fallas de Autenticación",
+    "A08:2025 - Fallas de Integridad de Software o Datos",
+    "A09:2025 - Fallas de Registro y Alertas de Seguridad",
+    "A10:2025 - Manejo Inadecuado de Condiciones Excepcionales"
 ];
 
-// Categorías OWASP TOP 10 API 2023
+// Categorías OWASP TOP 10 API 2023 (español)
 const owaspApiCategories = [
-    "API1:2023 - Broken Object Level Authorization",
-    "API2:2023 - Broken Authentication",
-    "API3:2023 - Broken Object Property Level Authorization",
-    "API4:2023 - Unrestricted Resource Consumption",
-    "API5:2023 - Broken Function Level Authorization",
-    "API6:2023 - Unrestricted Access to Sensitive Business Flows",
-    "API7:2023 - Server Side Request Forgery",
-    "API8:2023 - Security Misconfiguration",
-    "API9:2023 - Improper Inventory Management",
-    "API10:2023 - Unsafe Consumption of APIs"
+    "API1:2023 - Autorización Robusta a Nivel de Objeto",
+    "API2:2023 - Autenticación Robusta",
+    "API3:2023 - Autorización Robusta a Nivel de Propiedades del Objeto",
+    "API4:2023 - Consumo de Recursos sin Restricciones",
+    "API5:2023 - Autorización Robusta a Nivel de Función",
+    "API6:2023 - Acceso sin Restricciones a Flujos de Negocio Sensibles",
+    "API7:2023 - Falsificación de Solicitudes del Lado del Servidor (SSRF)",
+    "API8:2023 - Configuración de Seguridad Incorrecta",
+    "API9:2023 - Gestión Inadecuada del Inventario",
+    "API10:2023 - Consumo Inseguro de APIs"
 ];
 
-// Categorías OWASP TOP 10 MOBILE 2024
+// Categorías OWASP TOP 10 MOBILE 2024 (español)
 const owaspMobileCategories = [
-    "M1:2024 - Improper Credential Usage",
-    "M2:2024 - Inadequate Supply Chain Security",
-    "M3:2024 - Insecure Authentication/Authorization",
-    "M4:2024 - Insufficient Input/Output Validation",
-    "M5:2024 - Insecure Communication",
-    "M6:2024 - Inadequate Privacy Controls",
-    "M7:2024 - Insufficient Binary Protections",
-    "M8:2024 - Security Misconfiguration",
-    "M9:2024 - Insecure Data Storage",
-    "M10:2024 - Insufficient Cryptography"
+    "M1:2024 - Uso Inadecuado de Credenciales",
+    "M2:2024 - Cadena de Suministro Insegura",
+    "M3:2024 - Autenticación/Autorización Insegura",
+    "M4:2024 - Validación de Entrada/Salida Insuficiente",
+    "M5:2024 - Comunicación Insegura",
+    "M6:2024 - Controles de Privacidad Inadecuados",
+    "M7:2024 - Protecciones Binarias Insuficientes",
+    "M8:2024 - Configuración de Seguridad Incorrecta",
+    "M9:2024 - Almacenamiento de Datos Inseguro",
+    "M10:2024 - Criptografía Insuficiente"
 ];
 
 // Colores para cada categoría
