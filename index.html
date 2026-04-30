@@ -22,7 +22,7 @@
             <h1 class="display-5">Intriga Risk Map (OWASP)</h1>
             <p class="lead">Calculadora de evaluación de riesgos con gestión completa de vulnerabilidades</p>
             <div class="mt-2">
-                <span class="badge bg-primary me-2">Web Top 10 2021</span>
+                <span class="badge bg-primary me-2">Web Top 10 2025</span>
                 <span class="badge bg-danger me-2">API Top 10 2023</span>
                 <span class="badge bg-success">Mobile Top 10 2024</span>
             </div>
@@ -53,7 +53,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Estándar OWASP</label>
                                 <select class="form-control" id="owasp-standard">
-                                    <option value="web">OWASP Top 10 Web 2021</option>
+                                    <option value="web">OWASP Top 10 Web 2025</option>
                                     <option value="api">OWASP Top 10 API 2023</option>
                                     <option value="mobile">OWASP Top 10 Mobile 2024</option>
                                 </select>
@@ -491,21 +491,18 @@
                 <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Vulnerabilidades por Categoría OWASP</h5>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
-                                📥 Cargar JSON
+                        <div class="d-flex gap-2">                            
+                            <button class="btn btn-danger btn-sm" id="export-pdf-btn">
+                                📊 Exportar a PDF
                             </button>
                             <button class="btn btn-primary btn-sm" id="export-executive-btn">
                                 ⭐ Exportar Informe Ejecutivo
                             </button>
+                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
+                                📥 Cargar JSON
+                            </button>                            
                             <button class="btn btn-info btn-sm" id="export-json-btn">
                                 📦 Exportar JSON
-                            </button>
-                            <button class="btn btn-success btn-sm" id="export-all-btn">
-                                📄 Exportar a Word (Completo)
-                            </button>
-                            <button class="btn btn-danger btn-sm" id="export-pdf-btn">
-                                📊 Exportar a PDF
                             </button>
                         </div>
                     </div>

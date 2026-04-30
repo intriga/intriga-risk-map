@@ -3,46 +3,46 @@ let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
 let currentTheme = 'light';
 
-// Categorías OWASP TOP 10 WEB 2021
+// Categorías OWASP TOP 10 WEB 2025 (español)
 const owaspWebCategories = [
-    "A01:2021 - Control de Acceso Roto",
-    "A02:2021 - Fallas Criptográficas", 
-    "A03:2021 - Inyección",
-    "A04:2021 - Diseño Inseguro",
-    "A05:2021 - Configuración de Seguridad Incorrecta",
-    "A06:2021 - Componentes Vulnerables",
-    "A07:2021 - Fallas de Autenticación",
-    "A08:2021 - Fallas de Integridad de Software",
-    "A09:2021 - Fallas de Registro y Monitoreo",
-    "A10:2021 - Falsificación de Solicitudes del Lado del Servidor (SSRF)"
+    "A01:2025 - Control de Acceso Roto",
+    "A02:2025 - Configuración de Seguridad Incorrecta",
+    "A03:2025 - Fallas en la Cadena de Suministro de Software",
+    "A04:2025 - Fallas Criptográficas",
+    "A05:2025 - Inyección",
+    "A06:2025 - Diseño Inseguro",
+    "A07:2025 - Fallas de Autenticación",
+    "A08:2025 - Fallas de Integridad de Software o Datos",
+    "A09:2025 - Fallas de Registro y Alertas de Seguridad",
+    "A10:2025 - Manejo Inadecuado de Condiciones Excepcionales"
 ];
 
-// Categorías OWASP TOP 10 API 2023
+// Categorías OWASP TOP 10 API 2023 (español)
 const owaspApiCategories = [
-    "API1:2023 - Broken Object Level Authorization",
-    "API2:2023 - Broken Authentication",
-    "API3:2023 - Broken Object Property Level Authorization",
-    "API4:2023 - Unrestricted Resource Consumption",
-    "API5:2023 - Broken Function Level Authorization",
-    "API6:2023 - Unrestricted Access to Sensitive Business Flows",
-    "API7:2023 - Server Side Request Forgery",
-    "API8:2023 - Security Misconfiguration",
-    "API9:2023 - Improper Inventory Management",
-    "API10:2023 - Unsafe Consumption of APIs"
+    "API1:2023 - Autorización Robusta a Nivel de Objeto",
+    "API2:2023 - Autenticación Robusta",
+    "API3:2023 - Autorización Robusta a Nivel de Propiedades del Objeto",
+    "API4:2023 - Consumo de Recursos sin Restricciones",
+    "API5:2023 - Autorización Robusta a Nivel de Función",
+    "API6:2023 - Acceso sin Restricciones a Flujos de Negocio Sensibles",
+    "API7:2023 - Falsificación de Solicitudes del Lado del Servidor (SSRF)",
+    "API8:2023 - Configuración de Seguridad Incorrecta",
+    "API9:2023 - Gestión Inadecuada del Inventario",
+    "API10:2023 - Consumo Inseguro de APIs"
 ];
 
-// Categorías OWASP TOP 10 MOBILE 2024
+// Categorías OWASP TOP 10 MOBILE 2024 (español)
 const owaspMobileCategories = [
-    "M1:2024 - Improper Credential Usage",
-    "M2:2024 - Inadequate Supply Chain Security",
-    "M3:2024 - Insecure Authentication/Authorization",
-    "M4:2024 - Insufficient Input/Output Validation",
-    "M5:2024 - Insecure Communication",
-    "M6:2024 - Inadequate Privacy Controls",
-    "M7:2024 - Insufficient Binary Protections",
-    "M8:2024 - Security Misconfiguration",
-    "M9:2024 - Insecure Data Storage",
-    "M10:2024 - Insufficient Cryptography"
+    "M1:2024 - Uso Inadecuado de Credenciales",
+    "M2:2024 - Cadena de Suministro Insegura",
+    "M3:2024 - Autenticación/Autorización Insegura",
+    "M4:2024 - Validación de Entrada/Salida Insuficiente",
+    "M5:2024 - Comunicación Insegura",
+    "M6:2024 - Controles de Privacidad Inadecuados",
+    "M7:2024 - Protecciones Binarias Insuficientes",
+    "M8:2024 - Configuración de Seguridad Incorrecta",
+    "M9:2024 - Almacenamiento de Datos Inseguro",
+    "M10:2024 - Criptografía Insuficiente"
 ];
 
 // Colores para cada categoría
@@ -418,8 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupOwaspStandardSelector();
     
     const calculateBtn = document.getElementById('calculate-btn');
-    const saveBtn = document.getElementById('save-btn');
-    const exportWordBtn = document.getElementById('export-all-btn');
+    const saveBtn = document.getElementById('save-btn');    
     const exportPdfBtn = document.getElementById('export-pdf-btn');
     const exportJsonBtn = document.getElementById('export-json-btn');
     const exportExecutiveBtn = document.getElementById('export-executive-btn');
@@ -430,10 +429,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (saveBtn) {
         saveBtn.addEventListener('click', saveVulnerability);
-    }
-
-    if (exportWordBtn) {
-        exportWordBtn.addEventListener('click', exportToWord);
     }
     
     if (exportPdfBtn) {
@@ -1641,73 +1636,7 @@ function updateDashboardTable() {
     });
 }
 
-// ========== EXPORTACIÓN A WORD ==========
-function exportToWord() {
-    console.log('Ejecutando exportToWord...');
-    
-    if (vulnerabilities.length === 0) {
-        showNotification('No hay vulnerabilidades para exportar', 'error');
-        return;
-    }
 
-    try {
-        let htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Reporte de Vulnerabilidades</title>
-                <style>
-                    body { font-family: Arial; margin: 20px; }
-                    .vuln { margin-bottom: 30px; page-break-after: always; }
-                    table { width: 100%; border-collapse: collapse; }
-                    td { border: 1px solid #000; padding: 8px; vertical-align: top; }
-                    .label { font-weight: bold; width: 30%; }
-                </style>
-            </head>
-            <body>
-        `;
-
-        vulnerabilities.forEach((vuln, index) => {
-            const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
-                                vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
-            
-            htmlContent += `
-                <div class="vuln">
-                    <h2>Vulnerabilidad ${index + 1}: ${vuln.name || 'No especificado'}</h2>
-                    <table>
-                        <tr><td class="label">Estándar OWASP:</td><td>${standardText}</td></tr>
-                        <tr><td class="label">Categoría OWASP:</td><td>${vuln.owasp || 'No especificado'}</td></tr>
-                        <tr><td class="label">Host:</td><td>${vuln.host || 'No especificado'}</td></tr>
-                        <tr><td class="label">Ruta afectada:</td><td>${vuln.rutaAfectada || 'No especificado'}</td></tr>
-                        <tr><td class="label">Nivel de Riesgo:</td><td>${vuln.riskLevel} (${vuln.risk?.toFixed(2) || '0'})</td></tr>
-                        <tr><td class="label">MITRE ID:</td><td>${vuln.mitre || 'No especificado'}</td></tr>
-                        <tr><td class="label">Descripción:</td><td>${vuln.description || 'No especificado'}</td></tr>
-                        <tr><td class="label">Recomendación:</td><td>${vuln.recommendation || 'No especificado'}</td></tr>
-                    </table>
-                </div>
-            `;
-        });
-
-        htmlContent += `</body></html>`;
-
-        const blob = new Blob([htmlContent], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.doc`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showNotification(`Reporte exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
-        
-    } catch (error) {
-        console.error('Error al exportar:', error);
-        showNotification('Error al exportar el reporte', 'error');
-    }
-}
 
 function exportExecutiveReport() {
     console.log('Ejecutando exportExecutiveReport...');
@@ -1830,9 +1759,9 @@ function createChartWithWhiteBackground(chart) {
     return tempCanvas.toDataURL('image/png');
 }
 
-// ========== EXPORTACIÓN A PDF ==========
+// ========== EXPORTACIÓN A PDF CON FORMATO DE TABLA UNIFICADA ==========
 function exportToPDF() {
-    console.log('Ejecutando exportToPDF...');
+    console.log('Ejecutando exportToPDF con formato de tabla unificada...');
     
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
@@ -1842,81 +1771,150 @@ function exportToPDF() {
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
         const pageWidth = doc.internal.pageSize.width;
         const margin = 15;
+        const maxWidth = pageWidth - (margin * 2);
+        let yPosition = 20;
         
-        doc.setFont('helvetica');
-        
+        // Recorrer todas las vulnerabilidades
         vulnerabilities.forEach((vuln, index) => {
+            // Si no es la primera página, agregar página nueva
             if (index > 0) {
                 doc.addPage();
+                yPosition = 20;
             }
             
-            let yPosition = 20;
-            
-            const riskColor = getRiskPdfColor(vuln.riskLevel);
-            doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
-            doc.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F');
-            
-            doc.setFontSize(12);
+            // ========== TÍTULO DE LA VULNERABILIDAD ==========
+            doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.setTextColor(riskColor.textColor);
+            doc.setTextColor(0, 0, 0);
             
-            const title = `${vuln.name || 'Vulnerabilidad'} (${vuln.owaspStandard?.toUpperCase() || 'WEB'})`;
-            const titleWidth = doc.getTextWidth(title);
-            const titleX = margin + ((pageWidth - 2 * margin - titleWidth) / 2);
-            doc.text(title, titleX, yPosition + 8);
+            const title = vuln.name || 'Vulnerabilidad sin nombre';
+            const titleLines = doc.splitTextToSize(title, maxWidth);
+            doc.text(titleLines, margin, yPosition);
+            yPosition += (titleLines.length * 7) + 8;
             
-            yPosition += 20;
-
+            // ========== TABLA UNIFICADA ==========
             const col1Width = 45;
-            const col2Width = pageWidth - col1Width - 2 * margin;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Estándar OWASP', 
-                              vuln.owaspStandard === 'web' ? 'Web' : 
-                              vuln.owaspStandard === 'api' ? 'API' : 'Mobile');
-            yPosition += 10;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Categoría OWASP', vuln.owasp || 'No especificado');
-            yPosition += 10;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Nombre', vuln.name || 'No especificado');
-            yPosition += 10;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
-            yPosition += 10;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Host', vuln.host || 'No especificado');
-            yPosition += 10;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'Ruta afectada', vuln.rutaAfectada || 'No especificado');
-            yPosition += 10;
-
-            const descHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                                'Descripción', vuln.description || 'No especificado');
-            yPosition += descHeight;
-
-            const recHeight = drawCombinedRowPDF(doc, margin, yPosition, col1Width, col2Width,
-                                               'Recomendación', vuln.recommendation || 'No especificado');
-            yPosition += recHeight;
-
-            drawTwoColumnRowPDF(doc, margin, yPosition, col1Width, col2Width, 
-                              'MITRE ID', vuln.mitre || 'No especificado');
-            yPosition += 10;
-
-            const factorsHeight = drawFactorsRowPDF(doc, margin, yPosition, col1Width, col2Width, vuln);
-            yPosition += factorsHeight;
+            const col2Width = maxWidth - col1Width;
+            
+            // Guardar posición inicial de la tabla
+            const tableStartY = yPosition;
+            let currentY = yPosition;
+            
+            // Colección de filas
+            const rows = [];
+            
+            // Función para agregar fila simple
+            function addRow(label, value, isRisk = false) {
+                rows.push({ type: 'simple', label, value, isRisk });
+            }
+            
+            // Función para agregar fila multilínea
+            function addMultiRow(label, value) {
+                rows.push({ type: 'multi', label, value });
+            }
+            
+            // Construir todas las filas
+            addRow('Host', vuln.host || 'No especificado');
+            addRow('Ruta afectada', vuln.rutaAfectada || 'No especificado');
+            addRow('Nivel de Riesgo', vuln.riskLevel, true);
+            
+            if (vuln.toolCriticity) {
+                addRow('Resultado del Escáner', vuln.toolCriticity);
+            }
+            
+            addMultiRow('Detalle', vuln.detail);
+            addMultiRow('Descripción del análisis', vuln.description);
+            addMultiRow('Recomendación', vuln.recommendation);
+            addRow('ID OWASP top 10', vuln.owasp || 'No especificado');
+            addRow('MITRE ID', vuln.mitre || 'No especificado');
+            addMultiRow('Estrategia de detección MITRE', vuln.mitreDetection);
+            addMultiRow('Estrategia de mitigación MITRE', vuln.mitreMitigation);
+            
+            // Calcular altura total de todas las filas con padding adicional
+            let totalHeight = 0;
+            const rowHeights = [];
+            const padding = 4; // Padding adicional entre filas
+            
+            rows.forEach(row => {
+                let rowHeight;
+                if (row.type === 'simple') {
+                    rowHeight = 10; // Aumentado de 8 a 10
+                } else {
+                    const valueLines = doc.splitTextToSize(row.value || 'No especificado', col2Width - 6);
+                    rowHeight = Math.max(12, valueLines.length * 5 + 4); // Aumentado el mínimo
+                }
+                rowHeights.push(rowHeight);
+                totalHeight += rowHeight;
+            });
+            
+            // Verificar si cabe en la página
+            if (currentY + totalHeight > doc.internal.pageSize.height - 25) {
+                doc.addPage();
+                currentY = 20;
+            }
+            
+            // Dibujar todas las filas de la tabla como un bloque unificado
+            let tempY = currentY;
+            
+            rows.forEach((row, i) => {
+                const rowHeight = rowHeights[i];
+                
+                // Dibujar borde izquierdo y derecho de la fila
+                doc.rect(margin, tempY, col1Width, rowHeight);
+                doc.rect(margin + col1Width, tempY, col2Width, rowHeight);
+                
+                // Texto de la etiqueta
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(0, 0, 0);
+                const labelLines = doc.splitTextToSize(row.label, col1Width - 6);
+                // Centrar verticalmente el texto de la etiqueta
+                const labelTotalHeight = labelLines.length * 5;
+                const labelY = tempY + (rowHeight / 2) - (labelTotalHeight / 2) + 2;
+                doc.text(labelLines, margin + 3, labelY);
+                
+                // Texto del valor
+                if (row.isRisk) {
+                    const riskColor = getRiskPdfColor(row.value);
+                    doc.setTextColor(riskColor.r, riskColor.g, riskColor.b);
+                    doc.setFont(undefined, 'bold');
+                } else {
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont(undefined, 'normal');
+                }
+                
+                let valueLines;
+                if (row.type === 'simple') {
+                    valueLines = doc.splitTextToSize(row.value, col2Width - 6);
+                } else {
+                    valueLines = doc.splitTextToSize(row.value || 'No especificado', col2Width - 6);
+                }
+                
+                // Centrar verticalmente el texto del valor
+                const valueTotalHeight = valueLines.length * 5;
+                const valueY = tempY + (rowHeight / 2) - (valueTotalHeight / 2) + 2;
+                doc.text(valueLines, margin + col1Width + 3, valueY);
+                
+                tempY += rowHeight;
+            });
+            
+            // Dibujar borde inferior de la última fila
+            doc.line(margin, tempY, margin + maxWidth, tempY);
+            
+            // Actualizar posición Y después de la tabla con más espacio
+            yPosition = tempY + 12;
+            
+            // Número de página
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Página ${index + 1} de ${vulnerabilities.length}`, pageWidth - margin - 15, doc.internal.pageSize.height - 10);
         });
         
+        // Guardar un solo PDF con todas las vulnerabilidades
         doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
-        showNotification(`PDF exportado con ${vulnerabilities.length} vulnerabilidad(es)`, 'success');
+        showNotification(`${vulnerabilities.length} vulnerabilidad(es) exportadas a PDF`, 'success');
         
     } catch (error) {
         console.error('Error al exportar PDF:', error);
