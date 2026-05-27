@@ -3,6 +3,223 @@ let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
 let currentTheme = 'light';
 
+
+// ========== CONFIGURACIÓN DE LA IA (DeepSeek) ==========
+const AI_CONFIG = {
+    apiKey: "PUT-THE-API-HERE", // Reemplaza con tu API key
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-chat" // o deepseek-v4-pro
+};
+
+// Función para generar redacción con IA
+async function generateWithAI(userDescription, formData = null) {
+    const systemPrompt = `Eres un analista de seguridad especializado en OWASP. Tu tarea es generar un reporte detallado de vulnerabilidad basado en la descripción del usuario.
+
+Debes responder EXCLUSIVAMENTE con un objeto JSON válido que siga EXACTAMENTE esta estructura:
+
+{
+    "owasp": "Categoría OWASP completa (ej: A02:2021 - Fallas Criptográficas)",
+    "name": "Nombre corto de la vulnerabilidad",
+    "host": "www.ejemplo.com",
+    "rutaAfectada": "/ruta/afectada",
+    "mitre": "CWE-XXX (descripción)",
+    "toolCriticity": "Crítica/Alta/Media/Baja",
+    "threatAgent": "Agente Externo/Agente Interno/Error de Software/Otro",
+    "securityWeakness": "Descripción de la debilidad de seguridad",
+    "securityControls": "Controles de seguridad recomendados",
+    "technicalBusinessImpact": "Impacto técnico y de negocio",
+    "detail": "Detalle técnico de la vulnerabilidad",
+    "description": "Descripción completa del problema",
+    "recommendation": "Recomendación para mitigar",
+    "mitreDetection": "Estrategia de detección MITRE",
+    "mitreMitigation": "Estrategia de mitigación MITRE"
+}
+
+Reglas:
+1. Responde SOLO con JSON, sin texto adicional
+2. Si no puedes inferir un campo, usa "No especificado"
+3. Para "toolCriticity", elige entre: Crítica, Alta, Media, Baja
+4. Para "threatAgent", elige la opción más adecuada
+5. La redacción debe ser profesional y técnica
+6. Usa el contexto proporcionado por el usuario`;
+
+    const userPrompt = `Descripción del hallazgo: ${userDescription}
+
+${formData ? `Contexto adicional de la vulnerabilidad actual:\n${JSON.stringify(formData, null, 2)}` : ''}
+
+Genera el JSON con el análisis completo de esta vulnerabilidad OWASP.`;
+
+    try {
+        const response = await fetch(`${AI_CONFIG.baseUrl}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AI_CONFIG.apiKey}`
+            },
+            body: JSON.stringify({
+                model: AI_CONFIG.model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 2000
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        
+        // Limpiar el contenido (por si hay markdown)
+        let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        return JSON.parse(cleanContent);
+        
+    } catch (error) {
+        console.error('Error calling AI:', error);
+        showNotification('Error al generar con IA. Verifica tu API key.', 'error');
+        return null;
+    }
+}
+
+// Función para rellenar el formulario con los datos generados por IA
+async function fillFormWithAIData(aiData) {
+    if (!aiData) return false;
+
+    // Mapeo de campos del JSON a IDs del formulario
+    const fieldMapping = {
+        'owasp-category': aiData.owasp,
+        'vulnerability-name': aiData.name,
+        'host': aiData.host,
+        'ruta-afectada': aiData.rutaAfectada,
+        'mitre-id': aiData.mitre,
+        'tool-criticity': aiData.toolCriticity,
+        'threat-agent': aiData.threatAgent,
+        'security-weakness': aiData.securityWeakness,
+        'security-controls': aiData.securityControls,
+        'technical-business-impact': aiData.technicalBusinessImpact,
+        'detail': aiData.detail,
+        'description': aiData.description,
+        'recommendation': aiData.recommendation,
+        'mitre-detection': aiData.mitreDetection,
+        'mitre-mitigation': aiData.mitreMitigation
+    };
+
+    // Rellenar cada campo
+    for (const [fieldId, value] of Object.entries(fieldMapping)) {
+        if (value && value !== 'No especificado') {
+            const element = document.getElementById(fieldId);
+            if (element) {
+                if (element.tagName === 'SELECT') {
+                    // Buscar si el valor existe en las opciones
+                    let optionExists = false;
+                    for (let i = 0; i < element.options.length; i++) {
+                        if (element.options[i].value === value || 
+                            element.options[i].text === value ||
+                            element.options[i].value.includes(value) ||
+                            element.options[i].text.includes(value)) {
+                            element.value = element.options[i].value;
+                            optionExists = true;
+                            break;
+                        }
+                    }
+                    if (!optionExists && fieldId === 'threat-agent') {
+                        // Para agente de amenazas, manejar "Otro"
+                        if (value.includes('Otro') || !['Agente Externo', 'Agente Interno', 'Error de Software'].includes(value)) {
+                            element.value = 'Otro';
+                            element.dispatchEvent(new Event('change'));
+                            const otherInput = document.getElementById('other-threat-agent');
+                            if (otherInput) {
+                                otherInput.value = value;
+                            }
+                        }
+                    }
+                } else if (fieldId === 'owasp-category') {
+                    // Para categoría OWASP, primero asegurar que el estándar está correcto
+                    const standardSelect = document.getElementById('owasp-standard');
+                    if (value.startsWith('API')) {
+                        standardSelect.value = 'api';
+                    } else if (value.startsWith('M')) {
+                        standardSelect.value = 'mobile';
+                    } else {
+                        standardSelect.value = 'web';
+                    }
+                    standardSelect.dispatchEvent(new Event('change'));
+                    
+                    // Esperar a que se carguen las categorías y seleccionar
+                    setTimeout(() => {
+                        const categorySelect = document.getElementById('owasp-category');
+                        for (let i = 0; i < categorySelect.options.length; i++) {
+                            if (categorySelect.options[i].value === value || 
+                                categorySelect.options[i].text === value ||
+                                categorySelect.options[i].value.includes(value.split(' - ')[0])) {
+                                categorySelect.value = categorySelect.options[i].value;
+                                break;
+                            }
+                        }
+                    }, 100);
+                } else {
+                    element.value = value;
+                    // Disparar evento de cambio para actualizar validación
+                    element.dispatchEvent(new Event('input'));
+                }
+            }
+        }
+    }
+
+    // Disparar cálculo de riesgo después de rellenar
+    setTimeout(() => {
+        calculateRisk();
+        // Marcar campos como válidos visualmente
+        document.querySelectorAll('.form-control, select.form-control, textarea.form-control').forEach(el => {
+            if (el.value && el.value !== '') {
+                el.classList.add('is-valid');
+                el.classList.remove('is-invalid');
+            }
+        });
+    }, 200);
+
+    return true;
+}
+
+// Función principal que recibe la descripción del usuario
+async function generateVulnerabilityFromDescription(description) {
+    if (!description || description.trim() === '') {
+        showNotification('Por favor, describe el procedimiento que realizaste', 'error');
+        return false;
+    }
+
+    showNotification('🤖 IA generando reporte...', 'info');
+
+    try {
+        // Obtener datos actuales del formulario por si hay contexto
+        const currentFormData = getFormData();
+        
+        // Generar con IA
+        const aiData = await generateWithAI(description, currentFormData);
+        
+        if (!aiData) {
+            showNotification('Error al generar con IA', 'error');
+            return false;
+        }
+
+        // Rellenar el formulario
+        await fillFormWithAIData(aiData);
+        
+        showNotification('✅ Reporte generado por IA. Revisa y ajusta si es necesario.', 'success');
+        return true;
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al generar el reporte', 'error');
+        return false;
+    }
+}
+
+
 // Categorías OWASP TOP 10 WEB 2025 (español)
 const owaspWebCategories = [
     "A01:2025 - Control de Acceso Roto",
@@ -511,6 +728,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 250);
     });
+
+    // Botón de generación con IA
+    const aiGenerateBtn = document.getElementById('ai-generate-btn');
+    if (aiGenerateBtn) {
+        aiGenerateBtn.addEventListener('click', async () => {
+            const description = document.getElementById('ai-description').value;
+            await generateVulnerabilityFromDescription(description);
+        });
+    }
+
+    // Botón flotante IA
+    const aiFabBtn = document.getElementById('ai-fab-btn');
+    if (aiFabBtn) {
+        aiFabBtn.addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('aiModal'));
+            modal.show();
+        });
+    }
+
+    const aiGenerateModalBtn = document.getElementById('ai-generate-modal-btn');
+    if (aiGenerateModalBtn) {
+        aiGenerateModalBtn.addEventListener('click', async () => {
+            const description = document.getElementById('ai-description-modal').value;
+            await generateVulnerabilityFromDescription(description);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('aiModal'));
+            modal.hide();
+            document.getElementById('ai-description-modal').value = '';
+        });
+    }
     
     console.log('Aplicación inicializada correctamente');
 });
