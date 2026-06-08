@@ -6,7 +6,7 @@ let currentTheme = 'light';
 
 // ========== CONFIGURACIÓN DE LA IA (DeepSeek) ==========
 const AI_CONFIG = {
-    apiKey: "PUT-THE-API-HERE", // Reemplaza con tu API key
+    apiKey: "API-PUT-HERE", // Reemplaza con tu API key
     baseUrl: "https://api.deepseek.com",
     model: "deepseek-chat" // o deepseek-v4-pro
 };
