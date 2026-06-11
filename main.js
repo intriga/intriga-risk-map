@@ -3672,168 +3672,328 @@ function createChartWithWhiteBackground(chart) {
     return tempCanvas.toDataURL('image/png');
 }
 
-// ========== EXPORTACIÓN A PDF CON FORMATO DE TABLA UNIFICADA ==========
-function exportToPDF() {
-    console.log('Ejecutando exportToPDF con formato de tabla unificada...');
+
+// ========== EXPORTACIÓN A PDF TÉCNICO - TAMAÑO BALANCEADO ==========
+async function exportToPDF() {
+    console.log('Ejecutando exportToPDF con formato balanceado...');
     
     if (vulnerabilities.length === 0) {
         showNotification('No hay vulnerabilidades para exportar', 'error');
         return;
     }
 
+    // Mostrar loading
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'pdf-loading-overlay';
+    loadingDiv.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+            <div style="background: white; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div style="font-size: 52px; margin-bottom: 15px;">📄</div>
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #1a2a6c;">Generando PDF Técnico...</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 20px;">Procesando ${vulnerabilities.length} vulnerabilidades</div>
+                <div class="spinner-border text-primary" role="status" style="width: 40px; height: 40px;"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+
+    await new Promise(r => setTimeout(r, 100));
+
     try {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.width;
-        const margin = 15;
-        const maxWidth = pageWidth - (margin * 2);
-        let yPosition = 20;
-        
-        // Recorrer todas las vulnerabilidades
-        vulnerabilities.forEach((vuln, index) => {
-            // Si no es la primera página, agregar página nueva
-            if (index > 0) {
-                doc.addPage();
-                yPosition = 20;
-            }
-            
-            // ========== TÍTULO DE LA VULNERABILIDAD ==========
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(0, 0, 0);
-            
-            const title = vuln.name || 'Vulnerabilidad sin nombre';
-            const titleLines = doc.splitTextToSize(title, maxWidth);
-            doc.text(titleLines, margin, yPosition);
-            yPosition += (titleLines.length * 7) + 8;
-            
-            // ========== TABLA UNIFICADA ==========
-            const col1Width = 45;
-            const col2Width = maxWidth - col1Width;
-            
-            // Guardar posición inicial de la tabla
-            const tableStartY = yPosition;
-            let currentY = yPosition;
-            
-            // Colección de filas
-            const rows = [];
-            
-            // Función para agregar fila simple
-            function addRow(label, value, isRisk = false) {
-                rows.push({ type: 'simple', label, value, isRisk });
-            }
-            
-            // Función para agregar fila multilínea
-            function addMultiRow(label, value) {
-                rows.push({ type: 'multi', label, value });
-            }
-            
-            // Construir todas las filas
-            addRow('Host', vuln.host || 'No especificado');
-            addRow('Ruta afectada', vuln.rutaAfectada || 'No especificado');
-            addRow('Nivel de Riesgo', vuln.riskLevel, true);
-            
-            if (vuln.toolCriticity) {
-                addRow('Resultado del Escáner', vuln.toolCriticity);
-            }
-            
-            addMultiRow('Detalle', vuln.detail);
-            addMultiRow('Descripción del análisis', vuln.description);
-            addMultiRow('Recomendación', vuln.recommendation);
-            addRow('ID OWASP top 10', vuln.owasp || 'No especificado');
-            addRow('MITRE ID', vuln.mitre || 'No especificado');
-            addMultiRow('Estrategia de detección MITRE', vuln.mitreDetection);
-            addMultiRow('Estrategia de mitigación MITRE', vuln.mitreMitigation);
-            
-            // Calcular altura total de todas las filas con padding adicional
-            let totalHeight = 0;
-            const rowHeights = [];
-            const padding = 4; // Padding adicional entre filas
-            
-            rows.forEach(row => {
-                let rowHeight;
-                if (row.type === 'simple') {
-                    rowHeight = 10; // Aumentado de 8 a 10
-                } else {
-                    const valueLines = doc.splitTextToSize(row.value || 'No especificado', col2Width - 6);
-                    rowHeight = Math.max(12, valueLines.length * 5 + 4); // Aumentado el mínimo
-                }
-                rowHeights.push(rowHeight);
-                totalHeight += rowHeight;
-            });
-            
-            // Verificar si cabe en la página
-            if (currentY + totalHeight > doc.internal.pageSize.height - 25) {
-                doc.addPage();
-                currentY = 20;
-            }
-            
-            // Dibujar todas las filas de la tabla como un bloque unificado
-            let tempY = currentY;
-            
-            rows.forEach((row, i) => {
-                const rowHeight = rowHeights[i];
-                
-                // Dibujar borde izquierdo y derecho de la fila
-                doc.rect(margin, tempY, col1Width, rowHeight);
-                doc.rect(margin + col1Width, tempY, col2Width, rowHeight);
-                
-                // Texto de la etiqueta
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(0, 0, 0);
-                const labelLines = doc.splitTextToSize(row.label, col1Width - 6);
-                // Centrar verticalmente el texto de la etiqueta
-                const labelTotalHeight = labelLines.length * 5;
-                const labelY = tempY + (rowHeight / 2) - (labelTotalHeight / 2) + 2;
-                doc.text(labelLines, margin + 3, labelY);
-                
-                // Texto del valor
-                if (row.isRisk) {
-                    const riskColor = getRiskPdfColor(row.value);
-                    doc.setTextColor(riskColor.r, riskColor.g, riskColor.b);
-                    doc.setFont(undefined, 'bold');
-                } else {
-                    doc.setTextColor(0, 0, 0);
-                    doc.setFont(undefined, 'normal');
-                }
-                
-                let valueLines;
-                if (row.type === 'simple') {
-                    valueLines = doc.splitTextToSize(row.value, col2Width - 6);
-                } else {
-                    valueLines = doc.splitTextToSize(row.value || 'No especificado', col2Width - 6);
-                }
-                
-                // Centrar verticalmente el texto del valor
-                const valueTotalHeight = valueLines.length * 5;
-                const valueY = tempY + (rowHeight / 2) - (valueTotalHeight / 2) + 2;
-                doc.text(valueLines, margin + col1Width + 3, valueY);
-                
-                tempY += rowHeight;
-            });
-            
-            // Dibujar borde inferior de la última fila
-            doc.line(margin, tempY, margin + maxWidth, tempY);
-            
-            // Actualizar posición Y después de la tabla con más espacio
-            yPosition = tempY + 12;
-            
-            // Número de página
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text(`Página ${index + 1} de ${vulnerabilities.length}`, pageWidth - margin - 15, doc.internal.pageSize.height - 10);
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
         });
         
-        // Guardar un solo PDF con todas las vulnerabilidades
-        doc.save(`reporte_vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
-        showNotification(`${vulnerabilities.length} vulnerabilidad(es) exportadas a PDF`, 'success');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        const maxWidth = pageWidth - (margin * 2);
+        let yPosition = margin;
+        let currentPage = 1;
+        
+        // ========== ESTADÍSTICAS ==========
+        const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
+        const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
+        const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
+        const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
+        
+        // ========== FUNCIONES AUXILIARES ==========
+        function addNewPageIfNeeded(requiredHeight) {
+            if (yPosition + requiredHeight > pageHeight - margin) {
+                doc.addPage();
+                currentPage++;
+                yPosition = margin;
+                return true;
+            }
+            return false;
+        }
+        
+        function addPageNumber() {
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Página ${currentPage}`, pageWidth - margin - 10, pageHeight - 8);
+        }
+        
+        // Fila de dos columnas - tamaño mediano
+        function drawMediumRow(label, value, isRisk = false, riskLevel = null) {
+            const col1Width = 45;
+            const col2Width = maxWidth - col1Width - 4;
+            const rowHeight = 8;
+            
+            if (addNewPageIfNeeded(rowHeight + 4)) {
+                addPageNumber();
+                return rowHeight;
+            }
+            
+            // Bordes
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.3);
+            doc.rect(margin, yPosition, col1Width, rowHeight);
+            doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight);
+            
+            // Fondo de la etiqueta
+            doc.setFillColor(240, 248, 255);
+            doc.rect(margin, yPosition, col1Width, rowHeight, 'F');
+            
+            // Color de fondo del valor si es riesgo
+            if (isRisk && riskLevel) {
+                const riskColor = getRiskPDFColor(riskLevel);
+                doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
+                doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight, 'F');
+            }
+            
+            // Texto de la etiqueta
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(0, 0, 0);
+            const labelLines = doc.splitTextToSize(label, col1Width - 4);
+            doc.text(labelLines, margin + 2, yPosition + 5);
+            
+            // Texto del valor
+            if (isRisk && riskLevel) {
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(undefined, 'bold');
+            } else {
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'normal');
+            }
+            
+            doc.setFontSize(9);
+            const valueLines = doc.splitTextToSize(value || 'No especificado', col2Width - 4);
+            doc.text(valueLines, margin + col1Width + 4, yPosition + 5);
+            
+            yPosition += rowHeight;
+            return rowHeight;
+        }
+        
+        // Fila multilínea - tamaño adecuado sin cortar
+        function drawMediumMultiRow(label, value, maxLines = 8) {
+            const col1Width = 45;
+            const col2Width = maxWidth - col1Width - 4;
+            
+            if (!value || value === '') {
+                value = 'No especificado';
+            }
+            
+            doc.setFontSize(9);
+            const valueLines = doc.splitTextToSize(value, col2Width - 4);
+            
+            // Limitar líneas solo si es extremadamente largo (más de 8 líneas)
+            let displayLines = valueLines;
+            let truncated = false;
+            if (valueLines.length > maxLines) {
+                displayLines = valueLines.slice(0, maxLines);
+                displayLines[displayLines.length - 1] += '...';
+                truncated = true;
+            }
+            
+            const lineHeight = 4.5;
+            const rowHeight = Math.max(10, displayLines.length * lineHeight + 4);
+            
+            if (addNewPageIfNeeded(rowHeight + 4)) {
+                addPageNumber();
+                return rowHeight;
+            }
+            
+            // Bordes
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.3);
+            doc.rect(margin, yPosition, col1Width, rowHeight);
+            doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight);
+            
+            // Fondo de la etiqueta
+            doc.setFillColor(240, 248, 255);
+            doc.rect(margin, yPosition, col1Width, rowHeight, 'F');
+            
+            // Texto de la etiqueta
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(0, 0, 0);
+            const labelLines = doc.splitTextToSize(label, col1Width - 4);
+            const labelY = yPosition + (rowHeight / 2) - ((labelLines.length * lineHeight) / 2) + 2;
+            doc.text(labelLines, margin + 2, labelY);
+            
+            // Texto del valor
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(0, 0, 0);
+            const valueY = yPosition + (rowHeight / 2) - ((displayLines.length * lineHeight) / 2) + 2;
+            doc.text(displayLines, margin + col1Width + 4, valueY);
+            
+            yPosition += rowHeight;
+            return rowHeight;
+        }
+        
+        function drawSectionTitle(title, color = '#2980b9') {
+            addNewPageIfNeeded(12);
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(parseInt(color.slice(1,3), 16), parseInt(color.slice(3,5), 16), parseInt(color.slice(5,7), 16));
+            doc.text(title, margin, yPosition);
+            yPosition += 5;
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.3);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 5;
+        }
+        
+        function getRiskPDFColor(riskLevel) {
+            switch(riskLevel?.toUpperCase()) {
+                case 'CRÍTICO': return { r: 220, g: 53, b: 69 };
+                case 'ALTO': return { r: 253, g: 126, b: 20 };
+                case 'MEDIO': return { r: 255, g: 193, b: 7 };
+                case 'BAJO': return { r: 40, g: 167, b: 69 };
+                default: return { r: 23, g: 162, b: 184 };
+            }
+        }
+        
+        function drawSeparator() {
+            yPosition += 4;
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.3);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 6;
+        }
+        
+        // ========== PORTADA ==========
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(41, 128, 185);
+        doc.text('INFORME TÉCNICO DE', pageWidth / 2, 50, { align: 'center' });
+        doc.text('VULNERABILIDADES', pageWidth / 2, 62, { align: 'center' });
+        
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Análisis detallado de hallazgos de seguridad', pageWidth / 2, 78, { align: 'center' });
+        
+        const currentDate = new Date().toLocaleDateString('es-ES', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${currentDate}`, pageWidth / 2, 95, { align: 'center' });
+        
+        // Resumen de vulnerabilidades
+        yPosition = 115;
+        drawSectionTitle('Resumen General', '#2c3e50');
+        
+        drawMediumRow('Total vulnerabilidades', vulnerabilities.length.toString());
+        drawMediumRow('Críticas', criticalCount.toString(), true, 'CRÍTICO');
+        drawMediumRow('Altas', highCount.toString(), true, 'ALTO');
+        drawMediumRow('Medias', mediumCount.toString(), true, 'MEDIO');
+        drawMediumRow('Bajas', lowCount.toString(), true, 'BAJO');
+        
+        drawSeparator();
+        
+        // ========== LISTADO DE VULNERABILIDADES ==========
+        for (let idx = 0; idx < vulnerabilities.length; idx++) {
+            const vuln = vulnerabilities[idx];
+            
+            // Verificar espacio
+            addNewPageIfNeeded(80);
+            
+            // Encabezado de vulnerabilidad
+            doc.setFillColor(41, 128, 185);
+            doc.rect(margin, yPosition, maxWidth, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            const shortName = (vuln.name || 'Sin nombre').substring(0, 60);
+            doc.text(`VULNERABILIDAD #${idx + 1}: ${shortName}`, margin + 4, yPosition + 7);
+            yPosition += 14;
+            
+            doc.setTextColor(0, 0, 0);
+            
+            // Campos principales
+            drawMediumRow('Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
+            drawMediumRow('Host / Dominio', vuln.host || 'No especificado');
+            drawMediumRow('Ruta Afectada', vuln.rutaAfectada || 'No especificado');
+            drawMediumRow('Categoría OWASP', vuln.owasp || 'No especificado');
+            drawMediumRow('MITRE ID', vuln.mitre || 'No especificado');
+            
+            // Campos multilínea - sin cortar redacción
+            drawMediumMultiRow('Detalle', vuln.detail, 10);
+            drawMediumMultiRow('Descripción', vuln.description, 10);
+            drawMediumMultiRow('Recomendación', vuln.recommendation, 8);
+            drawMediumMultiRow('Debilidad de Seguridad', vuln.securityWeakness, 6);
+            drawMediumMultiRow('Estrategia de Detección MITRE', vuln.mitreDetection, 6);
+            
+            // Fecha
+            yPosition += 3;
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Registrado: ${new Date(vuln.date).toLocaleString()}`, margin, yPosition);
+            yPosition += 6;
+            
+            // Separador entre vulnerabilidades
+            if (idx < vulnerabilities.length - 1) {
+                yPosition += 3;
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 8;
+            }
+            
+            addPageNumber();
+        }
+        
+        // ========== PIE DE PÁGINA FINAL ==========
+        addNewPageIfNeeded(25);
+        doc.setDrawColor(41, 128, 185);
+        doc.setLineWidth(1);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 5;
+        
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Fin del informe técnico', pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 5;
+        doc.setFontSize(8);
+        doc.text('Documento generado automáticamente por Intriga Risk Map - OWASP Vulnerability Manager', pageWidth / 2, yPosition, { align: 'center' });
+        
+        addPageNumber();
+        
+        // Guardar PDF
+        doc.save(`Informe_Tecnico_Vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        // Limpiar loading
+        document.body.removeChild(loadingDiv);
+        showNotification(`✅ PDF Técnico generado con ${vulnerabilities.length} vulnerabilidades`, 'success');
         
     } catch (error) {
-        console.error('Error al exportar PDF:', error);
-        showNotification('Error al exportar el PDF', 'error');
+        console.error('Error al exportar PDF Técnico:', error);
+        if (document.getElementById('pdf-loading-overlay')) {
+            document.body.removeChild(document.getElementById('pdf-loading-overlay'));
+        }
+        showNotification('❌ Error al exportar el PDF Técnico', 'error');
     }
 }
+
+
 
 function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
     doc.setDrawColor(0, 0, 0);
