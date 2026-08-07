@@ -4311,6 +4311,7 @@ function formatMitreStrategies(strategies) {
     return strategies;
 }
 
+
 function showVulnerabilityDetails(id) {
     const vuln = vulnerabilities.find(v => v.id === id);
     if (!vuln) return;
@@ -4405,43 +4406,69 @@ function showVulnerabilityDetails(id) {
     
     modalBody.innerHTML = `
         <div class="vulnerability-details">
+            <!-- 1. Número -->
             <div class="detail-item">
                 <div class="detail-label">Número</div>
                 <div class="detail-value">${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
             </div>
             
+            <!-- 2. ID -->
             <div class="detail-item">
                 <div class="detail-label">ID</div>
                 <div class="detail-value">${vuln.id}</div>
             </div>
             
+            <!-- 3. Estándar OWASP -->
             <div class="detail-item">
                 <div class="detail-label">Estándar OWASP</div>
                 <div class="detail-value">
                     <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${standardText}</span>
                 </div>
-            </div>
+            </div>                                
             
-            <div class="detail-item">
-                <div class="detail-label">Categoría OWASP</div>
-                <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">Vector de Ataque (Vulnerabilidad)</div>
-                <div class="detail-value">${vuln.name || 'No especificado'}</div>
-            </div>
-            
+            <!-- 8. Host -->
             <div class="detail-item">
                 <div class="detail-label">Host</div>
                 <div class="detail-value">${vuln.host || 'No especificado'}</div>
             </div>
             
+            <!-- 9. Ruta Afectada -->
             <div class="detail-item">
                 <div class="detail-label">Ruta Afectada</div>
                 <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
             
+            <!-- 10. Agente de Amenazas -->
+            <div class="detail-item">
+                <div class="detail-label">Agente de Amenazas</div>
+                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
+            </div>
+            
+            <!-- 11. Vector de Ataque -->
+            <div class="detail-item">
+                <div class="detail-label">Vector de Ataque</div>
+                <div class="detail-value">${vuln.name || 'No especificado'}</div>
+            </div>
+            
+            <!-- 12. Debilidad de Seguridad -->
+            <div class="detail-item">
+                <div class="detail-label">Debilidad de Seguridad</div>
+                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
+            </div>
+            
+            <!-- 13. Controles de Seguridad -->
+            <div class="detail-item">
+                <div class="detail-label">Controles de Seguridad</div>
+                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
+            </div>
+            
+            <!-- 14. Impacto Técnico - Negocio -->
+            <div class="detail-item">
+                <div class="detail-label">Impacto Técnico - Negocio</div>
+                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
+            </div>
+
+            <!-- 7. Nivel de Riesgo -->
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
                 <div class="detail-value">
@@ -4450,73 +4477,70 @@ function showVulnerabilityDetails(id) {
                 </div>
             </div>
             
-            <div class="detail-item">
-                <div class="detail-label">Probabilidad Calculada</div>
-                <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">Impacto Calculado</div>
-                <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">MITRE ID</div>
-                <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
-            </div>
-            
+            <!-- 4. Criticidad según Herramienta -->
             <div class="detail-item">
                 <div class="detail-label">Criticidad según Herramienta</div>
                 <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
             </div>
             
+            <!-- 5. Probabilidad Calculada -->
             <div class="detail-item">
-                <div class="detail-label">Agente de Amenazas</div>
-                <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
-            </div>
-                        
-            <div class="detail-item">
-                <div class="detail-label">Debilidad de Seguridad</div>
-                <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
+                <div class="detail-label">Probabilidad Calculada</div>
+                <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
             </div>
             
+            <!-- 6. Impacto Calculado -->
             <div class="detail-item">
-                <div class="detail-label">Controles de Seguridad</div>
-                <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
-            </div>
+                <div class="detail-label">Impacto Calculado</div>
+                <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
+            </div>  
             
-            <div class="detail-item">
-                <div class="detail-label">Impacto Técnico - Negocio</div>
-                <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
-            </div>
-            
+            <!-- 15. Detalle -->
             <div class="detail-item">
                 <div class="detail-label">Detalle</div>
                 <div class="detail-value">${vuln.detail || 'No especificado'}</div>
             </div>
             
+            <!-- 16. Descripción del análisis -->
             <div class="detail-item">
-                <div class="detail-label">Descripción</div>
+                <div class="detail-label">Descripción del análisis</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
             
+            <!-- 17. Recomendación -->
             <div class="detail-item">
                 <div class="detail-label">Recomendación</div>
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             
+            <!-- 18. Categoría OWASP -->
+            <div class="detail-item">
+                <div class="detail-label">Categoría OWASP</div>
+                <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
+            </div>
+            
+            <!-- 19. MITRE ID -->
+            <div class="detail-item">
+                <div class="detail-label">MITRE ID</div>
+                <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
+            </div>
+            
+            <!-- 20. Estrategia de Detección MITRE -->
             <div class="detail-item">
                 <div class="detail-label">Estrategia de Detección MITRE</div>
                 <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
             </div>
             
+            <!-- 21. Estrategia de Mitigación MITRE -->
             <div class="detail-item">
                 <div class="detail-label">Estrategia de Mitigación MITRE</div>
                 <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
             </div>
             
+            <!-- Factores de Riesgo -->
             ${factoresHTML}
             
+            <!-- Fechas -->
             <div class="detail-item">
                 <div class="detail-label">Fecha de Creación</div>
                 <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
@@ -4575,6 +4599,9 @@ function showVulnerabilityDetails(id) {
         modal.show();
     }
 }
+
+
+
 
 function showNotification(message, type) {
     const notification = document.createElement('div');
