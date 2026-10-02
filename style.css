@@ -1074,3 +1074,179 @@ textarea.form-control.is-invalid {
         font-size: 10px;
     }
 }
+
+
+/* ============================================================
+   EVIDENCIAS - Preview en el formulario y galería en modal
+   ============================================================ */
+
+/* --- Preview en el formulario (después de subir archivos) --- */
+#evidence-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.evidence-thumb {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.evidence-thumb:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.evidence-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.evidence-thumb .evidence-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    font-size: 10px;
+    padding: 4px 6px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.evidence-thumb:hover .evidence-name {
+    opacity: 1;
+}
+
+.evidence-thumb .evidence-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    z-index: 2;
+}
+
+.evidence-thumb:hover .evidence-delete {
+    opacity: 1;
+}
+
+.evidence-thumb .evidence-delete:hover {
+    background: rgba(220, 53, 69, 1);
+    transform: scale(1.1);
+}
+
+/* --- Galería dentro del modal de detalles --- */
+.evidence-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.evidence-gallery-item {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card-bg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.evidence-gallery-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.evidence-gallery-item img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    cursor: zoom-in;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.evidence-gallery-item img:hover {
+    transform: scale(1.05);
+}
+
+.evidence-gallery-item .evidence-file {
+    width: 100%;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: var(--text-color);
+    background: var(--table-row-even);
+}
+
+.evidence-gallery-name {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--text-color);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+/* --- Overlay de pantalla completa (zoom) --- */
+.evidence-fullscreen-overlay img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+}
+
+/* --- Responsive para móviles --- */
+@media (max-width: 576px) {
+    .evidence-thumb {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .evidence-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+    }
+    
+    .evidence-gallery-item img,
+    .evidence-gallery-item .evidence-file {
+        height: 110px;
+    }
+}
