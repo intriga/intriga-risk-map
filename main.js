@@ -1334,14 +1334,16 @@ function renderVulnerabilitiesList() {
                 <div class="vulnerability-content">
                     <div class="d-flex justify-content-between align-items-start">
                         <div style="flex: 1;">
-                            <h5 class="mb-2">${vuln.name}</h5>
-                            <p class="mb-1"><strong>ID:</strong> <code>${vuln.vulnId || 'N/A'}</code></p>
-                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
+                            <h5 class="mb-2">${vuln.name}${copyBtnHTML(vuln.name, 'inline')}</h5>
+                            ${vuln.client ? `<p class="mb-1"><strong>Cliente:</strong> ${vuln.client}${copyBtnHTML(vuln.client, 'inline')}</p>` : ''}
+                            ${vuln.project ? `<p class="mb-1"><strong>Proyecto:</strong> ${vuln.project}${copyBtnHTML(vuln.project, 'inline')}</p>` : ''}
+                            <p class="mb-1"><strong>ID:</strong> <code>${vuln.vulnId || 'N/A'}</code>${vuln.vulnId ? copyBtnHTML(vuln.vulnId, 'inline') : ''}</p>
+                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}${vuln.host ? copyBtnHTML(vuln.host, 'inline') : ''}</p>
                             <p class="mb-1">
                                 <strong>OWASP:</strong> 
                                 <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)} me-1">${standardText}</span>
-                                ${vuln.owasp || 'No especificado'} | 
-                                <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}
+                                ${vuln.owasp || 'No especificado'}${vuln.owasp ? copyBtnHTML(vuln.owasp, 'inline') : ''} | 
+                                <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}${vuln.mitre ? copyBtnHTML(vuln.mitre, 'inline') : ''}
                             </p>
                             <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
                             <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
@@ -1369,6 +1371,16 @@ function renderVulnerabilitiesList() {
     });
     
     setTimeout(() => {
+        // Listeners de botones de copiado en las tarjetas
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = btn.getAttribute('data-copy');
+                copyToClipboard(text, btn);
+            });
+        });
+
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1395,7 +1407,7 @@ function renderVulnerabilitiesList() {
         
         document.querySelectorAll('.vulnerability-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                if (!e.target.closest('.btn')) {
+                if (!e.target.closest('.btn') && !e.target.closest('.copy-btn')) {
                     const id = parseInt(item.dataset.id);
                     showVulnerabilityDetails(id);
                 }
@@ -2979,7 +2991,7 @@ function showVulnerabilityDetails(id) {
         </div>
     `;
     
-    modalBody.innerHTML = `
+        modalBody.innerHTML = `
         <div class="vulnerability-details">
             <div class="detail-item">
                 <div class="detail-label">Número</div>
@@ -2987,22 +2999,22 @@ function showVulnerabilityDetails(id) {
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Cliente</div>
+                <div class="detail-label">Cliente ${vuln.client ? copyBtnHTML(vuln.client) : ''}</div>
                 <div class="detail-value">${vuln.client || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Proyecto</div>
+                <div class="detail-label">Proyecto ${vuln.project ? copyBtnHTML(vuln.project) : ''}</div>
                 <div class="detail-value">${vuln.project || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Vuln ID</div>
+                <div class="detail-label">Vuln ID ${vuln.vulnId ? copyBtnHTML(vuln.vulnId) : ''}</div>
                 <div class="detail-value"><code>${vuln.vulnId || 'N/A'}</code></div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">ID interno</div>
+                <div class="detail-label">ID interno ${vuln.id ? copyBtnHTML(String(vuln.id)) : ''}</div>
                 <div class="detail-value">${vuln.id}</div>
             </div>
             
@@ -3014,37 +3026,37 @@ function showVulnerabilityDetails(id) {
             </div>                                
             
             <div class="detail-item">
-                <div class="detail-label">Host</div>
+                <div class="detail-label">Host ${vuln.host ? copyBtnHTML(vuln.host) : ''}</div>
                 <div class="detail-value">${vuln.host || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Ruta Afectada</div>
+                <div class="detail-label">Ruta Afectada ${vuln.rutaAfectada ? copyBtnHTML(vuln.rutaAfectada) : ''}</div>
                 <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Agente de Amenazas</div>
+                <div class="detail-label">Agente de Amenazas ${vuln.threatAgent ? copyBtnHTML(vuln.threatAgent) : ''}</div>
                 <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
+                <div class="detail-label">Vector de Ataque ${vuln.name ? copyBtnHTML(vuln.name) : ''}</div>
                 <div class="detail-value">${vuln.name || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Debilidad de Seguridad</div>
+                <div class="detail-label">Debilidad de Seguridad ${vuln.securityWeakness ? copyBtnHTML(vuln.securityWeakness) : ''}</div>
                 <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Controles de Seguridad</div>
+                <div class="detail-label">Controles de Seguridad ${vuln.securityControls ? copyBtnHTML(vuln.securityControls) : ''}</div>
                 <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Impacto Técnico - Negocio</div>
+                <div class="detail-label">Impacto Técnico - Negocio ${vuln.technicalBusinessImpact ? copyBtnHTML(vuln.technicalBusinessImpact) : ''}</div>
                 <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
             </div>
 
@@ -3057,52 +3069,52 @@ function showVulnerabilityDetails(id) {
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Criticidad según Herramienta</div>
+                <div class="detail-label">Criticidad según Herramienta ${vuln.toolCriticity ? copyBtnHTML(vuln.toolCriticity) : ''}</div>
                 <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Probabilidad Calculada</div>
+                <div class="detail-label">Probabilidad Calculada ${vuln.likelihood ? copyBtnHTML(String(vuln.likelihood.toFixed(2))) : ''}</div>
                 <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Impacto Calculado</div>
+                <div class="detail-label">Impacto Calculado ${vuln.impact ? copyBtnHTML(String(vuln.impact.toFixed(2))) : ''}</div>
                 <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
             </div>  
             
             <div class="detail-item">
-                <div class="detail-label">Detalle</div>
+                <div class="detail-label">Detalle ${vuln.detail ? copyBtnHTML(vuln.detail) : ''}</div>
                 <div class="detail-value">${vuln.detail || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Descripción del análisis</div>
+                <div class="detail-label">Descripción del análisis ${vuln.description ? copyBtnHTML(vuln.description) : ''}</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Recomendación</div>
+                <div class="detail-label">Recomendación ${vuln.recommendation ? copyBtnHTML(vuln.recommendation) : ''}</div>
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Categoría OWASP</div>
+                <div class="detail-label">Categoría OWASP ${vuln.owasp ? copyBtnHTML(vuln.owasp) : ''}</div>
                 <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">MITRE ID</div>
+                <div class="detail-label">MITRE ID ${vuln.mitre ? copyBtnHTML(vuln.mitre) : ''}</div>
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Detección MITRE</div>
+                <div class="detail-label">Estrategia de Detección MITRE ${vuln.mitreDetection ? copyBtnHTML(vuln.mitreDetection) : ''}</div>
                 <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Mitigación MITRE</div>
+                <div class="detail-label">Estrategia de Mitigación MITRE ${vuln.mitreMitigation ? copyBtnHTML(vuln.mitreMitigation) : ''}</div>
                 <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
             </div>
             
@@ -3160,6 +3172,16 @@ function showVulnerabilityDetails(id) {
                 setTimeout(() => deleteVulnerability(vuln.id), 300);
             });
         }
+
+        // NUEVO: listeners de botones de copiado en el modal
+        document.querySelectorAll('#modal-body .copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = btn.getAttribute('data-copy');
+                copyToClipboard(text, btn);
+            });
+        });
     }, 100);
     
     const modalElement = document.getElementById('vulnerabilityModal');
@@ -3689,4 +3711,68 @@ function updateClientProjectSuggestions() {
             .map(p => `<option value="${p.replace(/"/g, '&quot;')}"></option>`)
             .join('');
     }
+}
+
+
+// ========== COPIADO AL PORTAPAPELES ==========
+async function copyToClipboard(text, buttonElement = null) {
+    if (!text || text === 'No especificado' || text === 'N/A') {
+        showNotification('No hay texto para copiar', 'error');
+        return false;
+    }
+
+    try {
+        // Método moderno
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            // Fallback para navegadores antiguos o contextos sin HTTPS
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        // Feedback visual en el botón
+        if (buttonElement) {
+            buttonElement.classList.add('copied');
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '✅';
+            setTimeout(() => {
+                buttonElement.classList.remove('copied');
+                buttonElement.innerHTML = originalHTML;
+            }, 1200);
+        }
+
+        // Preview corto en la notificación
+        const preview = text.length > 40 ? text.substring(0, 40) + '…' : text;
+        showNotification(`📋 Copiado: "${preview}"`, 'success');
+        return true;
+
+    } catch (error) {
+        console.error('Error copiando al portapapeles:', error);
+        showNotification('No se pudo copiar', 'error');
+        return false;
+    }
+}
+
+// Genera el HTML del botón de copiado para un campo.
+// Uso: copyBtnHTML('Valor a copiar')
+//      copyBtnHTML('Valor', 'inline')  → versión pequeña para tarjetas
+function copyBtnHTML(text, variant = 'default') {
+    // Escapamos el texto para meterlo en el atributo data-copy
+    const safe = String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const cls = variant === 'inline' ? 'copy-btn copy-btn-inline' : 'copy-btn';
+    return `<button type="button" class="${cls}" data-copy="${safe}" title="Copiar">📋</button>`;
 }

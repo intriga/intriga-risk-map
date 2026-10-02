@@ -1263,3 +1263,97 @@ input[list] {
 [data-theme="dark"] input[list] {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23a0aec0'%3e%3cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
 }
+
+/* ============================================================
+   BOTONES DE COPIADO POR CAMPO
+   ============================================================ */
+
+.copy-btn {
+    background: rgba(52, 152, 219, 0.12);
+    border: 1px solid rgba(52, 152, 219, 0.35);
+    cursor: pointer;
+    padding: 3px 8px;
+    margin-left: 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #3498db;
+    opacity: 0.85;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    font-weight: 500;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    background: rgba(52, 152, 219, 0.25);
+    border-color: #3498db;
+    color: #2980b9;
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 3px 8px rgba(52, 152, 219, 0.3);
+}
+
+.copy-btn:active {
+    transform: translateY(0) scale(0.95);
+    box-shadow: 0 1px 2px rgba(52, 152, 219, 0.3);
+}
+
+.copy-btn.copied {
+    color: #ffffff;
+    background: #2ecc71;
+    border-color: #27ae60;
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(46, 204, 113, 0.5);
+    animation: copyPop 0.4s ease;
+}
+
+@keyframes copyPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.25); }
+    100% { transform: scale(1.1); }
+}
+
+/* Contenedor del label: alinea label + botón */
+.detail-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+/* Versión reducida para las tarjetas de lista */
+.copy-btn-inline {
+    margin-left: 5px;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 5px;
+}
+
+/* ============================================================
+   TEMA OSCURO - Ajustes específicos de contraste
+   ============================================================ */
+[data-theme="dark"] .copy-btn {
+    background: rgba(90, 180, 240, 0.18);
+    border-color: rgba(90, 180, 240, 0.45);
+    color: #5dade2;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .copy-btn:hover {
+    background: rgba(90, 180, 240, 0.35);
+    border-color: #5dade2;
+    color: #85c1e9;
+    box-shadow: 0 3px 10px rgba(90, 180, 240, 0.5);
+}
+
+[data-theme="dark"] .copy-btn.copied {
+    color: #ffffff;
+    background: #27ae60;
+    border-color: #2ecc71;
+    box-shadow: 0 3px 12px rgba(39, 174, 96, 0.6);
+}
