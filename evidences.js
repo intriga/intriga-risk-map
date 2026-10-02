@@ -132,15 +132,27 @@ function generateVulnId() {
     return `${prefix}-${String(nextNum).padStart(3, '0')}`;
 }
 
-function buildPackageName(projectName) {
+function buildPackageName(projectName, clientName = '') {
     const date = new Date().toISOString().split('T')[0];
     const project = sanitizeFilename(projectName || 'SinProyecto');
-    // Contar versiones existentes para ese proyecto (localStorage)
-    const key = `zipVersion_${project}_${date}`;
+    const client = clientName ? sanitizeFilename(clientName) : '';
+
+    // Clave única por cliente+proyecto+fecha para contar versiones
+    const keyBase = client ? `${client}_${project}` : project;
+    const key = `zipVersion_${keyBase}_${date}`;
     const currentVersion = parseInt(localStorage.getItem(key) || '0') + 1;
     localStorage.setItem(key, currentVersion.toString());
     const version = `v${String(currentVersion).padStart(2, '0')}`;
-    return `IntrigaRiskMap_${project}_${date}_${version}.zip`;
+
+    // Nombre: IntrigaRiskMap_Cliente_Proyecto_Fecha_vXX.zip
+    // Si no hay cliente: IntrigaRiskMap_Proyecto_Fecha_vXX.zip
+    const parts = ['IntrigaRiskMap'];
+    if (client) parts.push(client);
+    parts.push(project);
+    parts.push(date);
+    parts.push(version);
+
+    return `${parts.join('_')}.zip`;
 }
 
 // ---------- PREVIEW EN EL FORMULARIO ----------
@@ -330,12 +342,28 @@ async function exportPackage() {
         return;
     }
 
-    // Pedir nombre del proyecto
-    const projectName = prompt(
-        'Nombre del proyecto o cliente (para el nombre del ZIP):',
-        'Proyecto'
-    );
-    if (projectName === null) return;
+    // Detectar cliente y proyecto desde los datos ya guardados
+    const clientDetected = vulnerabilities.find(v => v.client)?.client || '';
+    const projectDetected = vulnerabilities.find(v => v.project)?.project || '';
+
+    // Si no hay ninguno de los dos, advertir (no debería pasar por la validación)
+    if (!clientDetected && !projectDetected) {
+        const fallback = prompt(
+            'No se detectó Cliente ni Proyecto en las vulnerabilidades. Ingrese un nombre para el ZIP:',
+            'SinProyecto'
+        );
+        if (fallback === null) return;
+        var projectName = fallback;
+        var clientName = '';
+    } else {
+        var clientName = clientDetected;
+        var projectName = projectDetected;
+        // Confirmación visual rápida
+        const ok = confirm(
+            `Se exportará el paquete para:\n\nCliente: ${clientName || '(sin cliente)'}\nProyecto: ${projectName || '(sin proyecto)'}\n\n¿Continuar?`
+        );
+        if (!ok) return;
+    }
 
     // Loading
     const loading = document.createElement('div');
@@ -359,6 +387,7 @@ async function exportPackage() {
         const manifest = {
             version: '1.0',
             product: 'IntrigaRiskMap',
+            client: clientName,
             project: projectName,
             exportedAt: new Date().toISOString(),
             totalVulnerabilities: vulnerabilities.length,
@@ -404,7 +433,7 @@ async function exportPackage() {
         const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 
         // Nombre del archivo
-        const filename = buildPackageName(projectName);
+        const filename = buildPackageName(projectName, clientName);
         downloadBlob(blob, filename);
 
         document.body.removeChild(loading);

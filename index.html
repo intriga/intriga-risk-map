@@ -45,6 +45,23 @@
                 <div class="row">
                     <section class="col-12">
                         <h5 class="border-bottom">Información General de la Vulnerabilidad</h5>
+
+                        <!-- NUEVO: Cliente y Proyecto (se recuerdan entre guardados) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cliente</label>
+                                <input type="text" class="form-control" id="client" placeholder="Ej: Banco de E" list="clients-suggestions">
+                                <datalist id="clients-suggestions"></datalist>
+                                <small class="text-muted">Se recuerda entre vulnerabilidades del mismo proyecto.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Proyecto</label>
+                                <input type="text" class="form-control" id="project" placeholder="Ej: Autil Tech" list="projects-suggestions">
+                                <datalist id="projects-suggestions"></datalist>
+                                <small class="text-muted">Se recuerda entre vulnerabilidades del mismo proyecto.</small>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre de la Vulnerabilidad</label>
@@ -53,9 +70,10 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Estándar OWASP</label>
                                 <select class="form-control" id="owasp-standard">
-                                    <option value="web">OWASP Top 10 Web 2025</option>
-                                    <option value="api">OWASP Top 10 API 2023</option>
-                                    <option value="mobile">OWASP Top 10 Mobile 2024</option>
+                                    <option value="">Seleccione un estándar</option>
+                                    <option value="web">WEB</option>
+                                    <option value="api">API</option>
+                                    <option value="mobile">MOBILE</option>
                                 </select>
                             </div>
                         </div>
@@ -510,20 +528,21 @@
                             <button class="btn btn-primary btn-sm" id="export-executive-btn">
                                 ⭐ Exportar Informe Ejecutivo
                             </button>
+                            
+                            <button class="btn btn-success btn-sm" id="export-zip-btn">
+                                🗜️ Exportar Hallazgos
+                            </button>
+                            <button class="btn btn-warning btn-sm" onclick="document.getElementById('import-zip-input').click()">
+                                📥 Importar Hallazgos
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="validate-package-btn">
+                                🔍 Validar Hallazgos
+                            </button>
                             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
                                 📥 Cargar JSON
                             </button>                            
                             <button class="btn btn-info btn-sm" id="export-json-btn">
                                 📦 Exportar JSON
-                            </button>
-                            <button class="btn btn-success btn-sm" id="export-zip-btn">
-                                🗜️ Exportar Paquete (ZIP)
-                            </button>
-                            <button class="btn btn-warning btn-sm" onclick="document.getElementById('import-zip-input').click()">
-                                📥 Importar Paquete (ZIP)
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" id="validate-package-btn">
-                                🔍 Validar Paquete
                             </button>
                         </div>
                     </div>
@@ -548,6 +567,7 @@
                 </div>
                 
                 <input type="file" id="import-zip-input" accept=".zip,application/zip" style="display: none;">
+                <input type="file" id="import-file-input" accept="application/json" style="display: none;">
             </div>
         </div>
     </div>

@@ -302,7 +302,6 @@ const categoryColors = {
     ]
 };
 
-// ========== FUNCIÓN PARA CONFIGURAR SELECTOR DE ESTÁNDAR OWASP ==========
 function setupOwaspStandardSelector() {
     const standardSelect = document.getElementById('owasp-standard');
     const categorySelect = document.getElementById('owasp-category');
@@ -336,8 +335,8 @@ function setupOwaspStandardSelector() {
             });
         });
         
-        // Trigger inicial para cargar las categorías por defecto (web)
-        standardSelect.dispatchEvent(new Event('change'));
+        // NO disparar el change inicial: dejamos el select vacío
+        // hasta que el usuario elija un estándar manualmente.
     }
 }
 
@@ -625,6 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadVulnerabilities();
     migrateVulnerabilities();
     updateOldVulnerabilities();
+    updateClientProjectSuggestions();
     
     setupThreatAgentSelect();
     setupOwaspStandardSelector();
@@ -950,6 +950,8 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) {
 // ========== VALIDACIÓN DE TODOS LOS CAMPOS OBLIGATORIOS ==========
 function validateRequiredFields() {
     const requiredFields = [
+        { id: 'client', name: 'Cliente' },
+        { id: 'project', name: 'Proyecto' },
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
         { id: 'owasp-standard', name: 'Estándar OWASP' },
@@ -1156,6 +1158,7 @@ function saveVulnerability() {
         saveVulnerabilities();
         renderVulnerabilitiesList();
         updateDashboard();
+        updateClientProjectSuggestions(); 
         
         clearFormValidation();
         
@@ -1186,6 +1189,8 @@ function saveVulnerability() {
 
 // ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
 function clearFormValidation() {
+    // ⚠️ NOTA: 'client' y 'project' NO están aquí a propósito.
+    // Se mantienen entre guardados para agilizar el flujo de trabajo.
     const allFormElements = [
         'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
         'threat-agent', 'attack-vector', 'security-weakness', 'security-controls',
@@ -1202,7 +1207,8 @@ function clearFormValidation() {
         if (element) {
             if (element.tagName === 'SELECT') {
                 if (id === 'owasp-standard') {
-                    element.value = 'web';
+                    // Dejar el estándar vacío (que el usuario elija)
+                    element.value = '';
                     element.dispatchEvent(new Event('change'));
                 } else {
                     element.value = element.querySelector('option[value=""]') ? '' : element.options[0].value;
@@ -1246,6 +1252,16 @@ function clearFormValidation() {
     if (updateBtn) updateBtn.remove();
     if (cancelBtn) cancelBtn.remove();
     if (saveBtn) saveBtn.style.display = 'inline-block';
+
+        // Cliente y Proyecto: solo quitamos validación visual, mantenemos el valor
+    ['client', 'project'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('is-invalid', 'is-valid');
+            const err = el.parentElement.querySelector('.invalid-feedback');
+            if (err) err.remove();
+        }
+    });
 }
 
 function getFormData() {
@@ -1264,6 +1280,8 @@ function getFormData() {
     }
     
     return {
+        client: getValue('client').trim(),
+        project: getValue('project').trim(),
         name: getValue('vulnerability-name'),
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
@@ -2060,11 +2078,22 @@ async function exportExecutiveReport() {
             `;
         }).join('');
         
+                const clientDetected = vulnerabilities.find(v => v.client)?.client;
+        const projectDetected = vulnerabilities.find(v => v.project)?.project;
+        const clientProjectLine = (clientDetected || projectDetected)
+            ? `<div style="font-size: 12px; opacity: 0.95; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3);">
+                   ${clientDetected ? `Cliente: <strong>${escapeHtml(clientDetected)}</strong>` : ''}
+                   ${clientDetected && projectDetected ? ' &nbsp;·&nbsp; ' : ''}
+                   ${projectDetected ? `Proyecto: <strong>${escapeHtml(projectDetected)}</strong>` : ''}
+               </div>`
+            : '';
+
         const section1HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
                 <h1 style="font-size: 24px; margin-bottom: 8px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
                 <div style="font-size: 13px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
+                ${clientProjectLine}
                 <div style="font-size: 11px; opacity: 0.8; margin-top: 10px;">📅 ${formattedDate}</div>
             </div>
             
@@ -2554,10 +2583,25 @@ async function exportToPDF() {
         const currentDate = new Date().toLocaleDateString('es-ES', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
-        doc.setFontSize(10);
+                doc.setFontSize(10);
         doc.text(`Fecha: ${currentDate}`, pageWidth / 2, 95, { align: 'center' });
+
+        // NUEVO: Cliente y Proyecto (tomados del primer registro que los tenga)
+        const clientDetected = vulnerabilities.find(v => v.client)?.client;
+        const projectDetected = vulnerabilities.find(v => v.project)?.project;
+
+        if (clientDetected || projectDetected) {
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            if (clientDetected) {
+                doc.text(`Cliente: ${clientDetected}`, pageWidth / 2, 105, { align: 'center' });
+            }
+            if (projectDetected) {
+                doc.text(`Proyecto: ${projectDetected}`, pageWidth / 2, 112, { align: 'center' });
+            }
+        }
         
-        yPosition = 115;
+        yPosition = 122;
         drawSectionTitle('Resumen General', '#2c3e50');
         
         drawMediumRow('Total vulnerabilidades', vulnerabilities.length.toString());
@@ -2943,6 +2987,16 @@ function showVulnerabilityDetails(id) {
             </div>
             
             <div class="detail-item">
+                <div class="detail-label">Cliente</div>
+                <div class="detail-value">${vuln.client || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Proyecto</div>
+                <div class="detail-value">${vuln.project || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
                 <div class="detail-label">Vuln ID</div>
                 <div class="detail-value"><code>${vuln.vulnId || 'N/A'}</code></div>
             </div>
@@ -3196,6 +3250,8 @@ function loadVulnerabilities() {
                     
                     id: vuln.id,
                     vulnId: vuln.vulnId || null,
+                    client: vuln.client || '',
+                    project: vuln.project || '',
                     name: vuln.name,
                     likelihood: vuln.likelihood || 0,
                     impact: vuln.impact || 0,
@@ -3318,10 +3374,12 @@ function openEditModal(id) {
         }
     }
     
+    setValue('client', vuln.client || '');
+    setValue('project', vuln.project || '');
     setValue('vulnerability-name', vuln.name);
     setValue('host', vuln.host);
     setValue('ruta-afectada', vuln.rutaAfectada);
-    setValue('owasp-standard', vuln.owaspStandard || 'web');
+    setValue('owasp-standard', vuln.owaspStandard || '');
     
     setTimeout(() => {
         setValue('owasp-category', vuln.owasp);
@@ -3456,6 +3514,7 @@ function updateVulnerabilityInCalculator(id) {
         saveVulnerabilities();
         renderVulnerabilitiesList();
         updateDashboard();
+        updateClientProjectSuggestions();
         
         const saveBtn = document.getElementById('save-btn');
         const updateBtn = document.getElementById('update-current-btn');
@@ -3598,5 +3657,36 @@ function updateOldVulnerabilities() {
         renderVulnerabilitiesList();
         updateDashboard();
         showNotification(`${updatedCount} vulnerabilidades actualizadas`, 'success');
+    }
+}
+
+// ========== SUGERENCIAS DE CLIENTE Y PROYECTO ==========
+function updateClientProjectSuggestions() {
+    // Clientes únicos
+    const clients = [...new Set(
+        vulnerabilities
+            .map(v => (v.client || '').trim())
+            .filter(Boolean)
+    )].sort();
+
+    // Proyectos únicos
+    const projects = [...new Set(
+        vulnerabilities
+            .map(v => (v.project || '').trim())
+            .filter(Boolean)
+    )].sort();
+
+    const clientsDatalist = document.getElementById('clients-suggestions');
+    if (clientsDatalist) {
+        clientsDatalist.innerHTML = clients
+            .map(c => `<option value="${c.replace(/"/g, '&quot;')}"></option>`)
+            .join('');
+    }
+
+    const projectsDatalist = document.getElementById('projects-suggestions');
+    if (projectsDatalist) {
+        projectsDatalist.innerHTML = projects
+            .map(p => `<option value="${p.replace(/"/g, '&quot;')}"></option>`)
+            .join('');
     }
 }
