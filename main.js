@@ -2909,84 +2909,105 @@ function showVulnerabilityDetails(id) {
     const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
                         vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
     
+        // Extraemos los textos descriptivos en variables para reutilizarlos en el copy-btn
+    const skillText = getSkillLevelText(vuln.sl);
+    const motivoText = getMotivoEconomicoText(vuln.m);
+    const oportunidadText = getOportunidadAtaqueText(vuln.o);
+    const tamanoText = getTamanoAgenteText(vuln.s);
+
+    const confidencialidadText = getPerdidaConfidencialidadText(vuln.lc);
+    const integridadText = getPerdidaIntegridadText(vuln.li);
+    const disponibilidadText = getImpactoDisponibilidadText(vuln.lav);
+    const rastreabilidadText = getRastreabilidadAtaqueText(vuln.lac);
+
+    const descubrimientoText = getFacilidadDescubrimientoText(vuln.ed);
+    const explotacionText = getFacilidadExplotacionText(vuln.ee);
+    const conocimientoText = getConocimientoVulnerabilidadText(vuln.a);
+    const deteccionText = getDeteccionIntrusionText(vuln.intrusion);
+
+    const financieroText = getDanioFinancieroText(vuln.fd);
+    const reputacionText = getDanioReputacionText(vuln.rd);
+    const incumplimientoText = getIncumplimientoText(vuln.nc);
+    const privacidadText = getViolacionPrivacidadText(vuln.pv);
+
     const factoresHTML = `
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Agente de Amenaza</h5>
             <div class="detail-item">
-                <div class="detail-label">Nivel de habilidad</div>
-                <div class="detail-value">${getSkillLevelText(vuln.sl)} (Valor: ${vuln.sl})</div>
+                <div class="detail-label">Nivel de habilidad ${copyBtnHTML(skillText)}</div>
+                <div class="detail-value">${skillText} <span class="factor-value">(Valor: ${vuln.sl})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Motivo Económico del agente</div>
-                <div class="detail-value">${getMotivoEconomicoText(vuln.m)} (Valor: ${vuln.m})</div>
+                <div class="detail-label">Motivo Económico del agente ${copyBtnHTML(motivoText)}</div>
+                <div class="detail-value">${motivoText} <span class="factor-value">(Valor: ${vuln.m})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Oportunidad de Ataque</div>
-                <div class="detail-value">${getOportunidadAtaqueText(vuln.o)} (Valor: ${vuln.o})</div>
+                <div class="detail-label">Oportunidad de Ataque ${copyBtnHTML(oportunidadText)}</div>
+                <div class="detail-value">${oportunidadText} <span class="factor-value">(Valor: ${vuln.o})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Tamaño del Agente de Amenaza</div>
-                <div class="detail-value">${getTamanoAgenteText(vuln.s)} (Valor: ${vuln.s})</div>
+                <div class="detail-label">Tamaño del Agente de Amenaza ${copyBtnHTML(tamanoText)}</div>
+                <div class="detail-value">${tamanoText} <span class="factor-value">(Valor: ${vuln.s})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Impacto Técnico</h5>
             <div class="detail-item">
-                <div class="detail-label">Pérdida de confidencialidad</div>
-                <div class="detail-value">${getPerdidaConfidencialidadText(vuln.lc)} (Valor: ${vuln.lc})</div>
+                <div class="detail-label">Pérdida de confidencialidad ${copyBtnHTML(confidencialidadText)}</div>
+                <div class="detail-value">${confidencialidadText} <span class="factor-value">(Valor: ${vuln.lc})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Pérdida de integridad</div>
-                <div class="detail-value">${getPerdidaIntegridadText(vuln.li)} (Valor: ${vuln.li})</div>
+                <div class="detail-label">Pérdida de integridad ${copyBtnHTML(integridadText)}</div>
+                <div class="detail-value">${integridadText} <span class="factor-value">(Valor: ${vuln.li})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Impacto en la Disponibilidad</div>
-                <div class="detail-value">${getImpactoDisponibilidadText(vuln.lav)} (Valor: ${vuln.lav})</div>
+                <div class="detail-label">Impacto en la Disponibilidad ${copyBtnHTML(disponibilidadText)}</div>
+                <div class="detail-value">${disponibilidadText} <span class="factor-value">(Valor: ${vuln.lav})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Rastreabilidad del Ataque</div>
-                <div class="detail-value">${getRastreabilidadAtaqueText(vuln.lac)} (Valor: ${vuln.lac})</div>
+                <div class="detail-label">Rastreabilidad del Ataque ${copyBtnHTML(rastreabilidadText)}</div>
+                <div class="detail-value">${rastreabilidadText} <span class="factor-value">(Valor: ${vuln.lac})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Vulnerabilidad</h5>
             <div class="detail-item">
-                <div class="detail-label">Facilidad de descubrimiento</div>
-                <div class="detail-value">${getFacilidadDescubrimientoText(vuln.ed)} (Valor: ${vuln.ed})</div>
+                <div class="detail-label">Facilidad de descubrimiento ${copyBtnHTML(descubrimientoText)}</div>
+                <div class="detail-value">${descubrimientoText} <span class="factor-value">(Valor: ${vuln.ed})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Facilidad de explotación</div>
-                <div class="detail-value">${getFacilidadExplotacionText(vuln.ee)} (Valor: ${vuln.ee})</div>
+                <div class="detail-label">Facilidad de explotación ${copyBtnHTML(explotacionText)}</div>
+                <div class="detail-value">${explotacionText} <span class="factor-value">(Valor: ${vuln.ee})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Conocimiento de la Vulnerabilidad</div>
-                <div class="detail-value">${getConocimientoVulnerabilidadText(vuln.a)} (Valor: ${vuln.a})</div>
+                <div class="detail-label">Conocimiento de la Vulnerabilidad ${copyBtnHTML(conocimientoText)}</div>
+                <div class="detail-value">${conocimientoText} <span class="factor-value">(Valor: ${vuln.a})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Detección de intrusiones</div>
-                <div class="detail-value">${getDeteccionIntrusionText(vuln.intrusion)} (Valor: ${vuln.intrusion})</div>
+                <div class="detail-label">Detección de intrusiones ${copyBtnHTML(deteccionText)}</div>
+                <div class="detail-value">${deteccionText} <span class="factor-value">(Valor: ${vuln.intrusion})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Impacto de Negocio</h5>
             <div class="detail-item">
-                <div class="detail-label">Daño financiero</div>
-                <div class="detail-value">${getDanioFinancieroText(vuln.fd)} (Valor: ${vuln.fd})</div>
+                <div class="detail-label">Daño financiero ${copyBtnHTML(financieroText)}</div>
+                <div class="detail-value">${financieroText} <span class="factor-value">(Valor: ${vuln.fd})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Daño a la reputación</div>
-                <div class="detail-value">${getDanioReputacionText(vuln.rd)} (Valor: ${vuln.rd})</div>
+                <div class="detail-label">Daño a la reputación ${copyBtnHTML(reputacionText)}</div>
+                <div class="detail-value">${reputacionText} <span class="factor-value">(Valor: ${vuln.rd})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Incumplimiento</div>
-                <div class="detail-value">${getIncumplimientoText(vuln.nc)} (Valor: ${vuln.nc})</div>
+                <div class="detail-label">Incumplimiento ${copyBtnHTML(incumplimientoText)}</div>
+                <div class="detail-value">${incumplimientoText} <span class="factor-value">(Valor: ${vuln.nc})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Violación de privacidad</div>
-                <div class="detail-value">${getViolacionPrivacidadText(vuln.pv)} (Valor: ${vuln.pv})</div>
+                <div class="detail-label">Violación de privacidad ${copyBtnHTML(privacidadText)}</div>
+                <div class="detail-value">${privacidadText} <span class="factor-value">(Valor: ${vuln.pv})</span></div>
             </div>
         </div>
     `;
