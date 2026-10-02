@@ -186,11 +186,17 @@
                             </div>
                         </div>  
                         
+                        <!-- Evidencias -->
                         <div class="row">
                             <div class="col-12 mb-3">
                                 <label class="form-label">Evidencias (capturas)</label>
                                 <input type="file" class="form-control" id="evidence-files" accept="image/*" multiple>
-                                <small class="text-muted">
+                                
+                                <div class="evidence-warning">
+                                    ⚠️ <strong>Recuerda:</strong> las capturas deben incluir <strong>fecha y hora visibles</strong> para ser válidas como evidencia.
+                                </div>
+                                
+                                <small class="text-muted d-block mt-2">
                                     Puedes subir varias capturas. Se vincularán automáticamente a esta vulnerabilidad.
                                 </small>
                                 <div id="evidence-preview" class="mt-2 d-flex flex-wrap gap-2"></div>
@@ -518,32 +524,62 @@
                     </div>
                 </div>
                 
-                <div class="card mt-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="card-title mb-0">Vulnerabilidades por Categoría OWASP</h5>
-                                                <div class="d-flex gap-2 flex-wrap">                            
+                        <div class="d-flex gap-2 flex-wrap align-items-center">
+
+                            <!-- Menú avanzado: JSON (semi-oculto) -->
+                            <div class="dropdown">
+                                <button class="btn btn-outline-info btn-sm dropdown-toggle" 
+                                        type="button" 
+                                        id="advanced-actions-btn" 
+                                        data-bs-toggle="dropdown" 
+                                        aria-expanded="false"
+                                        title="Acciones avanzadas (JSON)">
+                                    ⚙️ Avanzado
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="advanced-actions-btn">
+                                    <li>
+                                        <h6 class="dropdown-header">Formato JSON</h6>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="document.getElementById('import-file-input').click()">
+                                            📥 Cargar JSON
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" id="export-json-btn">
+                                            📦 Exportar JSON
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Informes PDF -->
                             <button class="btn btn-danger btn-sm" id="export-pdf-btn">
-                                📊 Exportar Informe Tecnico
+                                📊 Informe Técnico
                             </button>
                             <button class="btn btn-primary btn-sm" id="export-executive-btn">
-                                ⭐ Exportar Informe Ejecutivo
-                            </button>
-                            
-                            <button class="btn btn-success btn-sm" id="export-zip-btn">
-                                🗜️ Exportar Hallazgos
-                            </button>
-                            <button class="btn btn-warning btn-sm" onclick="document.getElementById('import-zip-input').click()">
-                                📥 Importar Hallazgos
-                            </button>
+                                ⭐ Informe Ejecutivo
+                            </button>  
+
                             <button class="btn btn-outline-secondary btn-sm" id="validate-package-btn">
                                 🔍 Validar Hallazgos
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
-                                📥 Cargar JSON
-                            </button>                            
-                            <button class="btn btn-info btn-sm" id="export-json-btn">
-                                📦 Exportar JSON
+
+                            <button class="btn btn-warning btn-sm" onclick="document.getElementById('import-zip-input').click()">
+                                📥 Importar Hallazgos
                             </button>
+
+                            <!-- Acciones principales de hallazgos -->
+                            <button class="btn btn-success btn-sm" id="export-zip-btn">
+                                🗜️ Exportar Hallazgos
+                            </button>
+                            
+                            
+
+                                                      
                         </div>
                     </div>
                     
