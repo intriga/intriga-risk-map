@@ -335,6 +335,47 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+
+// ========== CONSTRUCCIÓN DEL NOMBRE DE CARPETA POR VULNERABILIDAD ==========
+// Genera un nombre tipo: "001_SQL_Injection_Login"
+// - Prefijo: número secuencial derivado del sufijo del vulnId (001, 002, 003...)
+// - Descripción: el campo "name" (Vector de Ataque) sanitizado a snake_case
+function buildEvidenceFolderName(vuln, orderIndex) {
+    // 1. Extraer el número secuencial del vulnId
+    //    Ej: "VULN-20250115-007" → "007"
+    //    Si no se puede, usar el orderIndex pasado
+    let seq = String(orderIndex).padStart(3, '0');
+    if (vuln.vulnId) {
+        const match = String(vuln.vulnId).match(/(\d+)$/);
+        if (match) {
+            seq = match[1].padStart(3, '0');
+        }
+    }
+
+    // 2. Sanitizar el nombre de la vulnerabilidad (Vector de Ataque)
+    //    - Quitar acentos
+    //    - Reemplazar espacios y caracteres no alfanuméricos por "_"
+    //    - Truncar a 60 caracteres para que el path no sea enorme
+    const rawName = (vuln.name || 'Sin_Vector').trim();
+    let safeName = rawName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')      // quitar acentos
+        .replace(/[^a-zA-Z0-9\s_-]/g, '')     // quitar símbolos peligrosos
+        .replace(/\s+/g, '_')                 // espacios → guion bajo
+        .replace(/_+/g, '_')                  // colapsar múltiples guiones
+        .replace(/^_+|_+$/g, '');             // quitar guiones al inicio/final
+
+    if (safeName.length > 60) {
+        safeName = safeName.substring(0, 60).replace(/_+$/, '');
+    }
+    if (!safeName) {
+        safeName = 'Sin_Vector';
+    }
+
+    return `${seq}_${safeName}`;
+}
+
+
 // ---------- EXPORTAR PAQUETE ZIP ----------
 async function exportPackage() {
     if (vulnerabilities.length === 0) {
@@ -346,7 +387,6 @@ async function exportPackage() {
     const clientDetected = vulnerabilities.find(v => v.client)?.client || '';
     const projectDetected = vulnerabilities.find(v => v.project)?.project || '';
 
-    // Si no hay ninguno de los dos, advertir (no debería pasar por la validación)
     if (!clientDetected && !projectDetected) {
         const fallback = prompt(
             'No se detectó Cliente ni Proyecto en las vulnerabilidades. Ingrese un nombre para el ZIP:',
@@ -358,7 +398,6 @@ async function exportPackage() {
     } else {
         var clientName = clientDetected;
         var projectName = projectDetected;
-        // Confirmación visual rápida
         const ok = confirm(
             `Se exportará el paquete para:\n\nCliente: ${clientName || '(sin cliente)'}\nProyecto: ${projectName || '(sin proyecto)'}\n\n¿Continuar?`
         );
@@ -374,7 +413,7 @@ async function exportPackage() {
             <div style="background: white; padding: 35px; border-radius: 20px; text-align: center;">
                 <div style="font-size: 52px; margin-bottom: 15px;">📦</div>
                 <div style="font-size: 18px; font-weight: bold; color: #1a2a6c; margin-bottom: 10px;">
-                    Empaquetando ZIP...
+                    Empaquetando hallazgos...
                 </div>
                 <div class="spinner-border text-primary" style="width: 40px; height: 40px;"></div>
             </div>
@@ -395,24 +434,63 @@ async function exportPackage() {
             evidences: []
         };
 
-        const evidenciasFolder = zip.folder('evidencias');
+        const evidenciasRoot = zip.folder('evidencias');
 
-        // Recorrer cada vulnerabilidad y sus evidencias
-        for (const vuln of vulnerabilities) {
+        // Ordenar vulnerabilidades para que el prefijo numérico sea secuencial
+        // (se ordenan por vulnId si existe; si no, por id)
+        const sortedVulns = [...vulnerabilities].sort((a, b) => {
+            const aId = a.vulnId || `VULN-${String(a.id).padStart(12, '0')}`;
+            const bId = b.vulnId || `VULN-${String(b.id).padStart(12, '0')}`;
+            return aId.localeCompare(bId);
+        });
+
+        // Recorrer cada vulnerabilidad y crear su carpeta
+        for (let i = 0; i < sortedVulns.length; i++) {
+            const vuln = sortedVulns[i];
             const vulnId = vuln.vulnId || `VULN-SINID-${vuln.id}`;
             const evidenceFiles = await getEvidencesByVuln(vulnId);
+
+            // Nombre de la carpeta: 001_Vector_de_Ataque
+            const folderName = buildEvidenceFolderName(vuln, i + 1);
+            const vulnFolder = evidenciasRoot.folder(folderName);
+
             const vulnManifest = {
                 vulnId: vulnId,
-                name: vuln.name || 'Sin nombre',
+                vector: vuln.name || 'Sin vector',
+                folder: folderName,
                 files: []
             };
 
-            for (const ev of evidenceFiles) {
-                const ext = (ev.name.split('.').pop() || 'png').toLowerCase();
-                const baseName = ev.name.replace(/\.[^.]+$/, '');
-                const newName = `${vulnId}_${sanitizeFilename(baseName)}.${ext}`;
+            // Si no hay evidencias, no creamos carpeta (evitamos carpetas vacías)
+            if (evidenceFiles.length === 0) {
+                manifest.evidences.push(vulnManifest);
+                continue;
+            }
 
-                evidenciasFolder.file(newName, ev.blob);
+            // Numerar las capturas dentro de la carpeta: 01_, 02_, ...
+            for (let j = 0; j < evidenceFiles.length; j++) {
+                const ev = evidenceFiles[j];
+                const seq = String(j + 1).padStart(2, '0');
+
+                // Extraer la extensión original
+                const ext = (ev.name.split('.').pop() || 'png').toLowerCase();
+
+                // Construir un nombre limpio y descriptivo a partir del nombre original
+                // Ej: "IMG_1234.png" → "01_img_1234.png"
+                //     "captura login.png" → "01_captura_login.png"
+                const baseName = ev.name
+                    .replace(/\.[^.]+$/, '')  // quitar extensión
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // quitar acentos
+                    .replace(/[^a-zA-Z0-9\s_-]/g, '')  // quitar símbolos
+                    .replace(/\s+/g, '_')  // espacios → _
+                    .replace(/_+/g, '_')
+                    .replace(/^_+|_+$/g, '')
+                    .substring(0, 40) || 'captura';
+
+                const newName = `${seq}_${baseName}.${ext}`;
+
+                vulnFolder.file(newName, ev.blob);
+
                 vulnManifest.files.push({
                     name: newName,
                     originalName: ev.name,
@@ -425,7 +503,7 @@ async function exportPackage() {
             manifest.evidences.push(vulnManifest);
         }
 
-        // Guardar JSON de vulnerabilidades (sin blobs, ya no aplica porque usamos IndexedDB)
+        // Guardar JSON de vulnerabilidades y manifest
         zip.file('vulns.json', JSON.stringify(vulnerabilities, null, 2));
         zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
@@ -447,6 +525,7 @@ async function exportPackage() {
         showNotification('❌ Error al generar el paquete ZIP', 'error');
     }
 }
+
 
 // ---------- IMPORTAR PAQUETE ZIP ----------
 async function importPackage(file) {
@@ -499,9 +578,19 @@ async function importPackage(file) {
             if (existingVulnIds.has(evEntry.vulnId)) continue;
 
             for (const fileInfo of evEntry.files || []) {
-                const zipPath = `evidencias/${fileInfo.name}`;
+                // Construir la ruta: evidencias/{folder}/{name}
+                // Si el manifest es viejo y no trae folder, usar fallback al formato anterior
+                let zipPath;
+                if (evEntry.folder) {
+                    zipPath = `evidencias/${evEntry.folder}/${fileInfo.name}`;
+                } else {
+                    // Compatibilidad con paquetes exportados antes del cambio
+                    zipPath = `evidencias/${fileInfo.name}`;
+                }
+
                 const zipEntry = zip.file(zipPath);
                 if (!zipEntry) {
+                    console.warn(`Evidencia no encontrada en el ZIP: ${zipPath}`);
                     missingEvidences++;
                     continue;
                 }
