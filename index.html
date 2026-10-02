@@ -45,6 +45,23 @@
                 <div class="row">
                     <section class="col-12">
                         <h5 class="border-bottom">Información General de la Vulnerabilidad</h5>
+
+                        <!-- NUEVO: Cliente y Proyecto (se recuerdan entre guardados) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cliente</label>
+                                <input type="text" class="form-control" id="client" placeholder="Ej: Banco de E" list="clients-suggestions">
+                                <datalist id="clients-suggestions"></datalist>
+                                <small class="text-muted">Se recuerda entre vulnerabilidades del mismo proyecto.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Proyecto</label>
+                                <input type="text" class="form-control" id="project" placeholder="Ej: Autil Tech" list="projects-suggestions">
+                                <datalist id="projects-suggestions"></datalist>
+                                <small class="text-muted">Se recuerda entre vulnerabilidades del mismo proyecto.</small>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre de la Vulnerabilidad</label>
@@ -53,9 +70,10 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Estándar OWASP</label>
                                 <select class="form-control" id="owasp-standard">
-                                    <option value="web">OWASP Top 10 Web 2025</option>
-                                    <option value="api">OWASP Top 10 API 2023</option>
-                                    <option value="mobile">OWASP Top 10 Mobile 2024</option>
+                                    <option value="">Seleccione un estándar</option>
+                                    <option value="web">WEB</option>
+                                    <option value="api">API</option>
+                                    <option value="mobile">MOBILE</option>
                                 </select>
                             </div>
                         </div>
@@ -166,7 +184,25 @@
                                 <label class="form-label">Impacto Técnico - Negocio</label>
                                 <textarea class="form-control" id="technical-business-impact" rows="2" placeholder="Describa el impacto técnico y de negocio"></textarea>
                             </div>
-                        </div>                        
+                        </div>  
+                        
+                        <!-- Evidencias -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Evidencias (capturas)</label>
+                                <input type="file" class="form-control" id="evidence-files" accept="image/*" multiple>
+                                
+                                <div class="evidence-warning">
+                                    ⚠️ <strong>Recuerda:</strong> las capturas deben incluir <strong>fecha y hora visibles</strong> para ser válidas como evidencia.
+                                </div>
+                                
+                                <small class="text-muted d-block mt-2">
+                                    Puedes subir varias capturas. Se vincularán automáticamente a esta vulnerabilidad.
+                                </small>
+                                <div id="evidence-preview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+
                     </section>
 
                     <section class="col-md-6">
@@ -488,22 +524,62 @@
                     </div>
                 </div>
                 
-                <div class="card mt-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="card-title mb-0">Vulnerabilidades por Categoría OWASP</h5>
-                        <div class="d-flex gap-2">                            
+                        <div class="d-flex gap-2 flex-wrap align-items-center">
+
+                            <!-- Menú avanzado: JSON (semi-oculto) -->
+                            <div class="dropdown">
+                                <button class="btn btn-outline-info btn-sm dropdown-toggle" 
+                                        type="button" 
+                                        id="advanced-actions-btn" 
+                                        data-bs-toggle="dropdown" 
+                                        aria-expanded="false"
+                                        title="Acciones avanzadas (JSON)">
+                                    ⚙️ Avanzado
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="advanced-actions-btn">
+                                    <li>
+                                        <h6 class="dropdown-header">Formato JSON</h6>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="document.getElementById('import-file-input').click()">
+                                            📥 Cargar JSON
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" id="export-json-btn">
+                                            📦 Exportar JSON
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Informes PDF -->
                             <button class="btn btn-danger btn-sm" id="export-pdf-btn">
-                                📊 Exportar Informe Tecnico
+                                📊 Informe Técnico
                             </button>
                             <button class="btn btn-primary btn-sm" id="export-executive-btn">
-                                ⭐ Exportar Informe Ejecutivo
+                                ⭐ Informe Ejecutivo
+                            </button>  
+
+                            <button class="btn btn-outline-secondary btn-sm" id="validate-package-btn">
+                                🔍 Validar Hallazgos
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file-input').click()">
-                                📥 Cargar JSON
-                            </button>                            
-                            <button class="btn btn-info btn-sm" id="export-json-btn">
-                                📦 Exportar JSON
+
+                            <button class="btn btn-warning btn-sm" onclick="document.getElementById('import-zip-input').click()">
+                                📥 Importar Hallazgos
                             </button>
+
+                            <!-- Acciones principales de hallazgos -->
+                            <button class="btn btn-success btn-sm" id="export-zip-btn">
+                                🗜️ Exportar Hallazgos
+                            </button>
+                            
+                            
+
+                                                      
                         </div>
                     </div>
                     
@@ -526,6 +602,7 @@
                     </div>
                 </div>
                 
+                <input type="file" id="import-zip-input" accept=".zip,application/zip" style="display: none;">
                 <input type="file" id="import-file-input" accept="application/json" style="display: none;">
             </div>
         </div>
@@ -580,12 +657,14 @@
     </div>
 </div>
 
-    <!-- Scripts -->
+        <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="main.js"></script>
+    <script src="evidences.js"></script>
 
     <script>
         // Script para mejorar la validación visual

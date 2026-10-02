@@ -265,7 +265,7 @@ const owaspMobileCategories = [
 // Colores para cada categoría
 const categoryColors = {
     web: [
-        'rgba(54, 162, 235, 0.8)',   // Azul
+        'rgba(54, 162, 235, 0.8)',
         'rgba(54, 162, 235, 0.8)',
         'rgba(54, 162, 235, 0.8)',
         'rgba(54, 162, 235, 0.8)',
@@ -277,7 +277,7 @@ const categoryColors = {
         'rgba(54, 162, 235, 0.8)'
     ],
     api: [
-        'rgba(255, 99, 132, 0.8)',   // Rojo
+        'rgba(255, 99, 132, 0.8)',
         'rgba(255, 99, 132, 0.8)',
         'rgba(255, 99, 132, 0.8)',
         'rgba(255, 99, 132, 0.8)',
@@ -289,7 +289,7 @@ const categoryColors = {
         'rgba(255, 99, 132, 0.8)'
     ],
     mobile: [
-        'rgba(75, 192, 192, 0.8)',   // Verde azulado
+        'rgba(75, 192, 192, 0.8)',
         'rgba(75, 192, 192, 0.8)',
         'rgba(75, 192, 192, 0.8)',
         'rgba(75, 192, 192, 0.8)',
@@ -302,7 +302,6 @@ const categoryColors = {
     ]
 };
 
-// ========== FUNCIÓN PARA CONFIGURAR SELECTOR DE ESTÁNDAR OWASP ==========
 function setupOwaspStandardSelector() {
     const standardSelect = document.getElementById('owasp-standard');
     const categorySelect = document.getElementById('owasp-category');
@@ -336,8 +335,8 @@ function setupOwaspStandardSelector() {
             });
         });
         
-        // Trigger inicial para cargar las categorías por defecto (web)
-        standardSelect.dispatchEvent(new Event('change'));
+        // NO disparar el change inicial: dejamos el select vacío
+        // hasta que el usuario elija un estándar manualmente.
     }
 }
 
@@ -347,7 +346,6 @@ function migrateVulnerabilities() {
     vulnerabilities = vulnerabilities.map(vuln => {
         if (!vuln.owaspStandard) {
             migrated = true;
-            // Detectar si es una categoría API o Mobile basado en el texto
             let standard = 'web';
             if (vuln.owasp) {
                 if (vuln.owasp.startsWith('API')) {
@@ -373,7 +371,7 @@ function migrateVulnerabilities() {
 // ========== FUNCIÓN PARA OBTENER TEXTO COMPLETO DE OWASP ==========
 function getOwaspFullText(value) {
     if (!value) return '';
-    return value; // Ahora el valor ya es el texto completo
+    return value;
 }
 
 // ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
@@ -568,7 +566,6 @@ function drawTotalInCenter(canvasElement, total) {
     const centerX = canvasElement.width / 2;
     const centerY = canvasElement.height / 2;
     
-    // Limpiar área central
     const radius = 45;
     ctx.save();
     ctx.beginPath();
@@ -625,13 +622,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     loadVulnerabilities();
-    migrateVulnerabilities(); // Migrar vulnerabilidades existentes
+    migrateVulnerabilities();
     updateOldVulnerabilities();
+    updateClientProjectSuggestions();
     
-    // Configurar el select de agente de amenazas
     setupThreatAgentSelect();
-    
-    // Configurar el selector de estándar OWASP
     setupOwaspStandardSelector();
     
     const calculateBtn = document.getElementById('calculate-btn');
@@ -673,7 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     setTimeout(calculateRisk, 100);
 
-    // Listeners para actualizar gráficos
     const dashboardTab = document.getElementById('dashboard-tab');
     if (dashboardTab) {
         dashboardTab.addEventListener('click', function() {
@@ -729,7 +723,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 250);
     });
 
-    // Botón de generación con IA
     const aiGenerateBtn = document.getElementById('ai-generate-btn');
     if (aiGenerateBtn) {
         aiGenerateBtn.addEventListener('click', async () => {
@@ -738,7 +731,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Botón flotante IA
     const aiFabBtn = document.getElementById('ai-fab-btn');
     if (aiFabBtn) {
         aiFabBtn.addEventListener('click', () => {
@@ -958,6 +950,8 @@ function updateRiskChart(likelihood, impact, risk, riskLevel) {
 // ========== VALIDACIÓN DE TODOS LOS CAMPOS OBLIGATORIOS ==========
 function validateRequiredFields() {
     const requiredFields = [
+        { id: 'client', name: 'Cliente' },
+        { id: 'project', name: 'Proyecto' },
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
         { id: 'owasp-standard', name: 'Estándar OWASP' },
@@ -1128,8 +1122,16 @@ function saveVulnerability() {
             return 0;
         };
         
+        // Obtener el vulnId temporal (si el usuario subió evidencias antes de guardar)
+        // o generar uno nuevo si no existe
+        const hiddenVulnId = document.getElementById('current-vuln-id');
+        const vulnId = (hiddenVulnId && hiddenVulnId.value.trim()) 
+            ? hiddenVulnId.value.trim() 
+            : generateVulnId();
+        
         const vulnerability = {
             id: Date.now(),
+            vulnId: vulnId,
             name: formData.name.trim(),
             ...riskData,
             ...formData,
@@ -1156,8 +1158,26 @@ function saveVulnerability() {
         saveVulnerabilities();
         renderVulnerabilitiesList();
         updateDashboard();
+        updateClientProjectSuggestions(); 
         
         clearFormValidation();
+        
+        // Resetear el vulnId temporal para la siguiente vulnerabilidad
+        if (hiddenVulnId) {
+            hiddenVulnId.value = '';
+        }
+        
+        // Limpiar la vista previa de evidencias
+        const preview = document.getElementById('evidence-preview');
+        if (preview) {
+            preview.innerHTML = '';
+        }
+        
+        // Limpiar el input de archivos
+        const evidenceInput = document.getElementById('evidence-files');
+        if (evidenceInput) {
+            evidenceInput.value = '';
+        }
         
         showNotification(`Vulnerabilidad "${vulnerability.name}" guardada con nivel de riesgo: ${riskData.riskLevel}`, 'success');
         
@@ -1169,6 +1189,8 @@ function saveVulnerability() {
 
 // ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
 function clearFormValidation() {
+    // ⚠️ NOTA: 'client' y 'project' NO están aquí a propósito.
+    // Se mantienen entre guardados para agilizar el flujo de trabajo.
     const allFormElements = [
         'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
         'threat-agent', 'attack-vector', 'security-weakness', 'security-controls',
@@ -1185,7 +1207,8 @@ function clearFormValidation() {
         if (element) {
             if (element.tagName === 'SELECT') {
                 if (id === 'owasp-standard') {
-                    element.value = 'web';
+                    // Dejar el estándar vacío (que el usuario elija)
+                    element.value = '';
                     element.dispatchEvent(new Event('change'));
                 } else {
                     element.value = element.querySelector('option[value=""]') ? '' : element.options[0].value;
@@ -1229,6 +1252,16 @@ function clearFormValidation() {
     if (updateBtn) updateBtn.remove();
     if (cancelBtn) cancelBtn.remove();
     if (saveBtn) saveBtn.style.display = 'inline-block';
+
+        // Cliente y Proyecto: solo quitamos validación visual, mantenemos el valor
+    ['client', 'project'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('is-invalid', 'is-valid');
+            const err = el.parentElement.querySelector('.invalid-feedback');
+            if (err) err.remove();
+        }
+    });
 }
 
 function getFormData() {
@@ -1247,6 +1280,8 @@ function getFormData() {
     }
     
     return {
+        client: getValue('client').trim(),
+        project: getValue('project').trim(),
         name: getValue('vulnerability-name'),
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
@@ -1299,13 +1334,16 @@ function renderVulnerabilitiesList() {
                 <div class="vulnerability-content">
                     <div class="d-flex justify-content-between align-items-start">
                         <div style="flex: 1;">
-                            <h5 class="mb-2">${vuln.name}</h5>
-                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}</p>
+                            <h5 class="mb-2">${vuln.name}${copyBtnHTML(vuln.name, 'inline')}</h5>
+                            ${vuln.client ? `<p class="mb-1"><strong>Cliente:</strong> ${vuln.client}${copyBtnHTML(vuln.client, 'inline')}</p>` : ''}
+                            ${vuln.project ? `<p class="mb-1"><strong>Proyecto:</strong> ${vuln.project}${copyBtnHTML(vuln.project, 'inline')}</p>` : ''}
+                            <p class="mb-1"><strong>ID:</strong> <code>${vuln.vulnId || 'N/A'}</code>${vuln.vulnId ? copyBtnHTML(vuln.vulnId, 'inline') : ''}</p>
+                            <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}${vuln.host ? copyBtnHTML(vuln.host, 'inline') : ''}</p>
                             <p class="mb-1">
                                 <strong>OWASP:</strong> 
                                 <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)} me-1">${standardText}</span>
-                                ${vuln.owasp || 'No especificado'} | 
-                                <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}
+                                ${vuln.owasp || 'No especificado'}${vuln.owasp ? copyBtnHTML(vuln.owasp, 'inline') : ''} | 
+                                <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}${vuln.mitre ? copyBtnHTML(vuln.mitre, 'inline') : ''}
                             </p>
                             <p class="mb-1"><strong>Riesgo:</strong> ${vuln.risk.toFixed(2)} | <strong>Probabilidad:</strong> ${vuln.likelihood.toFixed(2)} | <strong>Impacto:</strong> ${vuln.impact.toFixed(2)}</p>
                             <small class="text-muted">Guardado: ${new Date(vuln.date).toLocaleDateString()} ${new Date(vuln.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
@@ -1333,6 +1371,16 @@ function renderVulnerabilitiesList() {
     });
     
     setTimeout(() => {
+        // Listeners de botones de copiado en las tarjetas
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = btn.getAttribute('data-copy');
+                copyToClipboard(text, btn);
+            });
+        });
+
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1359,7 +1407,7 @@ function renderVulnerabilitiesList() {
         
         document.querySelectorAll('.vulnerability-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                if (!e.target.closest('.btn')) {
+                if (!e.target.closest('.btn') && !e.target.closest('.copy-btn')) {
                     const id = parseInt(item.dataset.id);
                     showVulnerabilityDetails(id);
                 }
@@ -1390,16 +1438,13 @@ function updateDashboard() {
         if (highElement) highElement.textContent = highCount;
         if (mediumElement) mediumElement.textContent = mediumCount;
         
-        // Obtener dimensiones del contenedor antes de crear los charts
         const riskChartContainer = document.querySelector('#riskDistributionChart').parentElement;
         const owaspChartContainer = document.querySelector('#owaspDistributionChart').parentElement;
         
-        // Forzar dimensiones explícitas en los canvas
         const riskCanvas = document.getElementById('riskDistributionChart');
         const owaspCanvas = document.getElementById('owaspDistributionChart');
         
         if (riskCanvas && riskChartContainer) {
-            // Establecer dimensiones explícitas basadas en el contenedor
             riskCanvas.style.width = '100%';
             riskCanvas.style.height = '300px';
             riskCanvas.width = riskChartContainer.clientWidth || 400;
@@ -1413,12 +1458,10 @@ function updateDashboard() {
             owaspCanvas.height = 300;
         }
         
-        // Actualizar los charts
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
         
-        // Dibujar el total en el centro después de un pequeño retraso
         setTimeout(() => {
             const total = vulnerabilities.length;
             const canvas = document.getElementById('riskDistributionChart');
@@ -1566,51 +1609,42 @@ function updateOwaspDistributionChart() {
     try {
         const context = ctx.getContext('2d');
         
-        // Crear un array con todas las categorías de los tres estándares
         const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
         
-        // Colores simples y consistentes para todas las categorías (30 colores únicos)
         const allColors = [
-            // Web - Colores simples (10 colores)
-            'rgba(255, 99, 132, 0.9)',   // A01 - Rojo
-            'rgba(54, 162, 235, 0.9)',   // A02 - Azul
-            'rgba(255, 206, 86, 0.9)',   // A03 - Amarillo
-            'rgba(75, 192, 192, 0.9)',   // A04 - Verde azulado
-            'rgba(153, 102, 255, 0.9)',  // A05 - Púrpura
-            'rgba(255, 159, 64, 0.9)',   // A06 - Naranja
-            'rgba(199, 199, 199, 0.9)',  // A07 - Gris
-            'rgba(83, 102, 255, 0.9)',   // A08 - Azul índigo
-            'rgba(40, 159, 64, 0.9)',    // A09 - Verde
-            'rgba(210, 105, 30, 0.9)',   // A10 - Marrón
-            
-            // API - Repetimos los mismos colores pero en diferente orden
-            'rgba(255, 99, 132, 0.8)',   // API1 - Rojo
-            'rgba(54, 162, 235, 0.8)',   // API2 - Azul
-            'rgba(255, 206, 86, 0.8)',   // API3 - Amarillo
-            'rgba(75, 192, 192, 0.8)',   // API4 - Verde azulado
-            'rgba(153, 102, 255, 0.8)',  // API5 - Púrpura
-            'rgba(255, 159, 64, 0.8)',   // API6 - Naranja
-            'rgba(199, 199, 199, 0.8)',  // API7 - Gris
-            'rgba(83, 102, 255, 0.8)',   // API8 - Azul índigo
-            'rgba(40, 159, 64, 0.8)',    // API9 - Verde
-            'rgba(210, 105, 30, 0.8)',   // API10 - Marrón
-            
-            // Mobile - Mismos colores pero con diferente opacidad/saturación
-            'rgba(255, 99, 132, 0.7)',   // M1 - Rojo
-            'rgba(54, 162, 235, 0.7)',   // M2 - Azul
-            'rgba(255, 206, 86, 0.7)',   // M3 - Amarillo
-            'rgba(75, 192, 192, 0.7)',   // M4 - Verde azulado
-            'rgba(153, 102, 255, 0.7)',  // M5 - Púrpura
-            'rgba(255, 159, 64, 0.7)',   // M6 - Naranja
-            'rgba(199, 199, 199, 0.7)',  // M7 - Gris
-            'rgba(83, 102, 255, 0.7)',   // M8 - Azul índigo
-            'rgba(40, 159, 64, 0.7)',    // M9 - Verde
-            'rgba(210, 105, 30, 0.7)'    // M10 - Marrón
+            'rgba(255, 99, 132, 0.9)',
+            'rgba(54, 162, 235, 0.9)',
+            'rgba(255, 206, 86, 0.9)',
+            'rgba(75, 192, 192, 0.9)',
+            'rgba(153, 102, 255, 0.9)',
+            'rgba(255, 159, 64, 0.9)',
+            'rgba(199, 199, 199, 0.9)',
+            'rgba(83, 102, 255, 0.9)',
+            'rgba(40, 159, 64, 0.9)',
+            'rgba(210, 105, 30, 0.9)',
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(153, 102, 255, 0.8)',
+            'rgba(255, 159, 64, 0.8)',
+            'rgba(199, 199, 199, 0.8)',
+            'rgba(83, 102, 255, 0.8)',
+            'rgba(40, 159, 64, 0.8)',
+            'rgba(210, 105, 30, 0.8)',
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(199, 199, 199, 0.7)',
+            'rgba(83, 102, 255, 0.7)',
+            'rgba(40, 159, 64, 0.7)',
+            'rgba(210, 105, 30, 0.7)'
         ];
         
-        // Colores para los bordes (más intensos)
         const allBorderColors = [
-            // Web
             'rgba(255, 99, 132, 1)',
             'rgba(54, 162, 235, 1)',
             'rgba(255, 206, 86, 1)',
@@ -1621,8 +1655,6 @@ function updateOwaspDistributionChart() {
             'rgba(83, 102, 255, 1)',
             'rgba(40, 159, 64, 1)',
             'rgba(210, 105, 30, 1)',
-            
-            // API
             'rgba(255, 99, 132, 1)',
             'rgba(54, 162, 235, 1)',
             'rgba(255, 206, 86, 1)',
@@ -1633,8 +1665,6 @@ function updateOwaspDistributionChart() {
             'rgba(83, 102, 255, 1)',
             'rgba(40, 159, 64, 1)',
             'rgba(210, 105, 30, 1)',
-            
-            // Mobile
             'rgba(255, 99, 132, 1)',
             'rgba(54, 162, 235, 1)',
             'rgba(255, 206, 86, 1)',
@@ -1647,12 +1677,10 @@ function updateOwaspDistributionChart() {
             'rgba(210, 105, 30, 1)'
         ];
         
-        // Contar vulnerabilidades por categoría
         const counts = Array(allCategories.length).fill(0);
         
         vulnerabilities.forEach(vuln => {
             if (vuln.owasp) {
-                // Buscar coincidencia exacta o parcial
                 const index = allCategories.findIndex(cat => {
                     if (cat === vuln.owasp) return true;
                     const catCode = cat.split(' - ')[0];
@@ -1666,13 +1694,11 @@ function updateOwaspDistributionChart() {
             }
         });
         
-        // Filtrar categorías sin vulnerabilidades
         const nonZeroIndices = counts
             .map((count, index) => ({ count, index }))
             .filter(item => item.count > 0)
             .map(item => item.index);
         
-        // Si no hay datos, mostrar mensaje
         if (nonZeroIndices.length === 0) {
             if (owaspDistributionChart) owaspDistributionChart.destroy();
             context.clearRect(0, 0, ctx.width, ctx.height);
@@ -1683,7 +1709,6 @@ function updateOwaspDistributionChart() {
             return;
         }
         
-        // Preparar datos filtrados
         const filteredLabels = nonZeroIndices.map(i => {
             const cat = allCategories[i];
             const code = cat.split(' - ')[0];
@@ -1697,10 +1722,8 @@ function updateOwaspDistributionChart() {
         const filteredColors = nonZeroIndices.map(i => allColors[i]);
         const filteredBorderColors = nonZeroIndices.map(i => allBorderColors[i]);
         
-        // Destruir gráfico anterior si existe
         if (owaspDistributionChart) owaspDistributionChart.destroy();
         
-        // Crear nuevo gráfico
         owaspDistributionChart = new Chart(context, {
             type: 'doughnut',
             data: {
@@ -1773,21 +1796,18 @@ function updateOwaspDistributionChart() {
             }
         });
         
-        // Agregar texto central con el total después de la animación
         setTimeout(() => {
             const total = filteredData.reduce((a, b) => a + b, 0);
             if (total > 0 && ctx) {
                 const centerX = ctx.width / 2;
                 const centerY = ctx.height / 2;
                 
-                // Limpiar área central
                 context.save();
                 context.beginPath();
                 context.arc(centerX, centerY, 40, 0, Math.PI * 2);
                 context.clip();
                 context.clearRect(centerX - 40, centerY - 40, 80, 80);
                 
-                // Dibujar texto
                 context.textAlign = 'center';
                 context.textBaseline = 'middle';
                 context.font = 'bold 22px "Segoe UI", Arial, sans-serif';
@@ -1883,7 +1903,7 @@ function updateDashboardTable() {
 }
 
 
-// ========== EXPORTACIÓN A INFORME EJECUTIVO EN PDF - TABLAS UNIFICADAS EN UNA SOLA PÁGINA ==========
+// ========== EXPORTACIÓN A INFORME EJECUTIVO EN PDF ==========
 async function exportExecutiveReport() {
     console.log('Generando informe ejecutivo completo en PDF...');
 
@@ -1892,7 +1912,6 @@ async function exportExecutiveReport() {
         return;
     }
 
-    // Mostrar loading
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'pdf-loading-overlay';
     loadingDiv.innerHTML = `
@@ -1910,13 +1929,11 @@ async function exportExecutiveReport() {
     await new Promise(r => setTimeout(r, 100));
 
     try {
-        // Asegurar que los charts estén actualizados
         if (!riskDistributionChart || !owaspDistributionChart) {
             updateDashboard();
             await new Promise(r => setTimeout(r, 500));
         }
 
-        // ========== ESTADÍSTICAS ==========
         const totalVulnerabilities = vulnerabilities.length;
         
         const criticalVulns = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO');
@@ -1935,7 +1952,6 @@ async function exportExecutiveReport() {
         const apiCount = vulnerabilities.filter(v => v.owaspStandard === 'api').length;
         const mobileCount = vulnerabilities.filter(v => v.owaspStandard === 'mobile').length;
         
-        // Categorías OWASP
         const categoryStats = {};
         vulnerabilities.forEach(v => {
             if (v.owasp) {
@@ -1957,7 +1973,6 @@ async function exportExecutiveReport() {
         const highPercent = totalVulnerabilities > 0 ? ((highCount / totalVulnerabilities) * 100).toFixed(1) : 0;
         const mediumPercent = totalVulnerabilities > 0 ? ((mediumCount / totalVulnerabilities) * 100).toFixed(1) : 0;
         
-        // Nivel de riesgo general
         let overallRiskLevel = 'BAJO';
         let overallRiskColor = '#28a745';
         if (criticalCount > 0) {
@@ -1971,7 +1986,6 @@ async function exportExecutiveReport() {
             overallRiskColor = '#ffc107';
         }
         
-        // Capturar imágenes de los charts
         const riskChartImage = await captureChartAsImage(riskDistributionChart);
         const owaspChartImage = await captureChartAsImage(owaspDistributionChart);
         
@@ -1985,7 +1999,6 @@ async function exportExecutiveReport() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        // Función para agregar una sección al PDF
         async function addSectionToPDF(htmlContent, isFirstPage = false) {
             const tempDiv = document.createElement('div');
             tempDiv.style.cssText = `
@@ -2020,9 +2033,6 @@ async function exportExecutiveReport() {
             document.body.removeChild(tempDiv);
         }
         
-        // ========== GENERAR HTML CON TODAS LAS TABLAS JUNTAS ==========
-        
-        // Generar filas de críticas
         const criticalRows = criticalCount > 0 ? criticalVulns.map((v, i) => `
             <tr style="background: #fff0f0;">
                 <td style="padding: 8px; border-bottom: 1px solid #ffcccc; text-align: center;">${i+1}</td>
@@ -2034,7 +2044,6 @@ async function exportExecutiveReport() {
             </tr>
         `).join('') : '';
         
-        // Generar filas de altas
         const highRows = highCount > 0 ? highVulns.map((v, i) => `
             <tr style="background: #fff8f0;">
                 <td style="padding: 8px; border-bottom: 1px solid #ffe0b3; text-align: center;">${i+1}</td>
@@ -2046,7 +2055,6 @@ async function exportExecutiveReport() {
              </tr>
         `).join('') : '';
         
-        // Generar filas de medias
         const mediumRows = mediumCount > 0 ? mediumVulns.map((v, i) => `
             <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
@@ -2058,7 +2066,6 @@ async function exportExecutiveReport() {
              </tr>
         `).join('') : '';
         
-        // Generar filas de bajas
         const lowRows = lowCount > 0 ? lowVulns.map((v, i) => `
             <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
@@ -2070,7 +2077,6 @@ async function exportExecutiveReport() {
              </tr>
         `).join('') : '';
         
-        // Categorías OWASP rows
         const categoryRows = topCategories.map(([code, cat], i) => {
             const hasCritical = cat.risks.includes('CRÍTICO');
             const hasHigh = cat.risks.includes('ALTO');
@@ -2084,17 +2090,25 @@ async function exportExecutiveReport() {
             `;
         }).join('');
         
-        // ========== SECCIÓN 1: HEADER + RESUMEN + DISTRIBUCIÓN ESTÁNDAR ==========
+                const clientDetected = vulnerabilities.find(v => v.client)?.client;
+        const projectDetected = vulnerabilities.find(v => v.project)?.project;
+        const clientProjectLine = (clientDetected || projectDetected)
+            ? `<div style="font-size: 12px; opacity: 0.95; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3);">
+                   ${clientDetected ? `Cliente: <strong>${escapeHtml(clientDetected)}</strong>` : ''}
+                   ${clientDetected && projectDetected ? ' &nbsp;·&nbsp; ' : ''}
+                   ${projectDetected ? `Proyecto: <strong>${escapeHtml(projectDetected)}</strong>` : ''}
+               </div>`
+            : '';
+
         const section1HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
-            <!-- HEADER -->
             <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
                 <h1 style="font-size: 24px; margin-bottom: 8px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
                 <div style="font-size: 13px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
+                ${clientProjectLine}
                 <div style="font-size: 11px; opacity: 0.8; margin-top: 10px;">📅 ${formattedDate}</div>
             </div>
             
-            <!-- RESUMEN EJECUTIVO -->
             <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px; border-left: 4px solid #fdbb4d; padding-left: 12px;">📋 Resumen Ejecutivo</h2>
                 
@@ -2127,7 +2141,6 @@ async function exportExecutiveReport() {
                 </div>
             </div>
             
-            <!-- DISTRIBUCIÓN POR ESTÁNDAR -->
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
                 <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">🏷️ Distribución por Estándar OWASP</h2>
                 <table style="width: 100%; border-collapse: collapse;">
@@ -2149,7 +2162,6 @@ async function exportExecutiveReport() {
         `;
         await addSectionToPDF(section1HTML, true);
         
-        // ========== SECCIÓN 2: GRÁFICOS ==========
         const section2HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
@@ -2169,10 +2181,8 @@ async function exportExecutiveReport() {
         `;
         await addSectionToPDF(section2HTML, false);
         
-        // ========== SECCIÓN 3: TODAS LAS TABLAS DE VULNERABILIDADES JUNTAS (misma página) ==========
         let vulnTablesHTML = '<div style="max-width: 750px; margin: 0 auto;">';
         
-        // Tabla de críticas
         if (criticalCount > 0) {
             vulnTablesHTML += `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffcccc; margin-bottom: 25px;">
@@ -2185,7 +2195,6 @@ async function exportExecutiveReport() {
             `;
         }
         
-        // Tabla de altas
         if (highCount > 0) {
             vulnTablesHTML += `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffe0b3; margin-bottom: 25px;">
@@ -2198,7 +2207,6 @@ async function exportExecutiveReport() {
             `;
         }
         
-        // Tabla de medias
         if (mediumCount > 0) {
             vulnTablesHTML += `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
@@ -2211,7 +2219,6 @@ async function exportExecutiveReport() {
             `;
         }
         
-        // Tabla de bajas
         if (lowCount > 0) {
             vulnTablesHTML += `
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d4edda; margin-bottom: 25px;">
@@ -2226,12 +2233,10 @@ async function exportExecutiveReport() {
         
         vulnTablesHTML += '</div>';
         
-        // Si hay al menos una tabla de vulnerabilidades, agregar la página
         if (criticalCount > 0 || highCount > 0 || mediumCount > 0 || lowCount > 0) {
             await addSectionToPDF(vulnTablesHTML, false);
         }
         
-        // ========== SECCIÓN 4: CATEGORÍAS OWASP MÁS AFECTADAS ==========
         if (topCategories.length > 0) {
             const section4HTML = `
             <div style="max-width: 750px; margin: 0 auto;">
@@ -2247,7 +2252,6 @@ async function exportExecutiveReport() {
             await addSectionToPDF(section4HTML, false);
         }
         
-        // ========== SECCIÓN 5: RECOMENDACIONES ==========
         const section5HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="background: #fff8e7; padding: 20px; border-radius: 12px;">
@@ -2273,7 +2277,6 @@ async function exportExecutiveReport() {
         `;
         await addSectionToPDF(section5HTML, false);
         
-        // ========== SECCIÓN 6: FOOTER ==========
         const section6HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="margin-top: 10px; padding: 15px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #e0e0e0;">
@@ -2284,7 +2287,6 @@ async function exportExecutiveReport() {
         `;
         await addSectionToPDF(section6HTML, false);
         
-        // Agregar números de página
         const totalPages = pdf.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             pdf.setPage(i);
@@ -2293,10 +2295,8 @@ async function exportExecutiveReport() {
             pdf.text(`Página ${i} de ${totalPages}`, pdfWidth - 30, pdfHeight - 10);
         }
         
-        // Guardar PDF
         pdf.save(`Informe_Ejecutivo_Seguridad_${new Date().toISOString().split('T')[0]}.pdf`);
         
-        // Limpiar
         document.body.removeChild(loadingDiv);
         
         showNotification(`✅ Informe PDF generado con ${totalVulnerabilities} vulnerabilidades`, 'success');
@@ -2310,743 +2310,34 @@ async function exportExecutiveReport() {
     }
 }
 
-
-// ========== FUNCIONES PARA GENERAR CADA SECCIÓN ==========
+// ========== FUNCIONES AUXILIARES PDF ==========
 
 function generateHeaderAndSummaryHTML(data) {
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <!-- HEADER -->
-        <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
-            <h1 style="font-size: 24px; margin-bottom: 8px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
-            <div style="font-size: 13px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
-            <div style="font-size: 11px; opacity: 0.8; margin-top: 10px;">📅 ${data.formattedDate}</div>
-        </div>
-        
-        <!-- RESUMEN EJECUTIVO -->
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px; border-left: 4px solid #fdbb4d; padding-left: 12px;">📋 Resumen Ejecutivo</h2>
-            
-            <div style="background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
-                <div style="font-size: 12px; color: #666;">Nivel de Riesgo General</div>
-                <div style="font-size: 32px; font-weight: bold; padding: 6px 30px; border-radius: 35px; display: inline-block; color: white; background: ${data.overallRiskColor}">${data.overallRiskLevel}</div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${data.criticalCount}</div>
-                    <div style="font-size: 10px; color: #666;">Críticas (${data.criticalPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #fd7e14;">${data.highCount}</div>
-                    <div style="font-size: 10px; color: #666;">Altas (${data.highPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #ffc107;">${data.mediumCount}</div>
-                    <div style="font-size: 10px; color: #666;">Medias (${data.mediumPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">${data.lowCount}</div>
-                    <div style="font-size: 10px; color: #666;">Bajas</div>
-                </div>
-                <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: bold; color: #17a2b8;">${data.infoCount}</div>
-                    <div style="font-size: 10px; color: #666;">Informativas</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- DISTRIBUCIÓN POR ESTÁNDAR -->
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-            <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">🏷️ Distribución por Estándar OWASP</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #1a2a6c; color: white;">
-                        <th style="padding: 10px; text-align: left;">Estándar</th>
-                        <th style="padding: 10px; text-align: center;">Cantidad</th>
-                        <th style="padding: 10px; text-align: center;">Porcentaje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🌐 OWASP Top 10 Web 2025</td><td style="padding: 8px; text-align: center;"><strong>${data.webCount}</strong></td><td style="padding: 8px; text-align: center;">${((data.webCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🔌 OWASP Top 10 API 2023</td><td style="padding: 8px; text-align: center;"><strong>${data.apiCount}</strong></td><td style="padding: 8px; text-align: center;">${((data.apiCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">📱 OWASP Top 10 Mobile 2024</td><td style="padding: 8px; text-align: center;"><strong>${data.mobileCount}</strong></td><td style="padding: 8px; text-align: center;">${((data.mobileCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateChartsHTML(riskChartImage, owaspChartImage) {
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">📈 Análisis Gráfico</h2>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                <div style="flex: 1; min-width: 280px; text-align: center;">
-                    <h3 style="font-size: 13px; margin-bottom: 10px; color: #555;">Distribución por Nivel de Riesgo</h3>
-                    <img src="${riskChartImage}" style="max-width: 100%; height: auto;">
-                </div>
-                <div style="flex: 1; min-width: 280px; text-align: center;">
-                    <h3 style="font-size: 13px; margin-bottom: 10px; color: #555;">Distribución por Categoría OWASP</h3>
-                    <img src="${owaspChartImage}" style="max-width: 100%; height: auto;">
-                </div>
-            </div>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateVulnTableHTML(level, title, vulns) {
-    const colors = {
-        critical: { header: '#dc3545', rowBg: '#fff0f0', border: '#ffcccc' },
-        high: { header: '#fd7e14', rowBg: '#fff8f0', border: '#ffe0b3' },
-        medium: { header: '#ffc107', rowBg: '#ffffff', border: '#e0e0e0' },
-        low: { header: '#28a745', rowBg: '#ffffff', border: '#d4edda' }
-    };
-    const color = colors[level] || colors.medium;
-    
-    const rows = vulns.map((v, i) => `
-        <tr style="background: ${color.rowBg};">
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border}; text-align: center;">${i+1}</td>
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border};"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border};">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border};">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}</td>
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border}; text-align: center;"><span style="background: ${color.header}; color: ${level === 'medium' ? '#333' : 'white'}; padding: 3px 10px; border-radius: 15px; font-size: 10px;">${v.riskLevel}</span></td>
-            <td style="padding: 8px; border-bottom: 1px solid ${color.border}; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid ${color.border};">
-            <h2 style="color: ${color.header}; margin-bottom: 12px; font-size: 16px;">${title} (${vulns.length})</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                <thead>
-                    <tr style="background: ${color.header}; color: ${level === 'medium' ? '#333' : 'white'};">
-                        <th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateEmptyMessageHTML(level, message) {
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; text-align: center;">
-            <p style="color: #666;">✅ ${message}</p>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateCategoriesHTML(topCategories) {
-    const rows = topCategories.map(([code, cat], i) => {
-        const hasCritical = cat.risks.includes('CRÍTICO');
-        const hasHigh = cat.risks.includes('ALTO');
-        const priorityIcon = hasCritical ? '🔴' : (hasHigh ? '🟠' : '🟡');
-        return `
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${priorityIcon} ${escapeHtml(cat.name)}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><strong>${cat.count}</strong></td>
-            </tr>
-        `;
-    }).join('');
-    
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-            <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">📂 Categorías OWASP más afectadas</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead><tr style="background: #1a2a6c; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Categoría</th><th style="padding: 10px; text-align: center;">Vulnerabilidades</th></tr></thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateRecommendationsHTML(criticalCount, highCount) {
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="background: #fff8e7; padding: 20px; border-radius: 12px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">🎯 Recomendaciones Estratégicas</h2>
-            ${criticalCount > 0 ? `
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 10px; border-left: 4px solid #dc3545;">
-                <strong style="color: #dc3545;">🔴 ACCIÓN INMEDIATA (${criticalCount} críticas)</strong>
-                <ul style="margin-left: 20px; margin-top: 8px;"><li>Corregir en máximo 48 horas</li><li>Equipo de respuesta rápida</li><li>Análisis de causa raíz</li></ul>
-            </div>
-            ` : ''}
-            ${highCount > 0 ? `
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 10px; border-left: 4px solid #fd7e14;">
-                <strong style="color: #fd7e14;">🟠 CORTO PLAZO (${highCount} altas)</strong>
-                <ul style="margin-left: 20px; margin-top: 8px;"><li>Abordar en próximas 2 semanas</li><li>Priorizar según contexto</li><li>Recursos dedicados</li></ul>
-            </div>
-            ` : ''}
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 10px; border-left: 4px solid #28a745;">
-                <strong style="color: #28a745;">🔄 MEJORA CONTINUA</strong>
-                <ul style="margin-left: 20px; margin-top: 8px;"><li>Programa de evaluación continua</li><li>Capacitación en seguridad OWASP</li><li>Pruebas de penetración periódicas</li></ul>
-            </div>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 function generateFooterHTML() {
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <div style="margin-top: 10px; padding: 15px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #e0e0e0;">
-            <p>Informe generado por <strong>Intriga Risk Map</strong> - OWASP Vulnerability Manager</p>
-            <p>📄 Documento confidencial - Contiene información sensible de seguridad</p>
-        </div>
-    </div>
-    `;
-}
-
-
-
-// Función para generar HTML continuo (sin separación forzada de páginas)
-function generateContinuousReportHTML(data) {
-    console.log('Generando HTML continuo con:', {
-        critical: data.criticalVulns.length,
-        high: data.highVulns.length,
-        medium: data.mediumVulns.length,
-        low: data.lowVulns.length
-    });
-    
-    // ========== GENERAR FILAS DE CADA NIVEL ==========
-    
-    const criticalRows = data.criticalVulns.map((v, i) => `
-        <tr style="background: #fff0f0;">
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center;"><span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const highRows = data.highVulns.map((v, i) => `
-        <tr style="background: #fff8f0;">
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center;"><span style="background: #fd7e14; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const mediumRows = data.mediumVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #ffc107; color: #333; padding: 4px 12px; border-radius: 20px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const lowRows = data.lowVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.name || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Categorías OWASP
-    const categoryRows = data.topCategories.map(([code, cat], i) => {
-        const hasCritical = cat.risks.includes('CRÍTICO');
-        const hasHigh = cat.risks.includes('ALTO');
-        const priorityIcon = hasCritical ? '🔴' : (hasHigh ? '🟠' : '🟡');
-        return `
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${priorityIcon} ${escapeHtml(cat.name)}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><strong>${cat.count}</strong></td>
-            </tr>
-        `;
-    }).join('');
-    
-    // HTML continuo (sin page-break, todo fluye naturalmente)
-    return `
-    <div style="max-width: 750px; margin: 0 auto;">
-        <!-- HEADER -->
-        <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 35px; text-align: center; border-radius: 12px; margin-bottom: 25px;">
-            <h1 style="font-size: 28px; margin-bottom: 10px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
-            <div style="font-size: 14px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
-            <div style="font-size: 12px; opacity: 0.8; margin-top: 12px;">📅 ${data.formattedDate}</div>
-        </div>
-        
-        <!-- RESUMEN EJECUTIVO -->
-        <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 20px; border-left: 4px solid #fdbb4d; padding-left: 15px;">📋 Resumen Ejecutivo</h2>
-            
-            <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                <div style="font-size: 13px; color: #666;">Nivel de Riesgo General</div>
-                <div style="font-size: 38px; font-weight: bold; padding: 8px 35px; border-radius: 40px; display: inline-block; color: white; background: ${data.overallRiskColor}">${data.overallRiskLevel}</div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 28px; font-weight: bold; color: #dc3545;">${data.criticalCount}</div>
-                    <div style="font-size: 11px; color: #666;">Críticas (${data.criticalPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 28px; font-weight: bold; color: #fd7e14;">${data.highCount}</div>
-                    <div style="font-size: 11px; color: #666;">Altas (${data.highPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 28px; font-weight: bold; color: #ffc107;">${data.mediumCount}</div>
-                    <div style="font-size: 11px; color: #666;">Medias (${data.mediumPercent}%)</div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 28px; font-weight: bold; color: #28a745;">${data.lowCount}</div>
-                    <div style="font-size: 11px; color: #666;">Bajas</div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 28px; font-weight: bold; color: #17a2b8;">${data.infoCount}</div>
-                    <div style="font-size: 11px; color: #666;">Informativas</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- DISTRIBUCIÓN POR ESTÁNDAR -->
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">🏷️ Distribución por Estándar OWASP</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #1a2a6c; color: white;">
-                        <th style="padding: 12px; text-align: left;">Estándar</th>
-                        <th style="padding: 12px; text-align: center;">Cantidad</th>
-                        <th style="padding: 12px; text-align: center;">Porcentaje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🌐 OWASP Top 10 Web 2025</td><td style="padding: 10px; text-align: center;"><strong>${data.webCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.webCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🔌 OWASP Top 10 API 2023</td><td style="padding: 10px; text-align: center;"><strong>${data.apiCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.apiCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">📱 OWASP Top 10 Mobile 2024</td><td style="padding: 10px; text-align: center;"><strong>${data.mobileCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.mobileCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- GRÁFICOS -->
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 18px;">📈 Análisis Gráfico</h2>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                <div style="flex: 1; min-width: 280px; text-align: center;">
-                    <h3 style="font-size: 14px; margin-bottom: 12px; color: #555;">Distribución por Riesgo</h3>
-                    <img src="${data.riskChartImage}" style="max-width: 100%; height: auto;">
-                </div>
-                <div style="flex: 1; min-width: 280px; text-align: center;">
-                    <h3 style="font-size: 14px; margin-bottom: 12px; color: #555;">Distribución por Categoría OWASP</h3>
-                    <img src="${data.owaspChartImage}" style="max-width: 100%; height: auto;">
-                </div>
-            </div>
-        </div>
-        
-        <!-- VULNERABILIDADES CRÍTICAS -->
-        ${data.criticalCount > 0 ? `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffcccc; margin-bottom: 25px;">
-            <h2 style="color: #dc3545; margin-bottom: 15px; font-size: 18px;">🔴 Vulnerabilidades Críticas (${data.criticalCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                <thead><tr style="background: #dc3545; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th></tr></thead>
-                <tbody>${criticalRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- VULNERABILIDADES ALTAS -->
-        ${data.highCount > 0 ? `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffe0b3; margin-bottom: 25px;">
-            <h2 style="color: #fd7e14; margin-bottom: 15px; font-size: 18px;">🟠 Vulnerabilidades Altas (${data.highCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                <thead><tr style="background: #fd7e14; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th></tr></thead>
-                <tbody>${highRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- VULNERABILIDADES MEDIAS -->
-        ${data.mediumCount > 0 ? `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
-            <h2 style="color: #ffc107; margin-bottom: 15px; font-size: 18px;">🟡 Vulnerabilidades Medias (${data.mediumCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                <thead><tr style="background: #ffc107; color: #333;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th></tr></thead>
-                <tbody>${mediumRows}</tbody>
-            </table>
-        </div>
-        ` : '<div style="background: #f8f9fa; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 25px;"><p style="color: #666;">✅ No hay vulnerabilidades de nivel MEDIO</p></div>'}
-        
-        <!-- VULNERABILIDADES BAJAS -->
-        ${data.lowCount > 0 ? `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d4edda; margin-bottom: 25px;">
-            <h2 style="color: #28a745; margin-bottom: 15px; font-size: 18px;">🟢 Vulnerabilidades Bajas (${data.lowCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                <thead><tr style="background: #28a745; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th></tr></thead>
-                <tbody>${lowRows}</tbody>
-            </table>
-        </div>
-        ` : '<div style="background: #f8f9fa; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 25px;"><p style="color: #666;">✅ No hay vulnerabilidades de nivel BAJO</p></div>'}
-        
-        <!-- CATEGORÍAS OWASP MÁS AFECTADAS -->
-        ${data.topCategories.length > 0 ? `
-        <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">📂 Categorías OWASP más afectadas</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead><tr style="background: #1a2a6c; color: white;"><th style="padding: 12px;">#</th><th style="padding: 12px;">Categoría</th><th style="padding: 12px; text-align: center;">Vulnerabilidades</th></tr></thead>
-                <tbody>${categoryRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- RECOMENDACIONES -->
-        <div style="background: #fff8e7; padding: 25px; border-radius: 12px; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 20px;">🎯 Recomendaciones Estratégicas</h2>
-            ${data.criticalCount > 0 ? `
-            <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #dc3545;">
-                <strong style="color: #dc3545; display: block; margin-bottom: 8px;">🔴 ACCIÓN INMEDIATA (${data.criticalCount} críticas)</strong>
-                <ul style="margin-left: 25px;"><li>Corregir en máximo 48 horas</li><li>Equipo de respuesta rápida</li><li>Análisis de causa raíz</li></ul>
-            </div>
-            ` : ''}
-            ${data.highCount > 0 ? `
-            <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #fd7e14;">
-                <strong style="color: #fd7e14; display: block; margin-bottom: 8px;">🟠 CORTO PLAZO (${data.highCount} altas)</strong>
-                <ul style="margin-left: 25px;"><li>Abordar en próximas 2 semanas</li><li>Priorizar según contexto</li><li>Recursos dedicados</li></ul>
-            </div>
-            ` : ''}
-            <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #28a745;">
-                <strong style="color: #28a745; display: block; margin-bottom: 8px;">🔄 MEJORA CONTINUA</strong>
-                <ul style="margin-left: 25px;"><li>Programa de evaluación continua</li><li>Capacitación en seguridad OWASP</li><li>Pruebas de penetración periódicas</li></ul>
-            </div>
-        </div>
-        
-        <!-- FOOTER -->
-        <div style="margin-top: 20px; padding: 20px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #e0e0e0;">
-            <p>Informe generado por <strong>Intriga Risk Map</strong> - OWASP Vulnerability Manager</p>
-            <p>📄 Documento confidencial - Contiene información sensible de seguridad</p>
-        </div>
-    </div>
-    `;
-}
-
-
-// Función para generar el HTML completo con TODAS las vulnerabilidades
-function generateCompleteReportHTML(data) {
-    console.log('Generando HTML con:', {
-        critical: data.criticalVulns.length,
-        high: data.highVulns.length,
-        medium: data.mediumVulns.length,
-        low: data.lowVulns.length,
-        info: data.infoVulns.length
-    });
-    
-    // ========== GENERAR FILAS DE CADA NIVEL ==========
-    
-    // Vulnerabilidades CRÍTICAS
-    const criticalRows = data.criticalVulns.map((v, i) => `
-        <tr style="background: #fff0f0;">
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc;">${escapeHtml((v.owasp || 'No especificado').substring(0, 45))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center;"><span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffcccc; text-align: center; font-weight: bold;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Vulnerabilidades ALTAS
-    const highRows = data.highVulns.map((v, i) => `
-        <tr style="background: #fff8f0;">
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3;">${escapeHtml((v.owasp || 'No especificado').substring(0, 45))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center;"><span style="background: #fd7e14; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #ffe0b3; text-align: center; font-weight: bold;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Vulnerabilidades MEDIAS
-    const mediumRows = data.mediumVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 45))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #ffc107; color: #333; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center; font-weight: bold;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Vulnerabilidades BAJAS
-    const lowRows = data.lowVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.name || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 45))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center; font-weight: bold;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Vulnerabilidades INFORMATIVAS
-    const infoRows = data.infoVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.name || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 45))}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #17a2b8; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">${v.riskLevel}</span></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center; font-weight: bold;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Categorías OWASP más afectadas
-    const categoryRows = data.topCategories.map(([code, cat], i) => {
-        const hasCritical = cat.risks.includes('CRÍTICO');
-        const hasHigh = cat.risks.includes('ALTO');
-        const priorityIcon = hasCritical ? '🔴' : (hasHigh ? '🟠' : '🟡');
-        return `
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${priorityIcon} ${escapeHtml(cat.name)}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><strong>${cat.count}</strong></td>
-            </tr>
-        `;
-    }).join('');
-    
-    // Construir HTML completo con todas las secciones
-    return `
-    <div style="max-width: 1000px; margin: 0 auto;">
-        <!-- SECCIÓN 1: HEADER -->
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 40px; text-align: center; border-radius: 15px 15px 0 0;">
-                <h1 style="font-size: 32px; margin-bottom: 12px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
-                <div style="font-size: 16px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
-                <div style="font-size: 13px; opacity: 0.8; margin-top: 15px;">📅 ${data.formattedDate}</div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 2: RESUMEN EJECUTIVO -->
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: #f8f9fa; padding: 25px; border-radius: 12px;">
-                <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 22px; border-left: 4px solid #fdbb4d; padding-left: 15px;">📋 Resumen Ejecutivo</h2>
-                
-                <div style="background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Nivel de Riesgo General de la Organización</div>
-                    <div style="font-size: 42px; font-weight: bold; padding: 10px 40px; border-radius: 50px; display: inline-block; color: white; background: ${data.overallRiskColor}">${data.overallRiskLevel}</div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;">
-                    <div style="background: white; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                        <div style="font-size: 32px; font-weight: bold; color: #dc3545;">${data.criticalCount}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Críticas (${data.criticalPercent}%)</div>
-                    </div>
-                    <div style="background: white; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                        <div style="font-size: 32px; font-weight: bold; color: #fd7e14;">${data.highCount}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Altas (${data.highPercent}%)</div>
-                    </div>
-                    <div style="background: white; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                        <div style="font-size: 32px; font-weight: bold; color: #ffc107;">${data.mediumCount}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Medias (${data.mediumPercent}%)</div>
-                    </div>
-                    <div style="background: white; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                        <div style="font-size: 32px; font-weight: bold; color: #28a745;">${data.lowCount}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Bajas (${data.lowPercent}%)</div>
-                    </div>
-                    <div style="background: white; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                        <div style="font-size: 32px; font-weight: bold; color: #17a2b8;">${data.infoCount}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Informativas</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 3: DISTRIBUCIÓN POR ESTÁNDAR -->
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">🏷️ Distribución por Estándar OWASP</h2>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #1a2a6c; color: white;">
-                            <th style="padding: 12px; text-align: left;">Estándar</th>
-                            <th style="padding: 12px; text-align: center;">Cantidad</th>
-                            <th style="padding: 12px; text-align: center;">Porcentaje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🌐 OWASP Top 10 Web 2025</td><td style="padding: 10px; text-align: center;"><strong>${data.webCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.webCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                        <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🔌 OWASP Top 10 API 2023</td><td style="padding: 10px; text-align: center;"><strong>${data.apiCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.apiCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                        <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">📱 OWASP Top 10 Mobile 2024</td><td style="padding: 10px; text-align: center;"><strong>${data.mobileCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.mobileCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 4: GRÁFICOS -->
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 18px;">📈 Análisis Gráfico</h2>
-                <div style="display: flex; gap: 25px; flex-wrap: wrap; justify-content: center;">
-                    <div style="flex: 1; min-width: 280px; text-align: center;">
-                        <h3 style="font-size: 14px; margin-bottom: 15px; color: #555;">Distribución por Nivel de Riesgo</h3>
-                        <img src="${data.riskChartImage}" style="max-width: 100%; height: auto; border-radius: 8px;">
-                    </div>
-                    <div style="flex: 1; min-width: 280px; text-align: center;">
-                        <h3 style="font-size: 14px; margin-bottom: 15px; color: #555;">Distribución por Categoría OWASP</h3>
-                        <img src="${data.owaspChartImage}" style="max-width: 100%; height: auto; border-radius: 8px;">
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 5: VULNERABILIDADES CRÍTICAS -->
-        ${data.criticalCount > 0 ? `
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffcccc;">
-                <h2 style="color: #dc3545; margin-bottom: 15px; font-size: 18px;">🔴 Vulnerabilidades Críticas (${data.criticalCount})</h2>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #dc3545; color: white;">
-                            <th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host/Dominio</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>${criticalRows}</tbody>
-                </table>
-            </div>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 6: VULNERABILIDADES ALTAS -->
-        ${data.highCount > 0 ? `
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffe0b3;">
-                <h2 style="color: #fd7e14; margin-bottom: 15px; font-size: 18px;">🟠 Vulnerabilidades Altas (${data.highCount})</h2>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #fd7e14; color: white;">
-                            <th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host/Dominio</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>${highRows}</tbody>
-                </table>
-            </div>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 7: VULNERABILIDADES MEDIAS -->
-        ${data.mediumCount > 0 ? `
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                <h2 style="color: #ffc107; margin-bottom: 15px; font-size: 18px;">🟡 Vulnerabilidades Medias (${data.mediumCount})</h2>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #ffc107; color: #333;">
-                            <th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host/Dominio</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>${mediumRows}</tbody>
-                </table>
-            </div>
-        </div>
-        ` : '<div class="pdf-section" style="margin-bottom: 25px;"><div style="background: #f0f0f0; padding: 20px; border-radius: 12px; text-align: center;"><p style="color: #666;">✅ No hay vulnerabilidades de nivel MEDIO registradas.</p></div></div>'}
-        
-        <!-- SECCIÓN 8: VULNERABILIDADES BAJAS -->
-        ${data.lowCount > 0 ? `
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d4edda;">
-                <h2 style="color: #28a745; margin-bottom: 15px; font-size: 18px;">🟢 Vulnerabilidades Bajas (${data.lowCount})</h2>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #28a745; color: white;">
-                            <th style="padding: 10px;">#</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Host/Dominio</th><th style="padding: 10px;">Categoría OWASP</th><th style="padding: 10px;">Riesgo</th><th style="padding: 10px;">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>${lowRows}</tbody>
-                </table>
-            </div>
-        </div>
-        ` : '<div class="pdf-section" style="margin-bottom: 25px;"><div style="background: #f0f0f0; padding: 20px; border-radius: 12px; text-align: center;"><p style="color: #666;">✅ No hay vulnerabilidades de nivel BAJO registradas.</p></div></div>'}
-        
-        <!-- SECCIÓN 9: CATEGORÍAS OWASP MÁS AFECTADAS -->
-        ${data.topCategories.length > 0 ? `
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">📂 Categorías OWASP más afectadas</h2>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #1a2a6c; color: white;">
-                            <th style="padding: 12px;">#</th><th style="padding: 12px;">Categoría</th><th style="padding: 12px; text-align: center;">Vulnerabilidades</th>
-                        </tr>
-                    </thead>
-                    <tbody>${categoryRows}</tbody>
-                </table>
-            </div>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 10: RECOMENDACIONES -->
-        <div class="pdf-section" style="margin-bottom: 25px;">
-            <div style="background: #fff8e7; padding: 25px; border-radius: 12px;">
-                <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 20px;">🎯 Recomendaciones Estratégicas</h2>
-                ${data.criticalCount > 0 ? `
-                <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #dc3545; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <strong style="color: #dc3545; display: block; margin-bottom: 10px; font-size: 16px;">🔴 ACCIÓN INMEDIATA (${data.criticalCount} críticas)</strong>
-                    <ul style="margin-left: 25px; color: #555;">
-                        <li>Corregir en máximo <strong>48 horas</strong></li>
-                        <li>Formar equipo de respuesta rápida</li>
-                        <li>Realizar análisis de causa raíz</li>
-                        <li>Implementar controles compensatorios</li>
-                    </ul>
-                </div>
-                ` : ''}
-                ${data.highCount > 0 ? `
-                <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #fd7e14; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <strong style="color: #fd7e14; display: block; margin-bottom: 10px; font-size: 16px;">🟠 CORTO PLAZO (${data.highCount} altas)</strong>
-                    <ul style="margin-left: 25px; color: #555;">
-                        <li>Abordar en próximas <strong>2 semanas</strong></li>
-                        <li>Priorizar según contexto de negocio</li>
-                        <li>Asignar recursos dedicados para remediación</li>
-                    </ul>
-                </div>
-                ` : ''}
-                <div style="background: white; padding: 18px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #28a745; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <strong style="color: #28a745; display: block; margin-bottom: 10px; font-size: 16px;">🔄 MEJORA CONTINUA</strong>
-                    <ul style="margin-left: 25px; color: #555;">
-                        <li>Implementar programa de evaluación continua</li>
-                        <li>Capacitar al equipo en seguridad OWASP</li>
-                        <li>Realizar pruebas de penetración periódicas</li>
-                        <li>Establecer métricas de reducción de riesgo</li>
-                        <li>Automatizar escaneos de seguridad</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 11: FOOTER -->
-        <div class="pdf-section">
-            <div style="margin-top: 20px; padding: 20px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #e0e0e0;">
-                <p>Informe generado por <strong>Intriga Risk Map</strong> - OWASP Vulnerability Manager</p>
-                <p>📄 Documento confidencial - Contiene información sensible de seguridad</p>
-                <p>🔒 Este informe debe ser tratado con estricta confidencialidad</p>
-            </div>
-        </div>
-    </div>
-    `;
+    return ``; // (contenido original sin usar)
 }
 
 // Función para capturar chart como imagen
@@ -3078,575 +2369,6 @@ async function captureChartAsImage(chart) {
     return tempCanvas.toDataURL('image/png');
 }
 
-
-
-
-// Función para generar el HTML completo del informe
-function generateFullReportHTML(data) {
-    // Generar filas de vulnerabilidades por nivel
-    const criticalRows = data.criticalVulns.map((v, i) => `
-        <tr style="background: #fff5f5;">
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 35))}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #dc3545; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const highRows = data.highVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 35))}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #fd7e14; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const mediumRows = data.mediumVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 35))}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #ffc107; color: #333; padding: 3px 10px; border-radius: 12px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const lowRows = data.lowVulns.map((v, i) => `
-        <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.name || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 35))}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;"><span style="background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px;">${v.riskLevel}</span></td>
-            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    // Top categorías rows
-    const categoryRows = data.topCategories.map(([code, cat], i) => {
-        const hasCritical = cat.risks.includes('CRÍTICO');
-        const hasHigh = cat.risks.includes('ALTO');
-        const priorityIcon = hasCritical ? '🔴' : (hasHigh ? '🟠' : '🟡');
-        return `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">${priorityIcon} ${escapeHtml(cat.name)}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center;"><strong>${cat.count}</strong></td>
-            </tr>
-        `;
-    }).join('');
-    
-    return `
-    <div style="max-width: 1000px; margin: 0 auto;">
-        <!-- SECCIÓN 1: HEADER Y RESUMEN -->
-        <div class="page-section" style="page-break-after: avoid;">
-            <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 35px; text-align: center; border-radius: 12px 12px 0 0; margin-bottom: 25px;">
-                <h1 style="font-size: 28px; margin-bottom: 10px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
-                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 12px;">Análisis de vulnerabilidades según estándares OWASP</div>
-                <div style="font-size: 12px; opacity: 0.8;">📅 ${data.formattedDate}</div>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
-                <h2 style="color: #1a2a6c; margin-bottom: 20px; font-size: 20px; border-left: 4px solid #fdbb4d; padding-left: 15px;">📋 Resumen Ejecutivo</h2>
-                <div style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                    <div style="font-size: 13px; color: #666; margin-bottom: 8px;">Nivel de Riesgo General</div>
-                    <div style="font-size: 36px; font-weight: bold; padding: 8px 35px; border-radius: 40px; display: inline-block; color: white; background: ${data.overallRiskColor}">${data.overallRiskLevel}</div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: bold; color: #dc3545;">${data.criticalCount}</div>
-                        <div style="font-size: 11px; color: #666;">Críticas</div>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: bold; color: #fd7e14;">${data.highCount}</div>
-                        <div style="font-size: 11px; color: #666;">Altas</div>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: bold; color: #ffc107;">${data.mediumCount}</div>
-                        <div style="font-size: 11px; color: #666;">Medias</div>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: bold; color: #28a745;">${data.lowCount}</div>
-                        <div style="font-size: 11px; color: #666;">Bajas</div>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 28px; font-weight: bold; color: #17a2b8;">${data.infoCount}</div>
-                        <div style="font-size: 11px; color: #666;">Informativas</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 2: DISTRIBUCIÓN POR ESTÁNDAR -->
-        <div class="page-section" style="page-break-after: avoid; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #fdbb4d; padding-bottom: 8px; display: inline-block;">🏷️ Distribución por Estándar OWASP</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <thead>
-                    <tr style="background: #1a2a6c; color: white;">
-                        <th style="padding: 10px; text-align: left;">Estándar</th>
-                        <th style="padding: 10px; text-align: center;">Cantidad</th>
-                        <th style="padding: 10px; text-align: center;">Porcentaje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🌐 OWASP Top 10 Web 2025</td><td style="padding: 10px; text-align: center;"><strong>${data.webCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.webCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">🔌 OWASP Top 10 API 2023</td><td style="padding: 10px; text-align: center;"><strong>${data.apiCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.apiCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">📱 OWASP Top 10 Mobile 2024</td><td style="padding: 10px; text-align: center;"><strong>${data.mobileCount}</strong></td><td style="padding: 10px; text-align: center;">${((data.mobileCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- SECCIÓN 3: GRÁFICOS -->
-        <div class="page-section" style="page-break-after: avoid; margin-bottom: 25px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #fdbb4d; padding-bottom: 8px; display: inline-block;">📈 Análisis Gráfico</h2>
-            <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 250px; background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
-                    <h3 style="font-size: 14px; margin-bottom: 10px; color: #1a2a6c;">Distribución por Nivel de Riesgo</h3>
-                    <img src="${data.riskChartImage}" style="max-width: 100%; height: auto; border-radius: 5px;">
-                </div>
-                <div style="flex: 1; min-width: 250px; background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
-                    <h3 style="font-size: 14px; margin-bottom: 10px; color: #1a2a6c;">Distribución por Categoría OWASP</h3>
-                    <img src="${data.owaspChartImage}" style="max-width: 100%; height: auto; border-radius: 5px;">
-                </div>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 4: VULNERABILIDADES CRÍTICAS -->
-        ${data.criticalCount > 0 ? `
-        <div class="page-section" style="margin-bottom: 25px; page-break-inside: avoid;">
-            <h2 style="color: #dc3545; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #dc3545; padding-bottom: 8px; display: inline-block;">🔴 Vulnerabilidades Críticas (${data.criticalCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
-                <thead>
-                    <tr style="background: #dc3545; color: white;">
-                        <th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th>
-                    </tr>
-                </thead>
-                <tbody>${criticalRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 5: VULNERABILIDADES ALTAS -->
-        ${data.highCount > 0 ? `
-        <div class="page-section" style="margin-bottom: 25px; page-break-inside: avoid;">
-            <h2 style="color: #fd7e14; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #fd7e14; padding-bottom: 8px; display: inline-block;">🟠 Vulnerabilidades Altas (${data.highCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
-                <thead>
-                    <tr style="background: #fd7e14; color: white;">
-                        <th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th>
-                    </tr>
-                </thead>
-                <tbody>${highRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 6: VULNERABILIDADES MEDIAS -->
-        ${data.mediumCount > 0 ? `
-        <div class="page-section" style="margin-bottom: 25px; page-break-inside: avoid;">
-            <h2 style="color: #ffc107; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #ffc107; padding-bottom: 8px; display: inline-block;">🟡 Vulnerabilidades Medias (${data.mediumCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
-                <thead>
-                    <tr style="background: #ffc107; color: #333;">
-                        <th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th>
-                    </tr>
-                </thead>
-                <tbody>${mediumRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 7: VULNERABILIDADES BAJAS -->
-        ${data.lowCount > 0 ? `
-        <div class="page-section" style="margin-bottom: 25px; page-break-inside: avoid;">
-            <h2 style="color: #28a745; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #28a745; padding-bottom: 8px; display: inline-block;">🟢 Vulnerabilidades Bajas (${data.lowCount})</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
-                <thead>
-                    <tr style="background: #28a745; color: white;">
-                        <th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th>
-                    </tr>
-                </thead>
-                <tbody>${lowRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 8: CATEGORÍAS OWASP MÁS AFECTADAS -->
-        ${data.topCategories.length > 0 ? `
-        <div class="page-section" style="margin-bottom: 25px; page-break-inside: avoid;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #fdbb4d; padding-bottom: 8px; display: inline-block;">📂 Categorías OWASP más afectadas</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <thead>
-                    <tr style="background: #1a2a6c; color: white;">
-                        <th style="padding: 10px;">#</th><th style="padding: 10px;">Categoría</th><th style="padding: 10px; text-align: center;">Vulnerabilidades</th>
-                    </tr>
-                </thead>
-                <tbody>${categoryRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- SECCIÓN 9: RECOMENDACIONES -->
-        <div class="page-section" style="background: #fff8e7; padding: 25px; border-radius: 10px; margin-top: 15px;">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">🎯 Recomendaciones Estratégicas</h2>
-            ${data.criticalCount > 0 ? `
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 8px; border-left: 4px solid #dc3545;">
-                <strong style="color: #dc3545; display: block; margin-bottom: 8px;">🔴 ACCIÓN INMEDIATA (${data.criticalCount} críticas)</strong>
-                <ul style="margin-left: 20px;"><li>Corregir en máximo 48 horas</li><li>Equipo de respuesta rápida</li><li>Análisis de causa raíz</li></ul>
-            </div>
-            ` : ''}
-            ${data.highCount > 0 ? `
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 8px; border-left: 4px solid #fd7e14;">
-                <strong style="color: #fd7e14; display: block; margin-bottom: 8px;">🟠 CORTO PLAZO (${data.highCount} altas)</strong>
-                <ul style="margin-left: 20px;"><li>Abordar en próximas 2 semanas</li><li>Priorizar según contexto</li><li>Recursos dedicados</li></ul>
-            </div>
-            ` : ''}
-            <div style="background: white; padding: 15px; margin: 12px 0; border-radius: 8px; border-left: 4px solid #28a745;">
-                <strong style="color: #28a745; display: block; margin-bottom: 8px;">🔄 MEJORA CONTINUA</strong>
-                <ul style="margin-left: 20px;"><li>Programa de evaluación continua</li><li>Capacitación en seguridad OWASP</li><li>Pruebas de penetración periódicas</li><li>Métrica de reducción de riesgo</li></ul>
-            </div>
-        </div>
-        
-        <!-- SECCIÓN 10: FOOTER -->
-        <div style="margin-top: 25px; padding: 15px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #e0e0e0;">
-            Informe generado por Intriga Risk Map - OWASP Vulnerability Manager<br>
-            Documento confidencial - Información sensible de seguridad
-        </div>
-    </div>
-    `;
-}
-
-
-
-// Función para capturar chart como imagen de alta calidad
-async function captureChartAsImage(chart) {
-    if (!chart || !chart.canvas) {
-        // Crear canvas en blanco
-        const blankCanvas = document.createElement('canvas');
-        blankCanvas.width = 400;
-        blankCanvas.height = 400;
-        const ctx = blankCanvas.getContext('2d');
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, 0, 400, 400);
-        ctx.fillStyle = '#666';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('No hay datos disponibles', 200, 200);
-        return blankCanvas.toDataURL('image/png');
-    }
-    
-    // Crear un canvas temporal con fondo blanco
-    const originalCanvas = chart.canvas;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = originalCanvas.width;
-    tempCanvas.height = originalCanvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    // Fondo blanco
-    tempCtx.fillStyle = '#ffffff';
-    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    
-    // Dibujar el chart
-    tempCtx.drawImage(originalCanvas, 0, 0);
-    
-    return tempCanvas.toDataURL('image/png');
-}
-
-// Función para generar el HTML del informe (sin estilos inline duplicados)
-function generateReportHTML(data) {
-    const top5Rows = data.top5Critical.map((v, i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;"><strong>${escapeHtml(v.name || 'No especificado')}</strong></td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(v.host || 'No especificado')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml((v.owasp || 'No especificado').substring(0, 40))}${(v.owasp || '').length > 40 ? '...' : ''}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">
-                <span style="display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; background: ${v.riskLevel === 'CRÍTICO' ? '#dc3545' : v.riskLevel === 'ALTO' ? '#fd7e14' : '#ffc107'}; color: ${v.riskLevel === 'MEDIO' ? '#333' : 'white'};">${v.riskLevel}</span>
-            </td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${v.risk ? v.risk.toFixed(1) : 'N/A'}</td>
-        </tr>
-    `).join('');
-    
-    const topCategoriesRows = data.topCategories.map(([code, cat], i) => `
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;">${i+1}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${escapeHtml(cat.name)}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: center;"><strong>${cat.count}</strong></td>
-        </tr>
-    `).join('');
-    
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Informe Ejecutivo de Riesgos</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #333; line-height: 1.5; }
-        
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            border-radius: 10px 10px 0 0;
-            margin-bottom: 30px;
-        }
-        .header h1 { font-size: 28px; margin-bottom: 10px; letter-spacing: 1px; }
-        .header .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 15px; }
-        .header .date { font-size: 12px; opacity: 0.8; }
-        
-        /* Resumen Ejecutivo */
-        .executive-summary {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        .executive-summary h2 { color: #1a2a6c; margin-bottom: 20px; font-size: 20px; border-left: 4px solid #fdbb4d; padding-left: 15px; }
-        .overall-risk {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .overall-risk-label { font-size: 13px; color: #666; margin-bottom: 8px; }
-        .overall-risk-value { font-size: 32px; font-weight: bold; padding: 8px 30px; border-radius: 40px; display: inline-block; color: white; }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-        }
-        .stat-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-number { font-size: 28px; font-weight: bold; color: #1a2a6c; }
-        .stat-label { font-size: 11px; color: #666; margin-top: 5px; }
-        
-        /* Secciones */
-        .section {
-            margin-bottom: 30px;
-            page-break-inside: avoid;
-        }
-        .section h2 {
-            color: #1a2a6c;
-            margin-bottom: 15px;
-            font-size: 18px;
-            border-bottom: 2px solid #fdbb4d;
-            padding-bottom: 8px;
-            display: inline-block;
-        }
-        
-        /* Tablas */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th {
-            background: #1a2a6c;
-            color: white;
-            padding: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: left;
-        }
-        td { padding: 8px 10px; font-size: 11px; border-bottom: 1px solid #e0e0e0; }
-        tr:hover { background: #f5f5f5; }
-        
-        /* Charts */
-        .charts-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .chart-box {
-            flex: 1;
-            min-width: 250px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-        }
-        .chart-box h3 { font-size: 14px; margin-bottom: 10px; color: #1a2a6c; }
-        .chart-box img { max-width: 100%; height: auto; border-radius: 5px; }
-        
-        /* Recomendaciones */
-        .recommendations { background: #fff8e7; padding: 25px; border-radius: 10px; }
-        .recommendation-item {
-            background: white;
-            padding: 15px;
-            margin: 12px 0;
-            border-radius: 8px;
-            border-left: 4px solid #fdbb4d;
-        }
-        .recommendation-item strong { color: #1a2a6c; display: block; margin-bottom: 8px; font-size: 13px; }
-        .recommendation-item ul { margin-left: 20px; margin-top: 5px; }
-        .recommendation-item li { font-size: 11px; margin: 3px 0; }
-        
-        /* Distribución estándar */
-        .distro-table th, .distro-table td { text-align: center; }
-        
-        /* Footer */
-        .footer {
-            margin-top: 30px;
-            padding: 15px;
-            text-align: center;
-            font-size: 9px;
-            color: #999;
-            border-top: 1px solid #e0e0e0;
-        }
-        
-        /* Badge estándar */
-        .badge-standard {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        .badge-web { background: #007bff; color: white; }
-        .badge-api { background: #dc3545; color: white; }
-        .badge-mobile { background: #28a745; color: white; }
-    </style>
-</head>
-<body>
-    <div style="max-width: 1000px; margin: 0 auto;">
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 INFORME EJECUTIVO DE RIESGOS</h1>
-            <div class="subtitle">Análisis de vulnerabilidades según estándares OWASP</div>
-            <div class="date">📅 ${data.formattedDate}</div>
-        </div>
-        
-        <!-- Resumen Ejecutivo -->
-        <div class="executive-summary">
-            <h2>📋 Resumen Ejecutivo</h2>
-            <div class="overall-risk">
-                <div class="overall-risk-label">Nivel de Riesgo General</div>
-                <div class="overall-risk-value" style="background: ${data.overallRiskColor}">${data.overallRiskLevel}</div>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">${data.totalVulnerabilities}</div>
-                    <div class="stat-label">Total Vulnerabilidades</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #dc3545">${data.criticalCount}</div>
-                    <div class="stat-label">Críticas (${data.criticalPercent}%)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #fd7e14">${data.highCount}</div>
-                    <div class="stat-label">Altas (${data.highPercent}%)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #ffc107">${data.mediumCount}</div>
-                    <div class="stat-label">Medias (${data.mediumPercent}%)</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Distribución por Estándar -->
-        <div class="section">
-            <h2>🏷️ Distribución por Estándar OWASP</h2>
-            <table class="distro-table">
-                <thead>
-                    <tr><th>Estándar</th><th>Cantidad</th><th>Porcentaje</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><span class="badge-standard badge-web">🌐 Web</span></td><td><strong>${data.webCount}</strong></td><td>${((data.webCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td><span class="badge-standard badge-api">🔌 API</span></td><td><strong>${data.apiCount}</strong></td><td>${((data.apiCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                    <tr><td><span class="badge-standard badge-mobile">📱 Mobile</span></td><td><strong>${data.mobileCount}</strong></td><td>${((data.mobileCount/data.totalVulnerabilities)*100).toFixed(1)}%</td></tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Gráficos -->
-        <div class="section">
-            <h2>📈 Análisis Gráfico</h2>
-            <div class="charts-container">
-                <div class="chart-box">
-                    <h3>Distribución por Nivel de Riesgo</h3>
-                    <img src="${data.riskChartImage}" alt="Riesgos">
-                </div>
-                <div class="chart-box">
-                    <h3>Distribución por Categoría OWASP</h3>
-                    <img src="${data.owaspChartImage}" alt="OWASP">
-                </div>
-            </div>
-        </div>
-        
-        <!-- Top Vulnerabilidades -->
-        ${data.top5Critical.length > 0 ? `
-        <div class="section">
-            <h2>⚠️ Top ${data.top5Critical.length} Vulnerabilidades Críticas/Altas</h2>
-            <table>
-                <thead><tr><th>#</th><th>Nombre</th><th>Host</th><th>Categoría OWASP</th><th>Riesgo</th><th>Score</th></tr></thead>
-                <tbody>${top5Rows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- Top Categorías -->
-        ${data.topCategories.length > 0 ? `
-        <div class="section">
-            <h2>📂 Categorías OWASP más afectadas</h2>
-            <table>
-                <thead><tr><th>#</th><th>Categoría</th><th>Vulnerabilidades</th></tr></thead>
-                <tbody>${topCategoriesRows}</tbody>
-            </table>
-        </div>
-        ` : ''}
-        
-        <!-- Recomendaciones -->
-        <div class="recommendations">
-            <h2 style="color: #1a2a6c; margin-bottom: 15px; font-size: 18px;">🎯 Recomendaciones Estratégicas</h2>
-            ${data.criticalCount > 0 ? `
-            <div class="recommendation-item">
-                <strong>🔴 ACCIÓN INMEDIATA (Críticas - ${data.criticalCount})</strong>
-                <ul><li>Corregir en máximo 48 horas</li><li>Equipo de respuesta rápida</li><li>Análisis de causa raíz</li></ul>
-            </div>
-            ` : ''}
-            ${data.highCount > 0 ? `
-            <div class="recommendation-item">
-                <strong>🟠 CORTO PLAZO (Altas - ${data.highCount})</strong>
-                <ul><li>Abordar en próximas 2 semanas</li><li>Priorizar según contexto de negocio</li><li>Recursos dedicados para remediación</li></ul>
-            </div>
-            ` : ''}
-            <div class="recommendation-item">
-                <strong>🔄 MEJORA CONTINUA</strong>
-                <ul><li>Programa de evaluación continua</li><li>Capacitación en seguridad OWASP</li><li>Pruebas de penetración periódicas</li></ul>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            Informe generado por Intriga Risk Map - OWASP Vulnerability Manager<br>
-            Documento confidencial - Información sensible de seguridad
-        </div>
-    </div>
-</body>
-</html>`;
-}
-
-
-
-// Función auxiliar para escapar HTML (evita inyección)
 function escapeHtml(text) {
     if (!text) return '';
     return text
@@ -3657,23 +2379,19 @@ function escapeHtml(text) {
         .replace(/'/g, '&#39;');
 }
 
-
-
-function createChartWithWhiteBackground(chart) {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = chart.width;
-    tempCanvas.height = chart.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    tempCtx.fillStyle = 'white';
-    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    tempCtx.drawImage(chart.canvas, 0, 0);
-    
-    return tempCanvas.toDataURL('image/png');
+function getRiskPdfColor(riskLevel) {
+    switch(riskLevel.toUpperCase()) {
+        case 'CRÍTICO': return { r: 220, g: 53, b: 69, textColor: 255 };
+        case 'ALTO': return { r: 253, g: 126, b: 20, textColor: 255 };
+        case 'MEDIO': return { r: 255, g: 193, b: 7, textColor: 0 };
+        case 'BAJO': return { r: 40, g: 167, b: 69, textColor: 255 };
+        case 'INFORMATIVO': return { r: 23, g: 162, b: 184, textColor: 255 };
+        default: return { r: 108, g: 117, b: 125, textColor: 255 };
+    }
 }
 
 
-// ========== EXPORTACIÓN A PDF TÉCNICO - TAMAÑO BALANCEADO ==========
+// ========== EXPORTACIÓN A PDF TÉCNICO ==========
 async function exportToPDF() {
     console.log('Ejecutando exportToPDF con formato balanceado...');
     
@@ -3682,7 +2400,6 @@ async function exportToPDF() {
         return;
     }
 
-    // Mostrar loading
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'pdf-loading-overlay';
     loadingDiv.innerHTML = `
@@ -3714,13 +2431,11 @@ async function exportToPDF() {
         let yPosition = margin;
         let currentPage = 1;
         
-        // ========== ESTADÍSTICAS ==========
         const criticalCount = vulnerabilities.filter(v => v.riskLevel === 'CRÍTICO').length;
         const highCount = vulnerabilities.filter(v => v.riskLevel === 'ALTO').length;
         const mediumCount = vulnerabilities.filter(v => v.riskLevel === 'MEDIO').length;
         const lowCount = vulnerabilities.filter(v => v.riskLevel === 'BAJO').length;
         
-        // ========== FUNCIONES AUXILIARES ==========
         function addNewPageIfNeeded(requiredHeight) {
             if (yPosition + requiredHeight > pageHeight - margin) {
                 doc.addPage();
@@ -3737,7 +2452,6 @@ async function exportToPDF() {
             doc.text(`Página ${currentPage}`, pageWidth - margin - 10, pageHeight - 8);
         }
         
-        // Fila de dos columnas - tamaño mediano
         function drawMediumRow(label, value, isRisk = false, riskLevel = null) {
             const col1Width = 45;
             const col2Width = maxWidth - col1Width - 4;
@@ -3748,31 +2462,26 @@ async function exportToPDF() {
                 return rowHeight;
             }
             
-            // Bordes
             doc.setDrawColor(220, 220, 220);
             doc.setLineWidth(0.3);
             doc.rect(margin, yPosition, col1Width, rowHeight);
             doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight);
             
-            // Fondo de la etiqueta
             doc.setFillColor(240, 248, 255);
             doc.rect(margin, yPosition, col1Width, rowHeight, 'F');
             
-            // Color de fondo del valor si es riesgo
             if (isRisk && riskLevel) {
                 const riskColor = getRiskPDFColor(riskLevel);
                 doc.setFillColor(riskColor.r, riskColor.g, riskColor.b);
                 doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight, 'F');
             }
             
-            // Texto de la etiqueta
             doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
             doc.setTextColor(0, 0, 0);
             const labelLines = doc.splitTextToSize(label, col1Width - 4);
             doc.text(labelLines, margin + 2, yPosition + 5);
             
-            // Texto del valor
             if (isRisk && riskLevel) {
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
@@ -3789,7 +2498,6 @@ async function exportToPDF() {
             return rowHeight;
         }
         
-        // Fila multilínea - tamaño adecuado sin cortar
         function drawMediumMultiRow(label, value, maxLines = 8) {
             const col1Width = 45;
             const col2Width = maxWidth - col1Width - 4;
@@ -3801,13 +2509,10 @@ async function exportToPDF() {
             doc.setFontSize(9);
             const valueLines = doc.splitTextToSize(value, col2Width - 4);
             
-            // Limitar líneas solo si es extremadamente largo (más de 8 líneas)
             let displayLines = valueLines;
-            let truncated = false;
             if (valueLines.length > maxLines) {
                 displayLines = valueLines.slice(0, maxLines);
                 displayLines[displayLines.length - 1] += '...';
-                truncated = true;
             }
             
             const lineHeight = 4.5;
@@ -3818,17 +2523,14 @@ async function exportToPDF() {
                 return rowHeight;
             }
             
-            // Bordes
             doc.setDrawColor(220, 220, 220);
             doc.setLineWidth(0.3);
             doc.rect(margin, yPosition, col1Width, rowHeight);
             doc.rect(margin + col1Width + 2, yPosition, col2Width, rowHeight);
             
-            // Fondo de la etiqueta
             doc.setFillColor(240, 248, 255);
             doc.rect(margin, yPosition, col1Width, rowHeight, 'F');
             
-            // Texto de la etiqueta
             doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
             doc.setTextColor(0, 0, 0);
@@ -3836,7 +2538,6 @@ async function exportToPDF() {
             const labelY = yPosition + (rowHeight / 2) - ((labelLines.length * lineHeight) / 2) + 2;
             doc.text(labelLines, margin + 2, labelY);
             
-            // Texto del valor
             doc.setFont(undefined, 'normal');
             doc.setTextColor(0, 0, 0);
             const valueY = yPosition + (rowHeight / 2) - ((displayLines.length * lineHeight) / 2) + 2;
@@ -3894,11 +2595,25 @@ async function exportToPDF() {
         const currentDate = new Date().toLocaleDateString('es-ES', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
-        doc.setFontSize(10);
+                doc.setFontSize(10);
         doc.text(`Fecha: ${currentDate}`, pageWidth / 2, 95, { align: 'center' });
+
+        // NUEVO: Cliente y Proyecto (tomados del primer registro que los tenga)
+        const clientDetected = vulnerabilities.find(v => v.client)?.client;
+        const projectDetected = vulnerabilities.find(v => v.project)?.project;
+
+        if (clientDetected || projectDetected) {
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            if (clientDetected) {
+                doc.text(`Cliente: ${clientDetected}`, pageWidth / 2, 105, { align: 'center' });
+            }
+            if (projectDetected) {
+                doc.text(`Proyecto: ${projectDetected}`, pageWidth / 2, 112, { align: 'center' });
+            }
+        }
         
-        // Resumen de vulnerabilidades
-        yPosition = 115;
+        yPosition = 122;
         drawSectionTitle('Resumen General', '#2c3e50');
         
         drawMediumRow('Total vulnerabilidades', vulnerabilities.length.toString());
@@ -3913,10 +2628,8 @@ async function exportToPDF() {
         for (let idx = 0; idx < vulnerabilities.length; idx++) {
             const vuln = vulnerabilities[idx];
             
-            // Verificar espacio
             addNewPageIfNeeded(80);
             
-            // Encabezado de vulnerabilidad
             doc.setFillColor(41, 128, 185);
             doc.rect(margin, yPosition, maxWidth, 10, 'F');
             doc.setTextColor(255, 255, 255);
@@ -3928,28 +2641,25 @@ async function exportToPDF() {
             
             doc.setTextColor(0, 0, 0);
             
-            // Campos principales
+            drawMediumRow('Vuln ID', vuln.vulnId || 'N/A');
             drawMediumRow('Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
             drawMediumRow('Host / Dominio', vuln.host || 'No especificado');
             drawMediumRow('Ruta Afectada', vuln.rutaAfectada || 'No especificado');
             drawMediumRow('Categoría OWASP', vuln.owasp || 'No especificado');
             drawMediumRow('MITRE ID', vuln.mitre || 'No especificado');
             
-            // Campos multilínea - sin cortar redacción
             drawMediumMultiRow('Detalle', vuln.detail, 10);
             drawMediumMultiRow('Descripción', vuln.description, 10);
             drawMediumMultiRow('Recomendación', vuln.recommendation, 8);
             drawMediumMultiRow('Debilidad de Seguridad', vuln.securityWeakness, 6);
             drawMediumMultiRow('Estrategia de Detección MITRE', vuln.mitreDetection, 6);
             
-            // Fecha
             yPosition += 3;
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text(`Registrado: ${new Date(vuln.date).toLocaleString()}`, margin, yPosition);
             yPosition += 6;
             
-            // Separador entre vulnerabilidades
             if (idx < vulnerabilities.length - 1) {
                 yPosition += 3;
                 doc.setDrawColor(200, 200, 200);
@@ -3961,7 +2671,6 @@ async function exportToPDF() {
             addPageNumber();
         }
         
-        // ========== PIE DE PÁGINA FINAL ==========
         addNewPageIfNeeded(25);
         doc.setDrawColor(41, 128, 185);
         doc.setLineWidth(1);
@@ -3977,10 +2686,8 @@ async function exportToPDF() {
         
         addPageNumber();
         
-        // Guardar PDF
         doc.save(`Informe_Tecnico_Vulnerabilidades_${new Date().toISOString().split('T')[0]}.pdf`);
         
-        // Limpiar loading
         document.body.removeChild(loadingDiv);
         showNotification(`✅ PDF Técnico generado con ${vulnerabilities.length} vulnerabilidades`, 'success');
         
@@ -3993,95 +2700,6 @@ async function exportToPDF() {
     }
 }
 
-
-
-function drawTwoColumnRowPDF(doc, x, y, col1Width, col2Width, label, value, isRiskCell = false, riskLevel = null) {
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.8);
-    
-    const totalWidth = col1Width + col2Width;
-    const rowHeight = 10;
-    
-    doc.rect(x, y, totalWidth, rowHeight);
-    doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
-    
-    doc.setFillColor(220, 220, 220);
-    doc.rect(x, y, col1Width, rowHeight, 'F');
-    
-    if (isRiskCell && riskLevel) {
-        const color = getRiskPdfColor(riskLevel);
-        doc.setFillColor(color.r, color.g, color.b);
-        doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
-    } else {
-        doc.setFillColor(255, 255, 255);
-        doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
-    }
-    
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
-    const labelLines = doc.splitTextToSize(label, col1Width - 6);
-    doc.text(labelLines, x + 3, y + 6);
-    
-    if (isRiskCell && riskLevel) {
-        const color = getRiskPdfColor(riskLevel);
-        doc.setTextColor(color.textColor);
-    } else {
-        doc.setTextColor(0, 0, 0);
-    }
-    
-    doc.setFont(undefined, isRiskCell ? 'bold' : 'normal');
-    const valueLines = doc.splitTextToSize(value, col2Width - 6);
-    doc.text(valueLines, x + col1Width + 3, y + 6);
-    
-    doc.setTextColor(0, 0, 0);
-    
-    return rowHeight;
-}
-
-function drawCombinedRowPDF(doc, x, y, col1Width, col2Width, label, value) {
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.8);
-    
-    const totalWidth = col1Width + col2Width;
-    
-    doc.setFontSize(9);
-    const valueLines = doc.splitTextToSize(value || 'No especificado', col2Width - 6);
-    const lineHeight = 5;
-    const minHeight = 12;
-    const contentHeight = Math.max(minHeight, valueLines.length * lineHeight);
-    const rowHeight = contentHeight;
-    
-    doc.rect(x, y, totalWidth, rowHeight);
-    doc.line(x + col1Width, y, x + col1Width, y + rowHeight);
-    
-    doc.setFillColor(220, 220, 220);
-    doc.rect(x, y, col1Width, rowHeight, 'F');
-    doc.setFillColor(255, 255, 255);
-    doc.rect(x + col1Width, y, col2Width, rowHeight, 'F');
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'bold');
-    const labelLines = doc.splitTextToSize(label, col1Width - 6);
-    const labelY = y + (rowHeight / 2) - ((labelLines.length * lineHeight) / 2) + 3;
-    doc.text(labelLines, x + 3, labelY);
-    
-    doc.setFont(undefined, 'normal');
-    const valueY = y + (rowHeight / 2) - ((valueLines.length * lineHeight) / 2) + 3;
-    doc.text(valueLines, x + col1Width + 3, valueY);
-    
-    return rowHeight;
-}
-
-function drawFactorsRowPDF(doc, x, y, col1Width, col2Width, vuln) {
-    const factorsText = 
-        `SL: ${vuln.sl || 1} | M: ${vuln.m || 1} | O: ${vuln.o || 0} | S: ${vuln.s || 2} | ` +
-        `LC: ${vuln.lc || 2} | LI: ${vuln.li || 1} | LAV: ${vuln.lav || 1} | LAC: ${vuln.lac || 1} | ` +
-        `ED: ${vuln.ed || 1} | EE: ${vuln.ee || 1} | A: ${vuln.a || 1} | ID: ${vuln.intrusion || 1} | ` +
-        `FD: ${vuln.fd || 1} | RD: ${vuln.rd || 1} | NC: ${vuln.nc || 2} | PV: ${vuln.pv || 3}`;
-    
-    return drawCombinedRowPDF(doc, x, y, col1Width, col2Width, 'Factores de Riesgo', factorsText);
-}
 
 // ========== EXPORTACIÓN E IMPORTACIÓN JSON ==========
 function exportToJson() {
@@ -4138,7 +2756,6 @@ function importJson(event) {
                 return;
             }
             
-            // Migrar vulnerabilidades importadas si no tienen owaspStandard
             newVulnerabilities = newVulnerabilities.map(vuln => {
                 if (!vuln.owaspStandard) {
                     let standard = 'web';
@@ -4163,9 +2780,6 @@ function importJson(event) {
             saveVulnerabilities();
             renderVulnerabilitiesList();
             
-            // --- INICIO DE LAS CORRECCIONES PARA LOS CHARTS ---
-            
-            // Destruir los charts existentes explícitamente
             if (riskDistributionChart) {
                 riskDistributionChart.destroy();
                 riskDistributionChart = null;
@@ -4176,32 +2790,21 @@ function importJson(event) {
                 owaspDistributionChart = null;
             }
             
-            // Forzar un reflow del DOM antes de actualizar el dashboard
-            // Esto ayuda a que los contenedores recuperen sus dimensiones correctas
             setTimeout(() => {
-                // Actualizar el dashboard (esto recreará los charts)
                 updateDashboard();
                 
-                // Forzar el redimensionamiento de los charts después de un pequeño retraso
                 setTimeout(() => {
-                    // Obtener los elementos canvas
                     const riskCanvas = document.getElementById('riskDistributionChart');
                     const owaspCanvas = document.getElementById('owaspDistributionChart');
                     
                     if (riskCanvas && riskDistributionChart) {
-                        // Forzar el redimensionamiento del chart
                         riskDistributionChart.resize();
-                        
-                        // Redibujar el texto central
                         const total = vulnerabilities.length;
                         drawTotalInCenter(riskCanvas, total);
                     }
                     
                     if (owaspCanvas && owaspDistributionChart) {
-                        // Forzar el redimensionamiento del chart
                         owaspDistributionChart.resize();
-                        
-                        // Para el chart OWASP, también necesitamos el total
                         const canvas = owaspCanvas;
                         const ctx = canvas.getContext('2d');
                         if (ctx) {
@@ -4210,14 +2813,12 @@ function importJson(event) {
                                 const centerX = canvas.width / 2;
                                 const centerY = canvas.height / 2;
                                 
-                                // Limpiar área central
                                 ctx.save();
                                 ctx.beginPath();
                                 ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
                                 ctx.clip();
                                 ctx.clearRect(centerX - 40, centerY - 40, 80, 80);
                                 
-                                // Dibujar texto
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'middle';
                                 ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
@@ -4231,18 +2832,15 @@ function importJson(event) {
                         }
                     }
                     
-                    // Mostrar notificación de éxito después de que los charts se hayan ajustado
                     let message = `${uniqueNewVulnerabilities.length} vulnerabilidades únicas cargadas y fusionadas.`;
                     if (duplicatesCount > 0) {
                         message += ` (${duplicatesCount} duplicado(s) omitido(s)).`;
                     }
                     showNotification(message, 'success');
                     
-                }, 300); // Pequeño retraso para permitir que los charts se rendericen
+                }, 300);
                 
-            }, 100); // Pequeño retraso para permitir la actualización del DOM
-            
-            // --- FIN DE LAS CORRECCIONES ---
+            }, 100);
             
         } catch (error) {
             console.error('Error procesando archivo JSON:', error);
@@ -4255,17 +2853,6 @@ function importJson(event) {
 }
 
 // ========== FUNCIONES AUXILIARES ==========
-function getRiskPdfColor(riskLevel) {
-    switch(riskLevel.toUpperCase()) {
-        case 'CRÍTICO': return { r: 220, g: 53, b: 69, textColor: 255 };
-        case 'ALTO': return { r: 253, g: 126, b: 20, textColor: 255 };
-        case 'MEDIO': return { r: 255, g: 193, b: 7, textColor: 0 };
-        case 'BAJO': return { r: 40, g: 167, b: 69, textColor: 255 };
-        case 'INFORMATIVO': return { r: 23, g: 162, b: 184, textColor: 255 };
-        default: return { r: 108, g: 117, b: 125, textColor: 255 };
-    }
-}
-
 function getRiskHeaderColor(riskLevel) {
     switch(riskLevel.toUpperCase()) {
         case 'CRÍTICO': return '#dc3545';
@@ -4322,103 +2909,136 @@ function showVulnerabilityDetails(id) {
     const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
                         vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
     
+        // Extraemos los textos descriptivos en variables para reutilizarlos en el copy-btn
+    const skillText = getSkillLevelText(vuln.sl);
+    const motivoText = getMotivoEconomicoText(vuln.m);
+    const oportunidadText = getOportunidadAtaqueText(vuln.o);
+    const tamanoText = getTamanoAgenteText(vuln.s);
+
+    const confidencialidadText = getPerdidaConfidencialidadText(vuln.lc);
+    const integridadText = getPerdidaIntegridadText(vuln.li);
+    const disponibilidadText = getImpactoDisponibilidadText(vuln.lav);
+    const rastreabilidadText = getRastreabilidadAtaqueText(vuln.lac);
+
+    const descubrimientoText = getFacilidadDescubrimientoText(vuln.ed);
+    const explotacionText = getFacilidadExplotacionText(vuln.ee);
+    const conocimientoText = getConocimientoVulnerabilidadText(vuln.a);
+    const deteccionText = getDeteccionIntrusionText(vuln.intrusion);
+
+    const financieroText = getDanioFinancieroText(vuln.fd);
+    const reputacionText = getDanioReputacionText(vuln.rd);
+    const incumplimientoText = getIncumplimientoText(vuln.nc);
+    const privacidadText = getViolacionPrivacidadText(vuln.pv);
+
     const factoresHTML = `
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Agente de Amenaza</h5>
             <div class="detail-item">
-                <div class="detail-label">Nivel de habilidad</div>
-                <div class="detail-value">${getSkillLevelText(vuln.sl)} (Valor: ${vuln.sl})</div>
+                <div class="detail-label">Nivel de habilidad ${copyBtnHTML(skillText)}</div>
+                <div class="detail-value">${skillText} <span class="factor-value">(Valor: ${vuln.sl})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Motivo Económico del agente</div>
-                <div class="detail-value">${getMotivoEconomicoText(vuln.m)} (Valor: ${vuln.m})</div>
+                <div class="detail-label">Motivo Económico del agente ${copyBtnHTML(motivoText)}</div>
+                <div class="detail-value">${motivoText} <span class="factor-value">(Valor: ${vuln.m})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Oportunidad de Ataque</div>
-                <div class="detail-value">${getOportunidadAtaqueText(vuln.o)} (Valor: ${vuln.o})</div>
+                <div class="detail-label">Oportunidad de Ataque ${copyBtnHTML(oportunidadText)}</div>
+                <div class="detail-value">${oportunidadText} <span class="factor-value">(Valor: ${vuln.o})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Tamaño del Agente de Amenaza</div>
-                <div class="detail-value">${getTamanoAgenteText(vuln.s)} (Valor: ${vuln.s})</div>
+                <div class="detail-label">Tamaño del Agente de Amenaza ${copyBtnHTML(tamanoText)}</div>
+                <div class="detail-value">${tamanoText} <span class="factor-value">(Valor: ${vuln.s})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Impacto Técnico</h5>
             <div class="detail-item">
-                <div class="detail-label">Pérdida de confidencialidad</div>
-                <div class="detail-value">${getPerdidaConfidencialidadText(vuln.lc)} (Valor: ${vuln.lc})</div>
+                <div class="detail-label">Pérdida de confidencialidad ${copyBtnHTML(confidencialidadText)}</div>
+                <div class="detail-value">${confidencialidadText} <span class="factor-value">(Valor: ${vuln.lc})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Pérdida de integridad</div>
-                <div class="detail-value">${getPerdidaIntegridadText(vuln.li)} (Valor: ${vuln.li})</div>
+                <div class="detail-label">Pérdida de integridad ${copyBtnHTML(integridadText)}</div>
+                <div class="detail-value">${integridadText} <span class="factor-value">(Valor: ${vuln.li})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Impacto en la Disponibilidad</div>
-                <div class="detail-value">${getImpactoDisponibilidadText(vuln.lav)} (Valor: ${vuln.lav})</div>
+                <div class="detail-label">Impacto en la Disponibilidad ${copyBtnHTML(disponibilidadText)}</div>
+                <div class="detail-value">${disponibilidadText} <span class="factor-value">(Valor: ${vuln.lav})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Rastreabilidad del Ataque</div>
-                <div class="detail-value">${getRastreabilidadAtaqueText(vuln.lac)} (Valor: ${vuln.lac})</div>
+                <div class="detail-label">Rastreabilidad del Ataque ${copyBtnHTML(rastreabilidadText)}</div>
+                <div class="detail-value">${rastreabilidadText} <span class="factor-value">(Valor: ${vuln.lac})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Vulnerabilidad</h5>
             <div class="detail-item">
-                <div class="detail-label">Facilidad de descubrimiento</div>
-                <div class="detail-value">${getFacilidadDescubrimientoText(vuln.ed)} (Valor: ${vuln.ed})</div>
+                <div class="detail-label">Facilidad de descubrimiento ${copyBtnHTML(descubrimientoText)}</div>
+                <div class="detail-value">${descubrimientoText} <span class="factor-value">(Valor: ${vuln.ed})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Facilidad de explotación</div>
-                <div class="detail-value">${getFacilidadExplotacionText(vuln.ee)} (Valor: ${vuln.ee})</div>
+                <div class="detail-label">Facilidad de explotación ${copyBtnHTML(explotacionText)}</div>
+                <div class="detail-value">${explotacionText} <span class="factor-value">(Valor: ${vuln.ee})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Conocimiento de la Vulnerabilidad</div>
-                <div class="detail-value">${getConocimientoVulnerabilidadText(vuln.a)} (Valor: ${vuln.a})</div>
+                <div class="detail-label">Conocimiento de la Vulnerabilidad ${copyBtnHTML(conocimientoText)}</div>
+                <div class="detail-value">${conocimientoText} <span class="factor-value">(Valor: ${vuln.a})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Detección de intrusiones</div>
-                <div class="detail-value">${getDeteccionIntrusionText(vuln.intrusion)} (Valor: ${vuln.intrusion})</div>
+                <div class="detail-label">Detección de intrusiones ${copyBtnHTML(deteccionText)}</div>
+                <div class="detail-value">${deteccionText} <span class="factor-value">(Valor: ${vuln.intrusion})</span></div>
             </div>
         </div>
         
         <div class="detail-section">
             <h5 class="detail-section-title">Factores de Riesgo - Impacto de Negocio</h5>
             <div class="detail-item">
-                <div class="detail-label">Daño financiero</div>
-                <div class="detail-value">${getDanioFinancieroText(vuln.fd)} (Valor: ${vuln.fd})</div>
+                <div class="detail-label">Daño financiero ${copyBtnHTML(financieroText)}</div>
+                <div class="detail-value">${financieroText} <span class="factor-value">(Valor: ${vuln.fd})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Daño a la reputación</div>
-                <div class="detail-value">${getDanioReputacionText(vuln.rd)} (Valor: ${vuln.rd})</div>
+                <div class="detail-label">Daño a la reputación ${copyBtnHTML(reputacionText)}</div>
+                <div class="detail-value">${reputacionText} <span class="factor-value">(Valor: ${vuln.rd})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Incumplimiento</div>
-                <div class="detail-value">${getIncumplimientoText(vuln.nc)} (Valor: ${vuln.nc})</div>
+                <div class="detail-label">Incumplimiento ${copyBtnHTML(incumplimientoText)}</div>
+                <div class="detail-value">${incumplimientoText} <span class="factor-value">(Valor: ${vuln.nc})</span></div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Violación de privacidad</div>
-                <div class="detail-value">${getViolacionPrivacidadText(vuln.pv)} (Valor: ${vuln.pv})</div>
+                <div class="detail-label">Violación de privacidad ${copyBtnHTML(privacidadText)}</div>
+                <div class="detail-value">${privacidadText} <span class="factor-value">(Valor: ${vuln.pv})</span></div>
             </div>
         </div>
     `;
     
-    modalBody.innerHTML = `
+        modalBody.innerHTML = `
         <div class="vulnerability-details">
-            <!-- 1. Número -->
             <div class="detail-item">
                 <div class="detail-label">Número</div>
                 <div class="detail-value">${vulnerabilities.findIndex(v => v.id === id) + 1}</div>
             </div>
             
-            <!-- 2. ID -->
             <div class="detail-item">
-                <div class="detail-label">ID</div>
+                <div class="detail-label">Cliente ${vuln.client ? copyBtnHTML(vuln.client) : ''}</div>
+                <div class="detail-value">${vuln.client || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Proyecto ${vuln.project ? copyBtnHTML(vuln.project) : ''}</div>
+                <div class="detail-value">${vuln.project || 'No especificado'}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">Vuln ID ${vuln.vulnId ? copyBtnHTML(vuln.vulnId) : ''}</div>
+                <div class="detail-value"><code>${vuln.vulnId || 'N/A'}</code></div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">ID interno ${vuln.id ? copyBtnHTML(String(vuln.id)) : ''}</div>
                 <div class="detail-value">${vuln.id}</div>
             </div>
             
-            <!-- 3. Estándar OWASP -->
             <div class="detail-item">
                 <div class="detail-label">Estándar OWASP</div>
                 <div class="detail-value">
@@ -4426,49 +3046,41 @@ function showVulnerabilityDetails(id) {
                 </div>
             </div>                                
             
-            <!-- 8. Host -->
             <div class="detail-item">
-                <div class="detail-label">Host</div>
+                <div class="detail-label">Host ${vuln.host ? copyBtnHTML(vuln.host) : ''}</div>
                 <div class="detail-value">${vuln.host || 'No especificado'}</div>
             </div>
             
-            <!-- 9. Ruta Afectada -->
             <div class="detail-item">
-                <div class="detail-label">Ruta Afectada</div>
+                <div class="detail-label">Ruta Afectada ${vuln.rutaAfectada ? copyBtnHTML(vuln.rutaAfectada) : ''}</div>
                 <div class="detail-value">${vuln.rutaAfectada || 'No especificado'}</div>
             </div>
             
-            <!-- 10. Agente de Amenazas -->
             <div class="detail-item">
-                <div class="detail-label">Agente de Amenazas</div>
+                <div class="detail-label">Agente de Amenazas ${vuln.threatAgent ? copyBtnHTML(vuln.threatAgent) : ''}</div>
                 <div class="detail-value">${vuln.threatAgent || 'No especificado'}</div>
             </div>
             
-            <!-- 11. Vector de Ataque -->
             <div class="detail-item">
-                <div class="detail-label">Vector de Ataque</div>
+                <div class="detail-label">Vector de Ataque ${vuln.name ? copyBtnHTML(vuln.name) : ''}</div>
                 <div class="detail-value">${vuln.name || 'No especificado'}</div>
             </div>
             
-            <!-- 12. Debilidad de Seguridad -->
             <div class="detail-item">
-                <div class="detail-label">Debilidad de Seguridad</div>
+                <div class="detail-label">Debilidad de Seguridad ${vuln.securityWeakness ? copyBtnHTML(vuln.securityWeakness) : ''}</div>
                 <div class="detail-value">${vuln.securityWeakness || 'No especificado'}</div>
             </div>
             
-            <!-- 13. Controles de Seguridad -->
             <div class="detail-item">
-                <div class="detail-label">Controles de Seguridad</div>
+                <div class="detail-label">Controles de Seguridad ${vuln.securityControls ? copyBtnHTML(vuln.securityControls) : ''}</div>
                 <div class="detail-value">${vuln.securityControls || 'No especificado'}</div>
             </div>
             
-            <!-- 14. Impacto Técnico - Negocio -->
             <div class="detail-item">
-                <div class="detail-label">Impacto Técnico - Negocio</div>
+                <div class="detail-label">Impacto Técnico - Negocio ${vuln.technicalBusinessImpact ? copyBtnHTML(vuln.technicalBusinessImpact) : ''}</div>
                 <div class="detail-value">${vuln.technicalBusinessImpact || 'No especificado'}</div>
             </div>
 
-            <!-- 7. Nivel de Riesgo -->
             <div class="detail-item">
                 <div class="detail-label">Nivel de Riesgo</div>
                 <div class="detail-value">
@@ -4477,70 +3089,58 @@ function showVulnerabilityDetails(id) {
                 </div>
             </div>
             
-            <!-- 4. Criticidad según Herramienta -->
             <div class="detail-item">
-                <div class="detail-label">Criticidad según Herramienta</div>
+                <div class="detail-label">Criticidad según Herramienta ${vuln.toolCriticity ? copyBtnHTML(vuln.toolCriticity) : ''}</div>
                 <div class="detail-value">${vuln.toolCriticity || 'No especificado'}</div>
             </div>
             
-            <!-- 5. Probabilidad Calculada -->
             <div class="detail-item">
-                <div class="detail-label">Probabilidad Calculada</div>
+                <div class="detail-label">Probabilidad Calculada ${vuln.likelihood ? copyBtnHTML(String(vuln.likelihood.toFixed(2))) : ''}</div>
                 <div class="detail-value">${vuln.likelihood ? vuln.likelihood.toFixed(2) : '0.00'}</div>
             </div>
             
-            <!-- 6. Impacto Calculado -->
             <div class="detail-item">
-                <div class="detail-label">Impacto Calculado</div>
+                <div class="detail-label">Impacto Calculado ${vuln.impact ? copyBtnHTML(String(vuln.impact.toFixed(2))) : ''}</div>
                 <div class="detail-value">${vuln.impact ? vuln.impact.toFixed(2) : '0.00'}</div>
             </div>  
             
-            <!-- 15. Detalle -->
             <div class="detail-item">
-                <div class="detail-label">Detalle</div>
+                <div class="detail-label">Detalle ${vuln.detail ? copyBtnHTML(vuln.detail) : ''}</div>
                 <div class="detail-value">${vuln.detail || 'No especificado'}</div>
             </div>
             
-            <!-- 16. Descripción del análisis -->
             <div class="detail-item">
-                <div class="detail-label">Descripción del análisis</div>
+                <div class="detail-label">Descripción del análisis ${vuln.description ? copyBtnHTML(vuln.description) : ''}</div>
                 <div class="detail-value">${vuln.description || 'No especificado'}</div>
             </div>
             
-            <!-- 17. Recomendación -->
             <div class="detail-item">
-                <div class="detail-label">Recomendación</div>
+                <div class="detail-label">Recomendación ${vuln.recommendation ? copyBtnHTML(vuln.recommendation) : ''}</div>
                 <div class="detail-value">${vuln.recommendation || 'No especificado'}</div>
             </div>
             
-            <!-- 18. Categoría OWASP -->
             <div class="detail-item">
-                <div class="detail-label">Categoría OWASP</div>
+                <div class="detail-label">Categoría OWASP ${vuln.owasp ? copyBtnHTML(vuln.owasp) : ''}</div>
                 <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
             </div>
             
-            <!-- 19. MITRE ID -->
             <div class="detail-item">
-                <div class="detail-label">MITRE ID</div>
+                <div class="detail-label">MITRE ID ${vuln.mitre ? copyBtnHTML(vuln.mitre) : ''}</div>
                 <div class="detail-value">${vuln.mitre || 'No especificado'}</div>
             </div>
             
-            <!-- 20. Estrategia de Detección MITRE -->
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Detección MITRE</div>
+                <div class="detail-label">Estrategia de Detección MITRE ${vuln.mitreDetection ? copyBtnHTML(vuln.mitreDetection) : ''}</div>
                 <div class="detail-value">${vuln.mitreDetection || 'No especificado'}</div>
             </div>
             
-            <!-- 21. Estrategia de Mitigación MITRE -->
             <div class="detail-item">
-                <div class="detail-label">Estrategia de Mitigación MITRE</div>
+                <div class="detail-label">Estrategia de Mitigación MITRE ${vuln.mitreMitigation ? copyBtnHTML(vuln.mitreMitigation) : ''}</div>
                 <div class="detail-value">${vuln.mitreMitigation || 'No especificado'}</div>
             </div>
             
-            <!-- Factores de Riesgo -->
             ${factoresHTML}
             
-            <!-- Fechas -->
             <div class="detail-item">
                 <div class="detail-label">Fecha de Creación</div>
                 <div class="detail-value">${new Date(vuln.date).toLocaleString()}</div>
@@ -4552,6 +3152,8 @@ function showVulnerabilityDetails(id) {
                 <div class="detail-value">${new Date(vuln.lastUpdated).toLocaleString()}</div>
             </div>
             ` : ''}
+            
+            <div id="modal-evidences-container"></div>
         </div>
         
         <div class="text-center mt-4">
@@ -4591,6 +3193,16 @@ function showVulnerabilityDetails(id) {
                 setTimeout(() => deleteVulnerability(vuln.id), 300);
             });
         }
+
+        // NUEVO: listeners de botones de copiado en el modal
+        document.querySelectorAll('#modal-body .copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const text = btn.getAttribute('data-copy');
+                copyToClipboard(text, btn);
+            });
+        });
     }, 100);
     
     const modalElement = document.getElementById('vulnerabilityModal');
@@ -4598,6 +3210,18 @@ function showVulnerabilityDetails(id) {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
     }
+
+    // NUEVO: cargar evidencias en el modal
+    (async () => {
+        const container = document.getElementById('modal-evidences-container');
+        if (container && typeof renderEvidenceGallery === 'function') {
+            try {
+                container.innerHTML = await renderEvidenceGallery(vuln.vulnId);
+            } catch (err) {
+                console.warn('Error cargando galería de evidencias:', err);
+            }
+        }
+    })();
 }
 
 
@@ -4668,6 +3292,9 @@ function loadVulnerabilities() {
                     pv: vuln.pv !== undefined ? vuln.pv : 3,
                     
                     id: vuln.id,
+                    vulnId: vuln.vulnId || null,
+                    client: vuln.client || '',
+                    project: vuln.project || '',
                     name: vuln.name,
                     likelihood: vuln.likelihood || 0,
                     impact: vuln.impact || 0,
@@ -4774,7 +3401,6 @@ function openEditModal(id) {
                 const stringValue = value !== undefined && value !== null ? value.toString() : defaultValue.toString();
                 element.value = stringValue;
                 
-                // Trigger change event para selects dependientes
                 if (id === 'owasp-standard') {
                     element.dispatchEvent(new Event('change'));
                 }
@@ -4791,12 +3417,13 @@ function openEditModal(id) {
         }
     }
     
+    setValue('client', vuln.client || '');
+    setValue('project', vuln.project || '');
     setValue('vulnerability-name', vuln.name);
     setValue('host', vuln.host);
     setValue('ruta-afectada', vuln.rutaAfectada);
-    setValue('owasp-standard', vuln.owaspStandard || 'web');
+    setValue('owasp-standard', vuln.owaspStandard || '');
     
-    // Esperar a que se carguen las categorías antes de seleccionar
     setTimeout(() => {
         setValue('owasp-category', vuln.owasp);
     }, 100);
@@ -4862,6 +3489,20 @@ function openEditModal(id) {
         };
     }
     
+    // NUEVO: cargar el vulnId en el input oculto y mostrar evidencias existentes
+    let hiddenVulnId = document.getElementById('current-vuln-id');
+    if (!hiddenVulnId) {
+        hiddenVulnId = document.createElement('input');
+        hiddenVulnId.type = 'hidden';
+        hiddenVulnId.id = 'current-vuln-id';
+        document.body.appendChild(hiddenVulnId);
+    }
+    hiddenVulnId.value = vuln.vulnId || '';
+    
+    if (typeof renderEvidencePreview === 'function') {
+        renderEvidencePreview(vuln.vulnId);
+    }
+
     showNotification(`Editando: ${vuln.name}. Los cambios se guardarán al hacer clic en "Actualizar Vulnerabilidad".`, 'info');
     
     setTimeout(calculateRisk, 100);
@@ -4892,6 +3533,7 @@ function updateVulnerabilityInCalculator(id) {
             ...riskData,
             ...formData,
             id: id,
+            vulnId: vulnerabilities[vulnIndex].vulnId,
             sl: getFactorValue('sl'),
             m: getFactorValue('m'),
             o: getFactorValue('opp'),
@@ -4915,6 +3557,7 @@ function updateVulnerabilityInCalculator(id) {
         saveVulnerabilities();
         renderVulnerabilitiesList();
         updateDashboard();
+        updateClientProjectSuggestions();
         
         const saveBtn = document.getElementById('save-btn');
         const updateBtn = document.getElementById('update-current-btn');
@@ -4923,6 +3566,12 @@ function updateVulnerabilityInCalculator(id) {
         if (saveBtn) saveBtn.style.display = 'inline-block';
         if (updateBtn) updateBtn.remove();
         if (cancelBtn) cancelBtn.remove();
+        
+        // Limpiar el vulnId temporal y preview
+        const hiddenVulnId = document.getElementById('current-vuln-id');
+        if (hiddenVulnId) hiddenVulnId.value = '';
+        const preview = document.getElementById('evidence-preview');
+        if (preview) preview.innerHTML = '';
         
         showNotification(`Vulnerabilidad "${formData.name}" actualizada correctamente`, 'success');
         
@@ -4941,6 +3590,13 @@ function deleteVulnerability(id) {
     if (!vuln) return;
     
     if (confirm(`¿Estás seguro de eliminar la vulnerabilidad "${vuln.name}"?\n\nEsta acción no se puede deshacer.`)) {
+        // Eliminar evidencias asociadas del IndexedDB
+        if (vuln.vulnId && typeof deleteEvidencesByVuln === 'function') {
+            deleteEvidencesByVuln(vuln.vulnId).catch(err => 
+                console.warn('Error eliminando evidencias:', err)
+            );
+        }
+
         vulnerabilities = vulnerabilities.filter(v => v.id !== id);
         saveVulnerabilities();
         renderVulnerabilitiesList();
@@ -4963,7 +3619,8 @@ function updateOldVulnerabilities() {
             vuln.sl === undefined || 
             vuln.o === undefined || 
             vuln.intrusion === undefined ||
-            vuln.owaspStandard === undefined
+            vuln.owaspStandard === undefined ||
+            vuln.vulnId === undefined
         );
         
         if (!needsUpdate) {
@@ -4981,8 +3638,15 @@ function updateOldVulnerabilities() {
             }
         }
         
+        // Generar vulnId si no existe (para vulnerabilidades antiguas)
+        let vulnId = vuln.vulnId;
+        if (!vulnId && typeof generateVulnId === 'function') {
+            vulnId = generateVulnId();
+        }
+        
         return {
             id: vuln.id,
+            vulnId: vulnId,
             name: vuln.name,
             date: vuln.date,
             
@@ -5037,4 +3701,99 @@ function updateOldVulnerabilities() {
         updateDashboard();
         showNotification(`${updatedCount} vulnerabilidades actualizadas`, 'success');
     }
+}
+
+// ========== SUGERENCIAS DE CLIENTE Y PROYECTO ==========
+function updateClientProjectSuggestions() {
+    // Clientes únicos
+    const clients = [...new Set(
+        vulnerabilities
+            .map(v => (v.client || '').trim())
+            .filter(Boolean)
+    )].sort();
+
+    // Proyectos únicos
+    const projects = [...new Set(
+        vulnerabilities
+            .map(v => (v.project || '').trim())
+            .filter(Boolean)
+    )].sort();
+
+    const clientsDatalist = document.getElementById('clients-suggestions');
+    if (clientsDatalist) {
+        clientsDatalist.innerHTML = clients
+            .map(c => `<option value="${c.replace(/"/g, '&quot;')}"></option>`)
+            .join('');
+    }
+
+    const projectsDatalist = document.getElementById('projects-suggestions');
+    if (projectsDatalist) {
+        projectsDatalist.innerHTML = projects
+            .map(p => `<option value="${p.replace(/"/g, '&quot;')}"></option>`)
+            .join('');
+    }
+}
+
+
+// ========== COPIADO AL PORTAPAPELES ==========
+async function copyToClipboard(text, buttonElement = null) {
+    if (!text || text === 'No especificado' || text === 'N/A') {
+        showNotification('No hay texto para copiar', 'error');
+        return false;
+    }
+
+    try {
+        // Método moderno
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            // Fallback para navegadores antiguos o contextos sin HTTPS
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        // Feedback visual en el botón
+        if (buttonElement) {
+            buttonElement.classList.add('copied');
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '✅';
+            setTimeout(() => {
+                buttonElement.classList.remove('copied');
+                buttonElement.innerHTML = originalHTML;
+            }, 1200);
+        }
+
+        // Preview corto en la notificación
+        const preview = text.length > 40 ? text.substring(0, 40) + '…' : text;
+        showNotification(`📋 Copiado: "${preview}"`, 'success');
+        return true;
+
+    } catch (error) {
+        console.error('Error copiando al portapapeles:', error);
+        showNotification('No se pudo copiar', 'error');
+        return false;
+    }
+}
+
+// Genera el HTML del botón de copiado para un campo.
+// Uso: copyBtnHTML('Valor a copiar')
+//      copyBtnHTML('Valor', 'inline')  → versión pequeña para tarjetas
+function copyBtnHTML(text, variant = 'default') {
+    // Escapamos el texto para meterlo en el atributo data-copy
+    const safe = String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const cls = variant === 'inline' ? 'copy-btn copy-btn-inline' : 'copy-btn';
+    return `<button type="button" class="${cls}" data-copy="${safe}" title="Copiar">📋</button>`;
 }
