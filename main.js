@@ -1712,9 +1712,9 @@ function updateOwaspDistributionChart() {
         const filteredLabels = nonZeroIndices.map(i => {
             const cat = allCategories[i];
             const code = cat.split(' - ')[0];
-            if (cat.startsWith('A')) return `${code} (Web)`;
             if (cat.startsWith('API')) return `${code} (API)`;
             if (cat.startsWith('M')) return `${code} (Mobile)`;
+            if (cat.startsWith('A')) return `${code} (Web)`;
             return cat;
         });
         
