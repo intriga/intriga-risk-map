@@ -794,25 +794,25 @@ function calculateRisk() {
     console.log('Calculando riesgo...');
     
     try {
-        const sl = parseFloat(document.getElementById('sl')?.value) || 1;
-        const m = parseFloat(document.getElementById('m')?.value) || 1;
+        const sl = parseFloat(document.getElementById('sl')?.value) || 0;
+        const m = parseFloat(document.getElementById('m')?.value) || 0;
         const o = parseFloat(document.getElementById('opp')?.value) || 0;
-        const s = parseFloat(document.getElementById('s')?.value) || 2;
-        
-        const lc = parseFloat(document.getElementById('lc')?.value) || 2;
-        const li = parseFloat(document.getElementById('li')?.value) || 1;
-        const lav = parseFloat(document.getElementById('lav')?.value) || 1;
-        const lac = parseFloat(document.getElementById('lac')?.value) || 1;
-        
-        const ed = parseFloat(document.getElementById('ed')?.value) || 1;
-        const ee = parseFloat(document.getElementById('ee')?.value) || 1;
-        const a = parseFloat(document.getElementById('a')?.value) || 1;
-        const id = parseFloat(document.getElementById('intrusion')?.value) || 1;
-        
-        const fd = parseFloat(document.getElementById('fd')?.value) || 1;
-        const rd = parseFloat(document.getElementById('rd')?.value) || 1;
-        const nc = parseFloat(document.getElementById('nc')?.value) || 2;
-        const pv = parseFloat(document.getElementById('pv')?.value) || 3;
+        const s = parseFloat(document.getElementById('s')?.value) || 0;
+
+        const lc = parseFloat(document.getElementById('lc')?.value) || 0;
+        const li = parseFloat(document.getElementById('li')?.value) || 0;
+        const lav = parseFloat(document.getElementById('lav')?.value) || 0;
+        const lac = parseFloat(document.getElementById('lac')?.value) || 0;
+
+        const ed = parseFloat(document.getElementById('ed')?.value) || 0;
+        const ee = parseFloat(document.getElementById('ee')?.value) || 0;
+        const a = parseFloat(document.getElementById('a')?.value) || 0;
+        const id = parseFloat(document.getElementById('intrusion')?.value) || 0;
+
+        const fd = parseFloat(document.getElementById('fd')?.value) || 0;
+        const rd = parseFloat(document.getElementById('rd')?.value) || 0;
+        const nc = parseFloat(document.getElementById('nc')?.value) || 0;
+        const pv = parseFloat(document.getElementById('pv')?.value) || 0;
         
         const likelihood = (sl + m + o + s + ed + ee + a + id) / 8;
         const impact = (lc + li + lav + lac + fd + rd + nc + pv) / 8;
