@@ -1,6 +1,7 @@
 // Variables globales
 let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
+let networkRiskChart; // <-- NUEVA VARIABLE
 let currentTheme = 'light';
 
 
@@ -845,6 +846,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         drawTotalInCenter(canvas, chartTotal);
                     }
                 }
+                
+                if (networkRiskChart) {
+                    updateNetworkRiskChart(); // Redibujar con nuevos colores del tema
+                }
             }, 300);
         });
     }
@@ -1646,6 +1651,7 @@ function updateDashboard() {
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
+        updateNetworkRiskChart(); // <-- NUEVA LLAMADA
         
         setTimeout(() => {
             const total = vulnerabilities.length;
@@ -2010,6 +2016,109 @@ function updateOwaspDistributionChart() {
     } catch (error) {
         console.error('Error actualizando gráfico OWASP:', error);
     }
+}
+
+function updateNetworkRiskChart() {
+    const ctx = document.getElementById('networkRiskChart');
+    const container = document.getElementById('network-risk-chart-container');
+    
+    if (!ctx || !container) return;
+
+    // Filtrar solo vulnerabilidades de red
+    const networkVulns = vulnerabilities.filter(v => 
+        v.owaspStandard === 'network-external' || 
+        v.owaspStandard === 'network-internal'
+    );
+
+    // Si no hay de red, ocultar el panel
+    if (networkVulns.length === 0) {
+        container.style.display = 'none';
+        if (networkRiskChart) {
+            networkRiskChart.destroy();
+            networkRiskChart = null;
+        }
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // Ordenar de mayor a menor riesgo
+    networkVulns.sort((a, b) => b.risk - a.risk);
+
+    // Limitar a los 15 principales para que no se vea gigante
+    const topVulns = networkVulns.slice(0, 15);
+
+    const labels = topVulns.map(v => v.name.length > 50 ? v.name.substring(0, 50) + '...' : v.name);
+    const data = topVulns.map(v => v.risk);
+    
+    // Colores según estándar
+    const bgColors = topVulns.map(v => 
+        v.owaspStandard === 'network-external' 
+            ? 'rgba(52, 58, 64, 0.8)'    // Gris oscuro para externa
+            : 'rgba(255, 193, 7, 0.8)'   // Amarillo para interna
+    );
+
+    const borderColors = topVulns.map(v => 
+        v.owaspStandard === 'network-external' 
+            ? 'rgba(52, 58, 64, 1)'
+            : 'rgba(255, 193, 7, 1)'
+    );
+
+    if (networkRiskChart) networkRiskChart.destroy();
+
+    const context = ctx.getContext('2d');
+
+    networkRiskChart = new Chart(context, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Severidad de Riesgo',
+                data: data,
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Esto hace que las barras sean horizontales (como en tu imagen)
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100, // Escala de 0 a 100
+                    title: {
+                        display: true,
+                        text: 'Score de Riesgo',
+                        color: 'var(--text-color)'
+                    },
+                    ticks: { color: 'var(--text-color)' },
+                    grid: { color: 'rgba(128, 128, 128, 0.1)' }
+                },
+                y: {
+                    ticks: { 
+                        color: 'var(--text-color)',
+                        font: { size: 11 }
+                    },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.x;
+                            const idx = context.dataIndex;
+                            const vuln = topVulns[idx];
+                            return `Riesgo: ${val.toFixed(2)} (${vuln.riskLevel})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 function updateDashboardTable() {
@@ -3002,6 +3111,11 @@ function importJson(event) {
             if (owaspDistributionChart) {
                 owaspDistributionChart.destroy();
                 owaspDistributionChart = null;
+            }
+
+            if (networkRiskChart) {
+                networkRiskChart.destroy();
+                networkRiskChart = null;
             }
             
             setTimeout(() => {

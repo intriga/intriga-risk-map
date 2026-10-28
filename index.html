@@ -19,8 +19,8 @@
 
     <div class="container py-4">
         <header class="text-center mb-4">
-            <h1 class="display-5">Intriga Risk Map (OWASP)</h1>
-            <p class="lead">Calculadora de evaluación de riesgos con gestión completa de vulnerabilidades</p>
+            <h1 class="display-5">Intriga Risk Map</h1>
+            <p class="lead">Calculadora de evaluación de riesgos y gestión de vulnerabilidades</p>
             <div class="mt-2">
                 <span class="badge bg-primary me-2">Web Top 10 2025</span>
                 <span class="badge bg-danger me-2">API Top 10 2023</span>
@@ -549,6 +549,22 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- NUEVO GRÁFICO DE BARRAS PARA RED -->
+                <div class="row mt-4" id="network-risk-chart-container" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Severidad de Riesgo - Hallazgos de Red (Externa e Interna)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height: 400px; position: relative;">
+                                    <canvas id="networkRiskChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -732,7 +748,6 @@
                 }
             });
             
-            // Configurar el selector de estándar OWASP (esto se maneja en main.js, pero aseguramos que exista)
             console.log('HTML cargado correctamente con soporte para OWASP Web, API, Mobile y Red');
         });
     </script>
