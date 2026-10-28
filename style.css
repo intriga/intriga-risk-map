@@ -1483,3 +1483,117 @@ input[list] {
         text-align: left;
     }
 }
+
+/* ============================================================
+   INPUT DE CATEGORÍA PERSONALIZADA ("Otro")
+   ============================================================ */
+
+#other-category-container {
+    animation: fadeIn 0.2s ease;
+    padding: 10px;
+    background: var(--table-row-even);
+    border-radius: 6px;
+    border-left: 3px solid var(--secondary-color);
+}
+
+#other-category-container .form-control {
+    margin-bottom: 6px;
+}
+
+#other-category-container .btn {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+[data-theme="dark"] #other-category-container {
+    background: var(--table-row-even);
+    border-left-color: var(--secondary-color);
+}
+
+[data-theme="dark"] #other-category-container .btn-outline-primary {
+    color: #5dade2;
+    border-color: #5dade2;
+}
+
+[data-theme="dark"] #other-category-container .btn-outline-primary:hover {
+    background-color: #5dade2;
+    color: #121212;
+}
+
+/* ============================================================
+   TABLAS SEPARADAS DEL DASHBOARD (OWASP vs Red)
+   ============================================================ */
+
+#dashboard-vulnerabilities-list + hr,
+.card-body > hr {
+    border-color: var(--border-color);
+    margin: 30px 0 20px 0;
+    opacity: 0.6;
+}
+
+/* Títulos de sección de las tablas del dashboard */
+.card-body > h5 {
+    color: var(--text-color);
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--secondary-color);
+    margin-bottom: 12px;
+}
+
+[data-theme="dark"] .card-body > h5 {
+    color: var(--text-color);
+    border-bottom-color: var(--secondary-color);
+}
+
+/* ============================================================
+   BADGES DE ESTÁNDAR (Red Externa / Red Interna)
+   Ajustes de contraste en tema oscuro
+   ============================================================ */
+
+[data-theme="dark"] .badge.bg-dark {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #555;
+}
+
+[data-theme="dark"] .badge.bg-warning.text-dark {
+    background-color: #ffc107 !important;
+    color: #121212 !important;
+}
+
+/* ============================================================
+   FILAS DE AGRUPACIÓN DE CATEGORÍA EN TABLAS
+   ============================================================ */
+
+#dashboard-vulnerabilities-list tr td[colspan="6"],
+#dashboard-network-list tr td[colspan="6"] {
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+[data-theme="dark"] #dashboard-vulnerabilities-list tr td[colspan="6"],
+[data-theme="dark"] #dashboard-network-list tr td[colspan="6"] {
+    color: var(--text-color);
+}
+
+/* ============================================================
+   RESPONSIVE: tablas en pantallas chicas
+   ============================================================ */
+
+@media (max-width: 768px) {
+    #other-category-container {
+        padding: 8px;
+    }
+    
+    #other-category-container .btn {
+        width: 100%;
+        margin-top: 6px;
+    }
+    
+    .card-body > h5 {
+        font-size: 15px;
+    }
+}

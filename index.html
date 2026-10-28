@@ -19,12 +19,14 @@
 
     <div class="container py-4">
         <header class="text-center mb-4">
-            <h1 class="display-5">Intriga Risk Map (OWASP)</h1>
-            <p class="lead">Calculadora de evaluación de riesgos con gestión completa de vulnerabilidades</p>
+            <h1 class="display-5">Intriga Risk Map</h1>
+            <p class="lead">Calculadora de evaluación de riesgos y gestión de vulnerabilidades</p>
             <div class="mt-2">
                 <span class="badge bg-primary me-2">Web Top 10 2025</span>
                 <span class="badge bg-danger me-2">API Top 10 2023</span>
-                <span class="badge bg-success">Mobile Top 10 2024</span>
+                <span class="badge bg-success me-2">Mobile Top 10 2024</span>
+                <span class="badge bg-dark me-2">Red Externa</span>
+                <span class="badge bg-warning text-dark">Red Interna</span>
             </div>
         </header>
 
@@ -46,7 +48,7 @@
                     <section class="col-12">
                         <h5 class="border-bottom">Información General de la Vulnerabilidad</h5>
 
-                        <!-- NUEVO: Cliente y Proyecto (se recuerdan entre guardados) -->
+                        <!-- Cliente y Proyecto (se recuerdan entre guardados) -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Cliente</label>
@@ -68,23 +70,31 @@
                                 <input type="text" class="form-control" id="vulnerability-name" placeholder="Ej: Exposición de directorios">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Estándar OWASP</label>
+                                <label class="form-label">Estándar</label>
                                 <select class="form-control" id="owasp-standard">
                                     <option value="">Seleccione un estándar</option>
                                     <option value="web">WEB</option>
                                     <option value="api">API</option>
                                     <option value="mobile">MOBILE</option>
+                                    <option value="network-external">RED EXTERNA (Pentest)</option>
+                                    <option value="network-internal">RED INTERNA (Pentest)</option>
                                 </select>
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Categoría OWASP</label>
+                                <label class="form-label">Categoría / Técnica</label>
                                 <select class="form-control" id="owasp-category">
-                                    <option value="">Seleccione categoría OWASP</option>
+                                    <option value="">Seleccione categoría</option>
                                     <!-- Las opciones se cargarán dinámicamente según el estándar -->
                                 </select>
+                                <div id="other-category-container" style="display: none; margin-top: 8px;">
+                                    <input type="text" class="form-control" id="other-category" placeholder="Escriba la categoría...">
+                                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="save-custom-category-btn">
+                                        + Guardar en mi lista
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Host</label>
@@ -526,7 +536,7 @@
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Distribución por Categoría OWASP</h5>
+                                <h5 class="card-title mb-0">Distribución por Categoría / Técnica</h5>
                             </div>
                             <div class="card-body">
                                 <div class="chart-container">
@@ -539,10 +549,26 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- NUEVO GRÁFICO DE BARRAS PARA RED -->
+                <div class="row mt-4" id="network-risk-chart-container" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Severidad de Riesgo - Hallazgos de Red (Externa e Interna)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="height: 400px; position: relative;">
+                                    <canvas id="networkRiskChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
-                                <div class="card mt-4">
+                <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="card-title mb-0">Vulnerabilidades por Categoría OWASP</h5>
+                        <h5 class="card-title mb-0">Vulnerabilidades por Categoría</h5>
                         <div class="d-flex gap-2 flex-wrap align-items-center">
 
                             <!-- Menú avanzado: JSON (semi-oculto) -->
@@ -593,18 +619,16 @@
                                 🗜️ Exportar Hallazgos
                             </button>
                             
-                            
-
-                                                      
                         </div>
                     </div>
                     
                     <div class="card-body">
+                        <h5 class="mb-3">Vulnerabilidades OWASP</h5>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Categoría OWASP</th>
+                                    <th>Categoría / Técnica</th>
                                     <th>Estándar</th>
                                     <th>Descripción</th>
                                     <th>URL/Dominio</th>
@@ -612,7 +636,26 @@
                                 </tr>
                             </thead>
                             <tbody id="dashboard-vulnerabilities-list">
-                                <!-- Las vulnerabilidades se cargarán dinámicamente aquí -->
+                                <!-- Vulnerabilidades Web/API/Mobile -->
+                            </tbody>
+                        </table>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3">Vulnerabilidades Red</h5>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Categoría / Técnica</th>
+                                    <th>Estándar</th>
+                                    <th>Descripción</th>
+                                    <th>URL/Dominio</th>
+                                    <th>Nivel de Riesgo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-network-list">
+                                <!-- Vulnerabilidades Red Externa/Interna -->
                             </tbody>
                         </table>
                     </div>
@@ -705,8 +748,7 @@
                 }
             });
             
-            // Configurar el selector de estándar OWASP (esto se maneja en main.js, pero aseguramos que exista)
-            console.log('HTML cargado correctamente con soporte para OWASP Web, API y Mobile');
+            console.log('HTML cargado correctamente con soporte para OWASP Web, API, Mobile y Red');
         });
     </script>
 </body>

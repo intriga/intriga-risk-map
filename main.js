@@ -1,6 +1,7 @@
 // Variables globales
 let vulnerabilities = [];
 let riskChart, riskDistributionChart, owaspDistributionChart;
+let networkRiskChart; // <-- NUEVA VARIABLE
 let currentTheme = 'light';
 
 
@@ -144,6 +145,10 @@ async function fillFormWithAIData(aiData) {
                         standardSelect.value = 'api';
                     } else if (value.startsWith('M')) {
                         standardSelect.value = 'mobile';
+                    } else if (value.startsWith('EXT-')) {
+                        standardSelect.value = 'network-external';
+                    } else if (value.startsWith('INT-')) {
+                        standardSelect.value = 'network-internal';
                     } else {
                         standardSelect.value = 'web';
                     }
@@ -262,6 +267,34 @@ const owaspMobileCategories = [
     "M10:2024 - Criptografía Insuficiente"
 ];
 
+// Categorías Red Externa (Pentest)
+const networkExternalCategories = [
+    "EXT-01 - Reconocimiento y OSINT",
+    "EXT-02 - Servicios expuestos a Internet",
+    "EXT-03 - Configuración de firewall y perímetro",
+    "EXT-04 - Certificados TLS y criptografía",
+    "EXT-05 - DNS y correo (SPF/DKIM/DMARC)",
+    "EXT-06 - VPN y accesos remotos",
+    "EXT-07 - APIs y endpoints públicos",
+    "EXT-08 - Aplicaciones web expuestas",
+    "EXT-09 - Gestión de parches en servicios públicos",
+    "EXT-10 - Fuga de información (metadatos, backups, repos)"
+];
+
+// Categorías Red Interna (Pentest)
+const networkInternalCategories = [
+    "INT-01 - Enumeración de Active Directory",
+    "INT-02 - Movimiento lateral",
+    "INT-03 - Escalada de privilegios local",
+    "INT-04 - Credenciales en memoria / Kerberoasting",
+    "INT-05 - SMB / NTLM relay",
+    "INT-06 - Segmentación de red",
+    "INT-07 - Compromiso de estaciones de trabajo",
+    "INT-08 - Configuración de servidores internos",
+    "INT-09 - Servicios internos sin autenticación",
+    "INT-10 - Persistencia y backdoors"
+];
+
 // Colores para cada categoría
 const categoryColors = {
     web: [
@@ -302,41 +335,115 @@ const categoryColors = {
     ]
 };
 
+// ========== CATEGORÍAS PERSONALIZADAS ==========
+function getCustomCategoriesKey(standard) {
+    return `customCategories_${standard}`;
+}
+
+function getCustomCategories(standard) {
+    try {
+        const raw = localStorage.getItem(getCustomCategoriesKey(standard));
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCustomCategory(standard, name) {
+    if (!name || !name.trim()) return false;
+    const trimmed = name.trim();
+    const existing = getCustomCategories(standard);
+    if (existing.includes(trimmed)) return false;
+    existing.push(trimmed);
+    localStorage.setItem(getCustomCategoriesKey(standard), JSON.stringify(existing));
+    return true;
+}
+
 function setupOwaspStandardSelector() {
     const standardSelect = document.getElementById('owasp-standard');
     const categorySelect = document.getElementById('owasp-category');
+    const otherContainer = document.getElementById('other-category-container');
+    const otherInput = document.getElementById('other-category');
     
-    if (standardSelect && categorySelect) {
-        standardSelect.addEventListener('change', function() {
-            const standard = this.value;
-            let categories = [];
-            
-            switch(standard) {
-                case 'web':
-                    categories = owaspWebCategories;
-                    break;
-                case 'api':
-                    categories = owaspApiCategories;
-                    break;
-                case 'mobile':
-                    categories = owaspMobileCategories;
-                    break;
-                default:
-                    categories = [];
-            }
-            
-            // Limpiar y llenar el select de categorías
-            categorySelect.innerHTML = '<option value="">Seleccione categoría OWASP</option>';
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                categorySelect.appendChild(option);
-            });
+    if (!standardSelect || !categorySelect) return;
+
+    function fillCategories(standard) {
+        let categories = [];
+        switch(standard) {
+            case 'web': categories = owaspWebCategories; break;
+            case 'api': categories = owaspApiCategories; break;
+            case 'mobile': categories = owaspMobileCategories; break;
+            case 'network-external': categories = networkExternalCategories; break;
+            case 'network-internal': categories = networkInternalCategories; break;
+            default: categories = [];
+        }
+
+        const customs = standard ? getCustomCategories(standard) : [];
+
+        categorySelect.innerHTML = '<option value="">Seleccione categoría</option>';
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            categorySelect.appendChild(opt);
         });
-        
-        // NO disparar el change inicial: dejamos el select vacío
-        // hasta que el usuario elija un estándar manualmente.
+        customs.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            categorySelect.appendChild(opt);
+        });
+
+        if (standard) {
+            const otro = document.createElement('option');
+            otro.value = '__otro__';
+            otro.textContent = 'Otro (especificar...)';
+            categorySelect.appendChild(otro);
+        }
+
+        if (otherContainer) otherContainer.style.display = 'none';
+        if (otherInput) otherInput.value = '';
+    }
+
+    standardSelect.addEventListener('change', function() {
+        fillCategories(this.value);
+    });
+
+    categorySelect.addEventListener('change', function() {
+        if (this.value === '__otro__') {
+            if (otherContainer) otherContainer.style.display = 'block';
+            if (otherInput) otherInput.focus();
+        } else {
+            if (otherContainer) otherContainer.style.display = 'none';
+            if (otherInput) otherInput.value = '';
+        }
+    });
+
+    // Botón "+ Guardar en mi lista"
+    const saveBtn = document.getElementById('save-custom-category-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            const standard = standardSelect.value;
+            const name = otherInput ? otherInput.value.trim() : '';
+            if (!standard) {
+                showNotification('Primero selecciona un estándar', 'error');
+                return;
+            }
+            if (!name) {
+                showNotification('Escribe una categoría antes de guardar', 'error');
+                return;
+            }
+            const ok = saveCustomCategory(standard, name);
+            if (ok) {
+                showNotification(`Categoría "${name}" guardada en tu lista`, 'success');
+                fillCategories(standard);
+                categorySelect.value = name;
+                if (otherContainer) otherContainer.style.display = 'none';
+                if (otherInput) otherInput.value = '';
+            } else {
+                showNotification('Esa categoría ya existe en tu lista', 'info');
+            }
+        });
     }
 }
 
@@ -352,6 +459,10 @@ function migrateVulnerabilities() {
                     standard = 'api';
                 } else if (vuln.owasp.startsWith('M')) {
                     standard = 'mobile';
+                } else if (vuln.owasp.startsWith('EXT-')) {
+                    standard = 'network-external';
+                } else if (vuln.owasp.startsWith('INT-')) {
+                    standard = 'network-internal';
                 }
             }
             return {
@@ -377,6 +488,7 @@ function getOwaspFullText(value) {
 // ========== FUNCIONES PARA OBTENER TEXTO DE FACTORES ==========
 function getSkillLevelText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Habilidades de penetración de seguridad',
         '3': 'Habilidades de red y programación',
         '5': 'Usuario avanzado de computadora',
@@ -389,6 +501,7 @@ function getSkillLevelText(value) {
 
 function getMotivoEconomicoText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Baja o ninguna recompensa',
         '2': 'Recompensa moderadamente baja',
         '4': 'Posible recompensa',
@@ -401,6 +514,7 @@ function getMotivoEconomicoText(value) {
 
 function getOportunidadAtaqueText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Acceso completo o recursos requeridos',
         '4': 'Acceso especial o recursos requeridos',
         '7': 'Algún acceso o recursos requeridos',
@@ -412,6 +526,7 @@ function getOportunidadAtaqueText(value) {
 
 function getTamanoAgenteText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '2': 'Desarrolladores, administradores de sistemas',
         '3': 'Personal interno autorizado',
         '4': 'Usuarios de intranet',
@@ -425,6 +540,7 @@ function getTamanoAgenteText(value) {
 
 function getPerdidaConfidencialidadText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '2': 'Datos no sensibles mínimos divulgados',
         '4': 'Datos internos no críticos',
         '6': 'Datos críticos mínimos divulgados',
@@ -437,6 +553,7 @@ function getPerdidaConfidencialidadText(value) {
 
 function getPerdidaIntegridadText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Datos mínimamente corruptos',
         '3': 'Datos mínimamente muy corruptos',
         '5': 'Datos extensamente corruptos',
@@ -449,6 +566,7 @@ function getPerdidaIntegridadText(value) {
 
 function getImpactoDisponibilidadText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Servicios secundarios mínimos interrumpidos',
         '5': 'Servicios primarios mínimos interrumpidos / Servicios secundarios extensos interrumpidos',
         '6': 'Múltiples servicios afectados',
@@ -461,6 +579,7 @@ function getImpactoDisponibilidadText(value) {
 
 function getRastreabilidadAtaqueText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Completamente rastreable',
         '7': 'Posiblemente rastreable',
         '8': 'Difícilmente rastreable',
@@ -471,6 +590,7 @@ function getRastreabilidadAtaqueText(value) {
 
 function getFacilidadDescubrimientoText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Prácticamente imposible',
         '3': 'Difícil',
         '4': 'Moderadamente difícil',
@@ -482,6 +602,7 @@ function getFacilidadDescubrimientoText(value) {
 
 function getFacilidadExplotacionText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Teórico',
         '3': 'Difícil',
         '4': 'Moderadamente difícil',
@@ -493,6 +614,7 @@ function getFacilidadExplotacionText(value) {
 
 function getConocimientoVulnerabilidadText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Desconocido',
         '4': 'Oculto',
         '6': 'Obvio',
@@ -504,6 +626,7 @@ function getConocimientoVulnerabilidadText(value) {
 
 function getDeteccionIntrusionText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Alta Detección - Alertas activas y revisión constante',
         '3': 'Buena Detección - Se registra y se revisa periódicamente',
         '8': 'Baja Detección - Se registra, pero no se revisa activamente',
@@ -514,6 +637,7 @@ function getDeteccionIntrusionText(value) {
 
 function getDanioFinancieroText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Menos que el costo de arreglar la vulnerabilidad',
         '3': 'Efecto menor en las ganancias anuales',
         '5': 'Impacto moderado en ganancias',
@@ -526,6 +650,7 @@ function getDanioFinancieroText(value) {
 
 function getDanioReputacionText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '1': 'Daño mínimo',
         '4': 'Pérdida de cuentas principales',
         '5': 'Pérdida de buena voluntad',
@@ -537,6 +662,7 @@ function getDanioReputacionText(value) {
 
 function getIncumplimientoText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '2': 'Violación menor',
         '5': 'Violación clara',
         '6': 'Incumplimiento grave',
@@ -547,6 +673,7 @@ function getIncumplimientoText(value) {
 
 function getViolacionPrivacidadText(value) {
     const options = {
+        '0': 'Riesgo Informativo',
         '3': 'Un individuo',
         '4': 'Decenas de personas',
         '5': 'Cientos de personas',
@@ -598,6 +725,10 @@ function getStandardBadgeClass(standard) {
             return 'bg-danger';
         case 'mobile':
             return 'bg-success';
+        case 'network-external':
+            return 'bg-dark';
+        case 'network-internal':
+            return 'bg-warning text-dark';
         default:
             return 'bg-secondary';
     }
@@ -608,7 +739,23 @@ function getStandardFromCategory(category) {
     if (owaspWebCategories.includes(category)) return 'web';
     if (owaspApiCategories.includes(category)) return 'api';
     if (owaspMobileCategories.includes(category)) return 'mobile';
+    if (networkExternalCategories.includes(category)) return 'network-external';
+    if (networkInternalCategories.includes(category)) return 'network-internal';
+    if (category && category.startsWith('EXT-')) return 'network-external';
+    if (category && category.startsWith('INT-')) return 'network-internal';
     return 'web';
+}
+
+// ========== FUNCIÓN AUXILIAR PARA TEXTO DE ESTÁNDAR ==========
+function getStandardText(standard) {
+    switch(standard) {
+        case 'web': return 'Web';
+        case 'api': return 'API';
+        case 'mobile': return 'Mobile';
+        case 'network-external': return 'Red Externa';
+        case 'network-internal': return 'Red Interna';
+        default: return 'Web';
+    }
 }
 
 // ========== INICIALIZACIÓN ==========
@@ -698,6 +845,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (canvas) {
                         drawTotalInCenter(canvas, chartTotal);
                     }
+                }
+                
+                if (networkRiskChart) {
+                    updateNetworkRiskChart(); // Redibujar con nuevos colores del tema
                 }
             }, 300);
         });
@@ -798,17 +949,17 @@ function calculateRisk() {
         const m = parseFloat(document.getElementById('m')?.value) || 0;
         const o = parseFloat(document.getElementById('opp')?.value) || 0;
         const s = parseFloat(document.getElementById('s')?.value) || 0;
-
+        
         const lc = parseFloat(document.getElementById('lc')?.value) || 0;
         const li = parseFloat(document.getElementById('li')?.value) || 0;
         const lav = parseFloat(document.getElementById('lav')?.value) || 0;
         const lac = parseFloat(document.getElementById('lac')?.value) || 0;
-
+        
         const ed = parseFloat(document.getElementById('ed')?.value) || 0;
         const ee = parseFloat(document.getElementById('ee')?.value) || 0;
         const a = parseFloat(document.getElementById('a')?.value) || 0;
         const id = parseFloat(document.getElementById('intrusion')?.value) || 0;
-
+        
         const fd = parseFloat(document.getElementById('fd')?.value) || 0;
         const rd = parseFloat(document.getElementById('rd')?.value) || 0;
         const nc = parseFloat(document.getElementById('nc')?.value) || 0;
@@ -954,8 +1105,8 @@ function validateRequiredFields() {
         { id: 'project', name: 'Proyecto' },
         { id: 'vulnerability-name', name: 'Nombre de la Vulnerabilidad' },
         { id: 'host', name: 'Host' },
-        { id: 'owasp-standard', name: 'Estándar OWASP' },
-        { id: 'owasp-category', name: 'Categoría OWASP' },
+        { id: 'owasp-standard', name: 'Estándar' },
+        { id: 'owasp-category', name: 'Categoría / Técnica' },
         { id: 'ruta-afectada', name: 'Ruta Afectada' },
         { id: 'mitre-id', name: 'MITRE ID' },
         { id: 'tool-criticity', name: 'Criticidad según Herramienta' },
@@ -1014,6 +1165,7 @@ function validateRequiredFields() {
             value = element.value.trim();
         }
         
+        // Los selectores de factores con value="0" (Riesgo Informativo) son válidos
         if (!value || value === '') {
             isValid = false;
             emptyFieldsCount++;
@@ -1084,6 +1236,37 @@ function validateRequiredFields() {
             existingError.remove();
         }
     }
+
+    // Validar "Otro" en categoría
+    const categorySelect = document.getElementById('owasp-category');
+    const otherCategoryInput = document.getElementById('other-category');
+
+    if (categorySelect && categorySelect.value === '__otro__') {
+        if (!otherCategoryInput || !otherCategoryInput.value.trim()) {
+            isValid = false;
+            emptyFieldsCount++;
+            if (otherCategoryInput) {
+                otherCategoryInput.classList.add('is-invalid');
+                let errorDiv = otherCategoryInput.parentElement.querySelector('.invalid-feedback');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback';
+                    otherCategoryInput.parentElement.appendChild(errorDiv);
+                }
+                errorDiv.textContent = 'Debe especificar la categoría cuando selecciona "Otro"';
+                if (!firstEmptyField) firstEmptyField = otherCategoryInput;
+            }
+        } else {
+            otherCategoryInput.classList.add('is-valid');
+            otherCategoryInput.classList.remove('is-invalid');
+            const err = otherCategoryInput.parentElement.querySelector('.invalid-feedback');
+            if (err) err.remove();
+        }
+    } else if (otherCategoryInput) {
+        otherCategoryInput.classList.remove('is-invalid', 'is-valid');
+        const err = otherCategoryInput.parentElement.querySelector('.invalid-feedback');
+        if (err) err.remove();
+    }
     
     if (firstEmptyField) {
         firstEmptyField.scrollIntoView({ 
@@ -1102,7 +1285,7 @@ function validateRequiredFields() {
     return isValid;
 }
 
-// ========== FUNCIÓN saveVulnerability MODIFICADA ==========
+// ========== FUNCIÓN saveVulnerability ==========
 function saveVulnerability() {
     console.log('Guardando vulnerabilidad...');
     
@@ -1122,8 +1305,6 @@ function saveVulnerability() {
             return 0;
         };
         
-        // Obtener el vulnId temporal (si el usuario subió evidencias antes de guardar)
-        // o generar uno nuevo si no existe
         const hiddenVulnId = document.getElementById('current-vuln-id');
         const vulnId = (hiddenVulnId && hiddenVulnId.value.trim()) 
             ? hiddenVulnId.value.trim() 
@@ -1162,18 +1343,15 @@ function saveVulnerability() {
         
         clearFormValidation();
         
-        // Resetear el vulnId temporal para la siguiente vulnerabilidad
         if (hiddenVulnId) {
             hiddenVulnId.value = '';
         }
         
-        // Limpiar la vista previa de evidencias
         const preview = document.getElementById('evidence-preview');
         if (preview) {
             preview.innerHTML = '';
         }
         
-        // Limpiar el input de archivos
         const evidenceInput = document.getElementById('evidence-files');
         if (evidenceInput) {
             evidenceInput.value = '';
@@ -1189,8 +1367,6 @@ function saveVulnerability() {
 
 // ========== FUNCIÓN PARA LIMPIAR VALIDACIÓN ==========
 function clearFormValidation() {
-    // ⚠️ NOTA: 'client' y 'project' NO están aquí a propósito.
-    // Se mantienen entre guardados para agilizar el flujo de trabajo.
     const allFormElements = [
         'vulnerability-name', 'host', 'ruta-afectada', 'mitre-id', 'tool-criticity',
         'threat-agent', 'attack-vector', 'security-weakness', 'security-controls',
@@ -1207,7 +1383,6 @@ function clearFormValidation() {
         if (element) {
             if (element.tagName === 'SELECT') {
                 if (id === 'owasp-standard') {
-                    // Dejar el estándar vacío (que el usuario elija)
                     element.value = '';
                     element.dispatchEvent(new Event('change'));
                 } else {
@@ -1244,6 +1419,17 @@ function clearFormValidation() {
             errorDiv.remove();
         }
     }
+
+    // Resetear "Otro" de categoría
+    const otherCategoryContainer = document.getElementById('other-category-container');
+    const otherCategoryInput = document.getElementById('other-category');
+    if (otherCategoryContainer) otherCategoryContainer.style.display = 'none';
+    if (otherCategoryInput) {
+        otherCategoryInput.value = '';
+        otherCategoryInput.classList.remove('is-invalid', 'is-valid');
+        const err = otherCategoryInput.parentElement.querySelector('.invalid-feedback');
+        if (err) err.remove();
+    }
     
     const updateBtn = document.getElementById('update-current-btn');
     const cancelBtn = document.getElementById('cancel-edit-btn');
@@ -1253,7 +1439,6 @@ function clearFormValidation() {
     if (cancelBtn) cancelBtn.remove();
     if (saveBtn) saveBtn.style.display = 'inline-block';
 
-        // Cliente y Proyecto: solo quitamos validación visual, mantenemos el valor
     ['client', 'project'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -1278,6 +1463,13 @@ function getFormData() {
             threatAgentValue = `Otro: ${otherValue.trim()}`;
         }
     }
+
+    // Manejar categoría "Otro"
+    let owaspValue = getValue('owasp-category');
+    if (owaspValue === '__otro__') {
+        const otherCat = getValue('other-category').trim();
+        owaspValue = otherCat ? `Otro: ${otherCat}` : '';
+    }
     
     return {
         client: getValue('client').trim(),
@@ -1286,7 +1478,7 @@ function getFormData() {
         host: getValue('host'),
         rutaAfectada: getValue('ruta-afectada'),
         owaspStandard: getValue('owasp-standard') || 'web',
-        owasp: getValue('owasp-category'),
+        owasp: owaspValue,
         mitre: getValue('mitre-id'),
         toolCriticity: getValue('tool-criticity'),
         threatAgent: threatAgentValue,
@@ -1321,8 +1513,7 @@ function renderVulnerabilitiesList() {
     const sortedVulnerabilities = [...vulnerabilities].sort((a, b) => b.id - a.id);
     
     sortedVulnerabilities.forEach((vuln, index) => {
-        const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
-                            vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
+        const standardText = getStandardText(vuln.owaspStandard);
         
         const item = document.createElement('div');
         item.className = 'vulnerability-item';
@@ -1340,7 +1531,7 @@ function renderVulnerabilitiesList() {
                             <p class="mb-1"><strong>ID:</strong> <code>${vuln.vulnId || 'N/A'}</code>${vuln.vulnId ? copyBtnHTML(vuln.vulnId, 'inline') : ''}</p>
                             <p class="mb-1"><strong>Host:</strong> ${vuln.host || 'No especificado'}${vuln.host ? copyBtnHTML(vuln.host, 'inline') : ''}</p>
                             <p class="mb-1">
-                                <strong>OWASP:</strong> 
+                                <strong>Categoría:</strong> 
                                 <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)} me-1">${standardText}</span>
                                 ${vuln.owasp || 'No especificado'}${vuln.owasp ? copyBtnHTML(vuln.owasp, 'inline') : ''} | 
                                 <strong>MITRE:</strong> ${vuln.mitre || 'No especificado'}${vuln.mitre ? copyBtnHTML(vuln.mitre, 'inline') : ''}
@@ -1371,7 +1562,6 @@ function renderVulnerabilitiesList() {
     });
     
     setTimeout(() => {
-        // Listeners de botones de copiado en las tarjetas
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1461,6 +1651,7 @@ function updateDashboard() {
         updateRiskDistributionChart(criticalCount, highCount, mediumCount, lowCount, infoCount);
         updateOwaspDistributionChart();
         updateDashboardTable();
+        updateNetworkRiskChart(); // <-- NUEVA LLAMADA
         
         setTimeout(() => {
             const total = vulnerabilities.length;
@@ -1609,9 +1800,16 @@ function updateOwaspDistributionChart() {
     try {
         const context = ctx.getContext('2d');
         
-        const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
+        const allCategories = [
+            ...owaspWebCategories,
+            ...owaspApiCategories,
+            ...owaspMobileCategories,
+            ...networkExternalCategories,
+            ...networkInternalCategories
+        ];
         
         const allColors = [
+            // Web (10)
             'rgba(255, 99, 132, 0.9)',
             'rgba(54, 162, 235, 0.9)',
             'rgba(255, 206, 86, 0.9)',
@@ -1622,6 +1820,7 @@ function updateOwaspDistributionChart() {
             'rgba(83, 102, 255, 0.9)',
             'rgba(40, 159, 64, 0.9)',
             'rgba(210, 105, 30, 0.9)',
+            // API (10)
             'rgba(255, 99, 132, 0.8)',
             'rgba(54, 162, 235, 0.8)',
             'rgba(255, 206, 86, 0.8)',
@@ -1632,6 +1831,7 @@ function updateOwaspDistributionChart() {
             'rgba(83, 102, 255, 0.8)',
             'rgba(40, 159, 64, 0.8)',
             'rgba(210, 105, 30, 0.8)',
+            // Mobile (10)
             'rgba(255, 99, 132, 0.7)',
             'rgba(54, 162, 235, 0.7)',
             'rgba(255, 206, 86, 0.7)',
@@ -1641,41 +1841,32 @@ function updateOwaspDistributionChart() {
             'rgba(199, 199, 199, 0.7)',
             'rgba(83, 102, 255, 0.7)',
             'rgba(40, 159, 64, 0.7)',
-            'rgba(210, 105, 30, 0.7)'
+            'rgba(210, 105, 30, 0.7)',
+            // Red Externa (10) - colores vivos distintos
+            'rgba(46, 204, 113, 0.9)',
+            'rgba(231, 76, 60, 0.9)',
+            'rgba(155, 89, 182, 0.9)',
+            'rgba(241, 196, 15, 0.9)',
+            'rgba(26, 188, 156, 0.9)',
+            'rgba(230, 126, 34, 0.9)',
+            'rgba(52, 152, 219, 0.9)',
+            'rgba(192, 57, 43, 0.9)',
+            'rgba(142, 68, 173, 0.9)',
+            'rgba(39, 174, 96, 0.9)',
+            // Red Interna (10) - colores vivos distintos
+            'rgba(0, 184, 148, 0.9)',
+            'rgba(253, 121, 168, 0.9)',
+            'rgba(116, 185, 255, 0.9)',
+            'rgba(250, 177, 160, 0.9)',
+            'rgba(162, 155, 254, 0.9)',
+            'rgba(255, 118, 117, 0.9)',
+            'rgba(0, 206, 209, 0.9)',
+            'rgba(255, 159, 243, 0.9)',
+            'rgba(99, 110, 114, 0.9)',
+            'rgba(255, 234, 167, 0.9)'
         ];
         
-        const allBorderColors = [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(199, 199, 199, 1)',
-            'rgba(83, 102, 255, 1)',
-            'rgba(40, 159, 64, 1)',
-            'rgba(210, 105, 30, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(199, 199, 199, 1)',
-            'rgba(83, 102, 255, 1)',
-            'rgba(40, 159, 64, 1)',
-            'rgba(210, 105, 30, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(199, 199, 199, 1)',
-            'rgba(83, 102, 255, 1)',
-            'rgba(40, 159, 64, 1)',
-            'rgba(210, 105, 30, 1)'
-        ];
+        const allBorderColors = allColors.map(c => c.replace(/0\.\d+\)/, '1)'));
         
         const counts = Array(allCategories.length).fill(0);
         
@@ -1712,15 +1903,17 @@ function updateOwaspDistributionChart() {
         const filteredLabels = nonZeroIndices.map(i => {
             const cat = allCategories[i];
             const code = cat.split(' - ')[0];
-            if (cat.startsWith('A')) return `${code} (Web)`;
+            if (cat.startsWith('EXT-')) return `${code} (Red Externa)`;
+            if (cat.startsWith('INT-')) return `${code} (Red Interna)`;
             if (cat.startsWith('API')) return `${code} (API)`;
             if (cat.startsWith('M')) return `${code} (Mobile)`;
+            if (cat.startsWith('A')) return `${code} (Web)`;
             return cat;
         });
         
         const filteredData = nonZeroIndices.map(i => counts[i]);
-        const filteredColors = nonZeroIndices.map(i => allColors[i]);
-        const filteredBorderColors = nonZeroIndices.map(i => allBorderColors[i]);
+        const filteredColors = nonZeroIndices.map(i => allColors[i] || 'rgba(108, 117, 125, 0.8)');
+        const filteredBorderColors = nonZeroIndices.map(i => allBorderColors[i] || 'rgba(108, 117, 125, 1)');
         
         if (owaspDistributionChart) owaspDistributionChart.destroy();
         
@@ -1825,81 +2018,225 @@ function updateOwaspDistributionChart() {
     }
 }
 
-function updateDashboardTable() {
-    const tableBody = document.getElementById('dashboard-vulnerabilities-list');
-    if (!tableBody) return;
+function updateNetworkRiskChart() {
+    const ctx = document.getElementById('networkRiskChart');
+    const container = document.getElementById('network-risk-chart-container');
     
-    tableBody.innerHTML = '';
-    
-    if (vulnerabilities.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
+    if (!ctx || !container) return;
+
+    // Filtrar solo vulnerabilidades de red
+    const networkVulns = vulnerabilities.filter(v => 
+        v.owaspStandard === 'network-external' || 
+        v.owaspStandard === 'network-internal'
+    );
+
+    // Si no hay de red, ocultar el panel
+    if (networkVulns.length === 0) {
+        container.style.display = 'none';
+        if (networkRiskChart) {
+            networkRiskChart.destroy();
+            networkRiskChart = null;
+        }
         return;
     }
+
+    container.style.display = 'block';
+
+    // Ordenar de mayor a menor riesgo
+    networkVulns.sort((a, b) => b.risk - a.risk);
+
+    // Limitar a los 15 principales para que no se vea gigante
+    const topVulns = networkVulns.slice(0, 15);
+
+    const labels = topVulns.map(v => v.name.length > 50 ? v.name.substring(0, 50) + '...' : v.name);
+    const data = topVulns.map(v => v.risk);
     
-    const vulnerabilitiesByCategory = {};
-    
-    const allCategories = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
-    
-    allCategories.forEach((_, index) => {
-        vulnerabilitiesByCategory[index] = vulnerabilities.filter(v => {
-            if (!v.owasp) return false;
-            return allCategories[index] === v.owasp;
-        });
-    });
-    
-    const sortedCategories = allCategories.map((cat, idx) => ({
-        category: cat,
-        index: idx,
-        count: vulnerabilitiesByCategory[idx].length,
-        standard: getStandardFromCategory(cat)
-    })).filter(item => item.count > 0)
-      .sort((a, b) => b.count - a.count);
-    
-    let globalCounter = 1;
-    
-    sortedCategories.forEach((catItem) => {
-        const categoryVulns = vulnerabilitiesByCategory[catItem.index];
-        
-        let categoryColor;
-        if (catItem.standard === 'web') {
-            categoryColor = 'rgba(54, 162, 235, 0.2)';
-        } else if (catItem.standard === 'api') {
-            categoryColor = 'rgba(255, 99, 132, 0.2)';
-        } else {
-            categoryColor = 'rgba(75, 192, 192, 0.2)';
+    // Colores según estándar
+    const bgColors = topVulns.map(v => 
+        v.owaspStandard === 'network-external' 
+            ? 'rgba(52, 58, 64, 0.8)'    // Gris oscuro para externa
+            : 'rgba(255, 193, 7, 0.8)'   // Amarillo para interna
+    );
+
+    const borderColors = topVulns.map(v => 
+        v.owaspStandard === 'network-external' 
+            ? 'rgba(52, 58, 64, 1)'
+            : 'rgba(255, 193, 7, 1)'
+    );
+
+    if (networkRiskChart) networkRiskChart.destroy();
+
+    const context = ctx.getContext('2d');
+
+    networkRiskChart = new Chart(context, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Severidad de Riesgo',
+                data: data,
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Esto hace que las barras sean horizontales (como en tu imagen)
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100, // Escala de 0 a 100
+                    title: {
+                        display: true,
+                        text: 'Score de Riesgo',
+                        color: 'var(--text-color)'
+                    },
+                    ticks: { color: 'var(--text-color)' },
+                    grid: { color: 'rgba(128, 128, 128, 0.1)' }
+                },
+                y: {
+                    ticks: { 
+                        color: 'var(--text-color)',
+                        font: { size: 11 }
+                    },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.x;
+                            const idx = context.dataIndex;
+                            const vuln = topVulns[idx];
+                            return `Riesgo: ${val.toFixed(2)} (${vuln.riskLevel})`;
+                        }
+                    }
+                }
+            }
         }
-        
-        const categoryRow = document.createElement('tr');
-        categoryRow.innerHTML = `
-            <td colspan="6" style="font-weight: bold; background-color: ${categoryColor}">
-                ${catItem.category} (${categoryVulns.length} vulnerabilidad${categoryVulns.length !== 1 ? 'es' : ''})
-            </td>
-        `;
-        tableBody.appendChild(categoryRow);
-        
-        const sortedVulns = categoryVulns.sort((a, b) => b.risk - a.risk);
-        
-        sortedVulns.forEach((vuln) => {
-            const row = document.createElement('tr');
-            
-            const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
-                                vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
-            
-            row.innerHTML = `
-                <td style="font-weight: bold; text-align: center; width: 50px;">
-                    ${globalCounter++}
-                </td>
-                <td>${vuln.owasp || 'No especificado'}</td>
-                <td>
-                    <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${standardText}</span>
-                </td>
-                <td>${vuln.name || 'No especificado'}</td>
-                <td>${vuln.host || vuln.attackVector || 'No especificado'}</td>
-                <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
-            `;
-            tableBody.appendChild(row);
-        });
     });
+}
+
+function updateDashboardTable() {
+    const tableBodyOWASP = document.getElementById('dashboard-vulnerabilities-list');
+    const tableBodyNET = document.getElementById('dashboard-network-list');
+    if (!tableBodyOWASP) return;
+
+    tableBodyOWASP.innerHTML = '';
+    if (tableBodyNET) tableBodyNET.innerHTML = '';
+
+    if (vulnerabilities.length === 0) {
+        tableBodyOWASP.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
+        if (tableBodyNET) tableBodyNET.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay vulnerabilidades de red registradas</td></tr>';
+        return;
+    }
+
+    const owaspCategoriesAll = [...owaspWebCategories, ...owaspApiCategories, ...owaspMobileCategories];
+    const networkCategoriesAll = [...networkExternalCategories, ...networkInternalCategories];
+
+    const owaspGrouped = owaspCategoriesAll.map((cat) => ({
+        category: cat,
+        vulns: vulnerabilities.filter(v => v.owasp === cat),
+        standard: getStandardFromCategory(cat)
+    })).filter(item => item.vulns.length > 0)
+      .sort((a, b) => b.vulns.length - a.vulns.length);
+
+    const netGrouped = networkCategoriesAll.map((cat) => ({
+        category: cat,
+        vulns: vulnerabilities.filter(v => v.owasp === cat),
+        standard: getStandardFromCategory(cat)
+    })).filter(item => item.vulns.length > 0)
+      .sort((a, b) => b.vulns.length - a.vulns.length);
+
+    const customVulns = vulnerabilities.filter(v => v.owasp && v.owasp.startsWith('Otro: '));
+    const customGrouped = {};
+    customVulns.forEach(v => {
+        if (!customGrouped[v.owasp]) customGrouped[v.owasp] = [];
+        customGrouped[v.owasp].push(v);
+    });
+
+    function renderGroup(tbody, grouped, custom) {
+        if (!tbody) return;
+        let counter = 1;
+
+        if (grouped.length === 0 && Object.keys(custom).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay vulnerabilidades registradas</td></tr>';
+            return;
+        }
+
+        grouped.forEach(catItem => {
+            const categoryColor = catItem.standard === 'web' ? 'rgba(54, 162, 235, 0.2)' :
+                                  catItem.standard === 'api' ? 'rgba(255, 99, 132, 0.2)' :
+                                  catItem.standard === 'mobile' ? 'rgba(75, 192, 192, 0.2)' :
+                                  catItem.standard === 'network-external' ? 'rgba(52, 58, 64, 0.15)' :
+                                  'rgba(255, 193, 7, 0.2)';
+
+            const categoryRow = document.createElement('tr');
+            categoryRow.innerHTML = `
+                <td colspan="6" style="font-weight: bold; background-color: ${categoryColor}">
+                    ${catItem.category} (${catItem.vulns.length} vulnerabilidad${catItem.vulns.length !== 1 ? 'es' : ''})
+                </td>
+            `;
+            tbody.appendChild(categoryRow);
+
+            const sorted = [...catItem.vulns].sort((a, b) => b.risk - a.risk);
+            sorted.forEach(vuln => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight: bold; text-align: center; width: 50px;">${counter++}</td>
+                    <td>${vuln.owasp || 'No especificado'}</td>
+                    <td><span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${getStandardText(vuln.owaspStandard)}</span></td>
+                    <td>${vuln.name || 'No especificado'}</td>
+                    <td>${vuln.host || vuln.rutaAfectada || 'No especificado'}</td>
+                    <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+
+        Object.keys(custom).forEach(catName => {
+            const vulns = custom[catName];
+            const categoryRow = document.createElement('tr');
+            categoryRow.innerHTML = `
+                <td colspan="6" style="font-weight: bold; background-color: rgba(108, 117, 125, 0.15)">
+                    ${catName} (${vulns.length} vulnerabilidad${vulns.length !== 1 ? 'es' : ''}) [Personalizada]
+                </td>
+            `;
+            tbody.appendChild(categoryRow);
+
+            const sorted = [...vulns].sort((a, b) => b.risk - a.risk);
+            sorted.forEach(vuln => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight: bold; text-align: center; width: 50px;">${counter++}</td>
+                    <td>${vuln.owasp || 'No especificado'}</td>
+                    <td><span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${getStandardText(vuln.owaspStandard)}</span></td>
+                    <td>${vuln.name || 'No especificado'}</td>
+                    <td>${vuln.host || vuln.rutaAfectada || 'No especificado'}</td>
+                    <td><span class="risk-badge ${vuln.riskClass}-badge">${vuln.riskLevel}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+    }
+
+    const customOWASP = {};
+    const customNET = {};
+    Object.keys(customGrouped).forEach(k => {
+        const sample = customGrouped[k][0];
+        if (sample.owaspStandard === 'network-external' || sample.owaspStandard === 'network-internal') {
+            customNET[k] = customGrouped[k];
+        } else {
+            customOWASP[k] = customGrouped[k];
+        }
+    });
+
+    renderGroup(tableBodyOWASP, owaspGrouped, customOWASP);
+    renderGroup(tableBodyNET, netGrouped, customNET);
 }
 
 
@@ -1951,6 +2288,8 @@ async function exportExecutiveReport() {
         const webCount = vulnerabilities.filter(v => v.owaspStandard === 'web').length;
         const apiCount = vulnerabilities.filter(v => v.owaspStandard === 'api').length;
         const mobileCount = vulnerabilities.filter(v => v.owaspStandard === 'mobile').length;
+        const extCount = vulnerabilities.filter(v => v.owaspStandard === 'network-external').length;
+        const intCount = vulnerabilities.filter(v => v.owaspStandard === 'network-internal').length;
         
         const categoryStats = {};
         vulnerabilities.forEach(v => {
@@ -2090,7 +2429,7 @@ async function exportExecutiveReport() {
             `;
         }).join('');
         
-                const clientDetected = vulnerabilities.find(v => v.client)?.client;
+        const clientDetected = vulnerabilities.find(v => v.client)?.client;
         const projectDetected = vulnerabilities.find(v => v.project)?.project;
         const clientProjectLine = (clientDetected || projectDetected)
             ? `<div style="font-size: 12px; opacity: 0.95; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3);">
@@ -2104,7 +2443,7 @@ async function exportExecutiveReport() {
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb4d); color: white; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px;">
                 <h1 style="font-size: 24px; margin-bottom: 8px;">📊 INFORME EJECUTIVO DE RIESGOS</h1>
-                <div style="font-size: 13px; opacity: 0.9;">Análisis de vulnerabilidades OWASP</div>
+                <div style="font-size: 13px; opacity: 0.9;">Análisis de vulnerabilidades</div>
                 ${clientProjectLine}
                 <div style="font-size: 11px; opacity: 0.8; margin-top: 10px;">📅 ${formattedDate}</div>
             </div>
@@ -2142,7 +2481,7 @@ async function exportExecutiveReport() {
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">🏷️ Distribución por Estándar OWASP</h2>
+                <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">🏷️ Distribución por Estándar</h2>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: #1a2a6c; color: white;">
@@ -2155,6 +2494,8 @@ async function exportExecutiveReport() {
                         <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🌐 OWASP Top 10 Web 2025</td><td style="padding: 8px; text-align: center;"><strong>${webCount}</strong></td><td style="padding: 8px; text-align: center;">${((webCount/totalVulnerabilities)*100).toFixed(1)}%</td></tr>
                         <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🔌 OWASP Top 10 API 2023</td><td style="padding: 8px; text-align: center;"><strong>${apiCount}</strong></td><td style="padding: 8px; text-align: center;">${((apiCount/totalVulnerabilities)*100).toFixed(1)}%</td></tr>
                         <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">📱 OWASP Top 10 Mobile 2024</td><td style="padding: 8px; text-align: center;"><strong>${mobileCount}</strong></td><td style="padding: 8px; text-align: center;">${((mobileCount/totalVulnerabilities)*100).toFixed(1)}%</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🌍 Red Externa (Pentest)</td><td style="padding: 8px; text-align: center;"><strong>${extCount}</strong></td><td style="padding: 8px; text-align: center;">${((extCount/totalVulnerabilities)*100).toFixed(1)}%</td></tr>
+                        <tr><td style="padding: 8px; border-bottom: 1px solid #e0e0e0;">🏢 Red Interna (Pentest)</td><td style="padding: 8px; text-align: center;"><strong>${intCount}</strong></td><td style="padding: 8px; text-align: center;">${((intCount/totalVulnerabilities)*100).toFixed(1)}%</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2172,7 +2513,7 @@ async function exportExecutiveReport() {
                         <img src="${riskChartImage}" style="max-width: 100%; height: auto;">
                     </div>
                     <div style="flex: 1; min-width: 280px; text-align: center;">
-                        <h3 style="font-size: 13px; margin-bottom: 10px; color: #555;">Distribución por Categoría OWASP</h3>
+                        <h3 style="font-size: 13px; margin-bottom: 10px; color: #555;">Distribución por Categoría / Técnica</h3>
                         <img src="${owaspChartImage}" style="max-width: 100%; height: auto;">
                     </div>
                 </div>
@@ -2188,7 +2529,7 @@ async function exportExecutiveReport() {
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffcccc; margin-bottom: 25px;">
                 <h2 style="color: #dc3545; margin-bottom: 12px; font-size: 16px;">🔴 Vulnerabilidades Críticas (${criticalCount})</h2>
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                    <thead><tr style="background: #dc3545; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
+                    <thead><tr style="background: #dc3545; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
                     <tbody>${criticalRows}</tbody>
                 </table>
             </div>
@@ -2200,7 +2541,7 @@ async function exportExecutiveReport() {
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #ffe0b3; margin-bottom: 25px;">
                 <h2 style="color: #fd7e14; margin-bottom: 12px; font-size: 16px;">🟠 Vulnerabilidades Altas (${highCount})</h2>
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                    <thead><tr style="background: #fd7e14; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
+                    <thead><tr style="background: #fd7e14; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
                     <tbody>${highRows}</tbody>
                 </table>
             </div>
@@ -2212,7 +2553,7 @@ async function exportExecutiveReport() {
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 25px;">
                 <h2 style="color: #ffc107; margin-bottom: 12px; font-size: 16px;">🟡 Vulnerabilidades Medias (${mediumCount})</h2>
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                    <thead><tr style="background: #ffc107; color: #333;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
+                    <thead><tr style="background: #ffc107; color: #333;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
                     <tbody>${mediumRows}</tbody>
                 </table>
             </div>
@@ -2224,7 +2565,7 @@ async function exportExecutiveReport() {
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #d4edda; margin-bottom: 25px;">
                 <h2 style="color: #28a745; margin-bottom: 12px; font-size: 16px;">🟢 Vulnerabilidades Bajas (${lowCount})</h2>
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                    <thead><tr style="background: #28a745; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría OWASP</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
+                    <thead><tr style="background: #28a745; color: white;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Nombre</th><th style="padding: 8px;">Host</th><th style="padding: 8px;">Categoría</th><th style="padding: 8px;">Riesgo</th><th style="padding: 8px;">Score</th></tr></thead>
                     <tbody>${lowRows}</tbody>
                 </table>
             </div>
@@ -2241,7 +2582,7 @@ async function exportExecutiveReport() {
             const section4HTML = `
             <div style="max-width: 750px; margin: 0 auto;">
                 <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0;">
-                    <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">📂 Categorías OWASP más afectadas</h2>
+                    <h2 style="color: #1a2a6c; margin-bottom: 12px; font-size: 16px;">📂 Categorías más afectadas</h2>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead><tr style="background: #1a2a6c; color: white;"><th style="padding: 10px;">#</th><th style="padding: 10px;">Categoría</th><th style="padding: 10px; text-align: center;">Vulnerabilidades</th></tr></thead>
                         <tbody>${categoryRows}</tbody>
@@ -2280,7 +2621,7 @@ async function exportExecutiveReport() {
         const section6HTML = `
         <div style="max-width: 750px; margin: 0 auto;">
             <div style="margin-top: 10px; padding: 15px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #e0e0e0;">
-                <p>Informe generado por <strong>Intriga Risk Map</strong> - OWASP Vulnerability Manager</p>
+                <p>Informe generado por <strong>Intriga Risk Map</strong> - Vulnerability Manager</p>
                 <p>📄 Documento confidencial - Contiene información sensible de seguridad</p>
             </div>
         </div>
@@ -2312,35 +2653,14 @@ async function exportExecutiveReport() {
 
 // ========== FUNCIONES AUXILIARES PDF ==========
 
-function generateHeaderAndSummaryHTML(data) {
-    return ``; // (contenido original sin usar)
-}
+function generateHeaderAndSummaryHTML(data) { return ''; }
+function generateChartsHTML(riskChartImage, owaspChartImage) { return ''; }
+function generateVulnTableHTML(level, title, vulns) { return ''; }
+function generateEmptyMessageHTML(level, message) { return ''; }
+function generateCategoriesHTML(topCategories) { return ''; }
+function generateRecommendationsHTML(criticalCount, highCount) { return ''; }
+function generateFooterHTML() { return ''; }
 
-function generateChartsHTML(riskChartImage, owaspChartImage) {
-    return ``; // (contenido original sin usar)
-}
-
-function generateVulnTableHTML(level, title, vulns) {
-    return ``; // (contenido original sin usar)
-}
-
-function generateEmptyMessageHTML(level, message) {
-    return ``; // (contenido original sin usar)
-}
-
-function generateCategoriesHTML(topCategories) {
-    return ``; // (contenido original sin usar)
-}
-
-function generateRecommendationsHTML(criticalCount, highCount) {
-    return ``; // (contenido original sin usar)
-}
-
-function generateFooterHTML() {
-    return ``; // (contenido original sin usar)
-}
-
-// Función para capturar chart como imagen
 async function captureChartAsImage(chart) {
     if (!chart || !chart.canvas) {
         const blankCanvas = document.createElement('canvas');
@@ -2595,10 +2915,9 @@ async function exportToPDF() {
         const currentDate = new Date().toLocaleDateString('es-ES', {
             year: 'numeric', month: 'long', day: 'numeric'
         });
-                doc.setFontSize(10);
+        doc.setFontSize(10);
         doc.text(`Fecha: ${currentDate}`, pageWidth / 2, 95, { align: 'center' });
 
-        // NUEVO: Cliente y Proyecto (tomados del primer registro que los tenga)
         const clientDetected = vulnerabilities.find(v => v.client)?.client;
         const projectDetected = vulnerabilities.find(v => v.project)?.project;
 
@@ -2645,7 +2964,7 @@ async function exportToPDF() {
             drawMediumRow('Nivel de Riesgo', vuln.riskLevel, true, vuln.riskLevel);
             drawMediumRow('Host / Dominio', vuln.host || 'No especificado');
             drawMediumRow('Ruta Afectada', vuln.rutaAfectada || 'No especificado');
-            drawMediumRow('Categoría OWASP', vuln.owasp || 'No especificado');
+            drawMediumRow('Categoría / Técnica', vuln.owasp || 'No especificado');
             drawMediumRow('MITRE ID', vuln.mitre || 'No especificado');
             
             drawMediumMultiRow('Detalle', vuln.detail, 10);
@@ -2682,7 +3001,7 @@ async function exportToPDF() {
         doc.text('Fin del informe técnico', pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 5;
         doc.setFontSize(8);
-        doc.text('Documento generado automáticamente por Intriga Risk Map - OWASP Vulnerability Manager', pageWidth / 2, yPosition, { align: 'center' });
+        doc.text('Documento generado automáticamente por Intriga Risk Map - Vulnerability Manager', pageWidth / 2, yPosition, { align: 'center' });
         
         addPageNumber();
         
@@ -2764,6 +3083,10 @@ function importJson(event) {
                             standard = 'api';
                         } else if (vuln.owasp.startsWith('M')) {
                             standard = 'mobile';
+                        } else if (vuln.owasp.startsWith('EXT-')) {
+                            standard = 'network-external';
+                        } else if (vuln.owasp.startsWith('INT-')) {
+                            standard = 'network-internal';
                         }
                     }
                     return { ...vuln, owaspStandard: standard };
@@ -2788,6 +3111,11 @@ function importJson(event) {
             if (owaspDistributionChart) {
                 owaspDistributionChart.destroy();
                 owaspDistributionChart = null;
+            }
+
+            if (networkRiskChart) {
+                networkRiskChart.destroy();
+                networkRiskChart = null;
             }
             
             setTimeout(() => {
@@ -2906,10 +3234,8 @@ function showVulnerabilityDetails(id) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
-    const standardText = vuln.owaspStandard === 'web' ? 'Web' : 
-                        vuln.owaspStandard === 'api' ? 'API' : 'Mobile';
-    
-        // Extraemos los textos descriptivos en variables para reutilizarlos en el copy-btn
+    const standardText = getStandardText(vuln.owaspStandard);
+
     const skillText = getSkillLevelText(vuln.sl);
     const motivoText = getMotivoEconomicoText(vuln.m);
     const oportunidadText = getOportunidadAtaqueText(vuln.o);
@@ -3012,7 +3338,7 @@ function showVulnerabilityDetails(id) {
         </div>
     `;
     
-        modalBody.innerHTML = `
+    modalBody.innerHTML = `
         <div class="vulnerability-details">
             <div class="detail-item">
                 <div class="detail-label">Número</div>
@@ -3040,7 +3366,7 @@ function showVulnerabilityDetails(id) {
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Estándar OWASP</div>
+                <div class="detail-label">Estándar</div>
                 <div class="detail-value">
                     <span class="badge ${getStandardBadgeClass(vuln.owaspStandard)}">${standardText}</span>
                 </div>
@@ -3120,7 +3446,7 @@ function showVulnerabilityDetails(id) {
             </div>
             
             <div class="detail-item">
-                <div class="detail-label">Categoría OWASP ${vuln.owasp ? copyBtnHTML(vuln.owasp) : ''}</div>
+                <div class="detail-label">Categoría / Técnica ${vuln.owasp ? copyBtnHTML(vuln.owasp) : ''}</div>
                 <div class="detail-value">${vuln.owasp || 'No especificado'}</div>
             </div>
             
@@ -3194,7 +3520,6 @@ function showVulnerabilityDetails(id) {
             });
         }
 
-        // NUEVO: listeners de botones de copiado en el modal
         document.querySelectorAll('#modal-body .copy-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3211,7 +3536,6 @@ function showVulnerabilityDetails(id) {
         modal.show();
     }
 
-    // NUEVO: cargar evidencias en el modal
     (async () => {
         const container = document.getElementById('modal-evidences-container');
         if (container && typeof renderEvidenceGallery === 'function') {
@@ -3242,7 +3566,7 @@ function showNotification(message, type) {
         z-index: 1000;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         transition: opacity 0.3s;
-        background-color: ${type === 'success' ? '#2ecc71' : '#e74c3c'};
+        background-color: ${type === 'success' ? '#2ecc71' : (type === 'info' ? '#3498db' : '#e74c3c')};
     `;
     
     document.body.appendChild(notification);
@@ -3425,8 +3749,20 @@ function openEditModal(id) {
     setValue('owasp-standard', vuln.owaspStandard || '');
     
     setTimeout(() => {
-        setValue('owasp-category', vuln.owasp);
-    }, 100);
+        const catSelect = document.getElementById('owasp-category');
+        const otherCatContainer = document.getElementById('other-category-container');
+        const otherCatInput = document.getElementById('other-category');
+
+        if (vuln.owasp && vuln.owasp.startsWith('Otro: ')) {
+            if (catSelect) catSelect.value = '__otro__';
+            if (otherCatContainer) otherCatContainer.style.display = 'block';
+            if (otherCatInput) otherCatInput.value = vuln.owasp.replace('Otro: ', '');
+        } else {
+            if (catSelect) catSelect.value = vuln.owasp || '';
+            if (otherCatContainer) otherCatContainer.style.display = 'none';
+            if (otherCatInput) otherCatInput.value = '';
+        }
+    }, 150);
     
     setValue('mitre-id', vuln.mitre);
     setValue('tool-criticity', vuln.toolCriticity);
@@ -3440,22 +3776,22 @@ function openEditModal(id) {
     setTextarea('mitre-detection', vuln.mitreDetection);
     setTextarea('mitre-mitigation', vuln.mitreMitigation);
     
-    setValue('sl', vuln.sl, 1);
-    setValue('m', vuln.m, 1);
+    setValue('sl', vuln.sl, 0);
+    setValue('m', vuln.m, 0);
     setValue('opp', vuln.o, 0);
-    setValue('s', vuln.s, 2);
-    setValue('lc', vuln.lc, 2);
-    setValue('li', vuln.li, 1);
-    setValue('lav', vuln.lav, 1);
-    setValue('lac', vuln.lac, 1);
-    setValue('ed', vuln.ed, 1);
-    setValue('ee', vuln.ee, 1);
-    setValue('a', vuln.a, 1);
-    setValue('intrusion', vuln.intrusion || vuln.id, 1);
-    setValue('fd', vuln.fd, 1);
-    setValue('rd', vuln.rd, 1);
-    setValue('nc', vuln.nc, 2);
-    setValue('pv', vuln.pv, 3);
+    setValue('s', vuln.s, 0);
+    setValue('lc', vuln.lc, 0);
+    setValue('li', vuln.li, 0);
+    setValue('lav', vuln.lav, 0);
+    setValue('lac', vuln.lac, 0);
+    setValue('ed', vuln.ed, 0);
+    setValue('ee', vuln.ee, 0);
+    setValue('a', vuln.a, 0);
+    setValue('intrusion', vuln.intrusion, 0);
+    setValue('fd', vuln.fd, 0);
+    setValue('rd', vuln.rd, 0);
+    setValue('nc', vuln.nc, 0);
+    setValue('pv', vuln.pv, 0);
     
     const saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
@@ -3489,7 +3825,6 @@ function openEditModal(id) {
         };
     }
     
-    // NUEVO: cargar el vulnId en el input oculto y mostrar evidencias existentes
     let hiddenVulnId = document.getElementById('current-vuln-id');
     if (!hiddenVulnId) {
         hiddenVulnId = document.createElement('input');
@@ -3567,7 +3902,6 @@ function updateVulnerabilityInCalculator(id) {
         if (updateBtn) updateBtn.remove();
         if (cancelBtn) cancelBtn.remove();
         
-        // Limpiar el vulnId temporal y preview
         const hiddenVulnId = document.getElementById('current-vuln-id');
         if (hiddenVulnId) hiddenVulnId.value = '';
         const preview = document.getElementById('evidence-preview');
@@ -3590,7 +3924,6 @@ function deleteVulnerability(id) {
     if (!vuln) return;
     
     if (confirm(`¿Estás seguro de eliminar la vulnerabilidad "${vuln.name}"?\n\nEsta acción no se puede deshacer.`)) {
-        // Eliminar evidencias asociadas del IndexedDB
         if (vuln.vulnId && typeof deleteEvidencesByVuln === 'function') {
             deleteEvidencesByVuln(vuln.vulnId).catch(err => 
                 console.warn('Error eliminando evidencias:', err)
@@ -3635,10 +3968,13 @@ function updateOldVulnerabilities() {
                 standard = 'api';
             } else if (vuln.owasp.startsWith('M')) {
                 standard = 'mobile';
+            } else if (vuln.owasp.startsWith('EXT-')) {
+                standard = 'network-external';
+            } else if (vuln.owasp.startsWith('INT-')) {
+                standard = 'network-internal';
             }
         }
         
-        // Generar vulnId si no existe (para vulnerabilidades antiguas)
         let vulnId = vuln.vulnId;
         if (!vulnId && typeof generateVulnId === 'function') {
             vulnId = generateVulnId();
@@ -3705,14 +4041,12 @@ function updateOldVulnerabilities() {
 
 // ========== SUGERENCIAS DE CLIENTE Y PROYECTO ==========
 function updateClientProjectSuggestions() {
-    // Clientes únicos
     const clients = [...new Set(
         vulnerabilities
             .map(v => (v.client || '').trim())
             .filter(Boolean)
     )].sort();
 
-    // Proyectos únicos
     const projects = [...new Set(
         vulnerabilities
             .map(v => (v.project || '').trim())
@@ -3743,11 +4077,9 @@ async function copyToClipboard(text, buttonElement = null) {
     }
 
     try {
-        // Método moderno
         if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(text);
         } else {
-            // Fallback para navegadores antiguos o contextos sin HTTPS
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
@@ -3759,7 +4091,6 @@ async function copyToClipboard(text, buttonElement = null) {
             document.body.removeChild(textarea);
         }
 
-        // Feedback visual en el botón
         if (buttonElement) {
             buttonElement.classList.add('copied');
             const originalHTML = buttonElement.innerHTML;
@@ -3770,7 +4101,6 @@ async function copyToClipboard(text, buttonElement = null) {
             }, 1200);
         }
 
-        // Preview corto en la notificación
         const preview = text.length > 40 ? text.substring(0, 40) + '…' : text;
         showNotification(`📋 Copiado: "${preview}"`, 'success');
         return true;
@@ -3782,11 +4112,7 @@ async function copyToClipboard(text, buttonElement = null) {
     }
 }
 
-// Genera el HTML del botón de copiado para un campo.
-// Uso: copyBtnHTML('Valor a copiar')
-//      copyBtnHTML('Valor', 'inline')  → versión pequeña para tarjetas
 function copyBtnHTML(text, variant = 'default') {
-    // Escapamos el texto para meterlo en el atributo data-copy
     const safe = String(text || '')
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
